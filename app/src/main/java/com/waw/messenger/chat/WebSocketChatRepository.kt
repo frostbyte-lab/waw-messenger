@@ -7,6 +7,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -80,7 +81,7 @@ class WebSocketChatRepository(
     override fun conversations(): Flow<List<Conversation>> = conversationsState
 
     override fun messages(conversationId: String): Flow<List<Message>> =
-        kotlinx.coroutines.flow.map(messagesState) { it.filter { m -> m.conversationId == conversationId } }
+        messagesState.map { messages -> messages.filter { message -> message.conversationId == conversationId } }
 
     override suspend fun sendMessage(conversationId: String, senderId: String, text: String): Message {
         val message = Message(conversationId = conversationId, senderId = senderId, text = text)
