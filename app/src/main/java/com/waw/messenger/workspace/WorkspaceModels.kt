@@ -18,8 +18,8 @@ data class WorkspaceFeature(
 
 object WorkspaceCatalog {
     val features = listOf(
-        WorkspaceFeature("file_manager", "File Manager", "Kelola file dan folder milik pengguna.", WorkspaceFeatureStatus.NOT_STARTED),
-        WorkspaceFeature("documents", "Documents & PDF", "Editor TXT/Markdown dan alat PDF.", WorkspaceFeatureStatus.NOT_STARTED),
+        WorkspaceFeature("file_manager", "File Manager", "Browse, folder operations, rename, copy, move, delete, share, and search pada lokasi yang diizinkan pengguna.", WorkspaceFeatureStatus.IMPLEMENTED),
+        WorkspaceFeature("documents", "Documents & PDF", "Editor TXT/Markdown dan ekspor dokumen ke PDF.", WorkspaceFeatureStatus.IMPLEMENTED),
         WorkspaceFeature("scanner", "Camera Scanner", "Scan dokumen dan ekspor ke PDF.", WorkspaceFeatureStatus.NOT_STARTED),
         WorkspaceFeature("watermark", "Custom Watermark", "Tambahkan watermark teks atau gambar ke output.", WorkspaceFeatureStatus.NOT_STARTED),
         WorkspaceFeature("security", "Biometric & Vault", "Kunci Workspace dan penyimpanan aman.", WorkspaceFeatureStatus.IMPLEMENTED),
