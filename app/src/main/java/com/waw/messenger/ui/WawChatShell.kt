@@ -3,39 +3,30 @@ package com.waw.messenger.ui
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
-import androidx.compose.animation.animateContentSize
-import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -51,13 +42,11 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.Call
-import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DoneAll
 import androidx.compose.material.icons.filled.EmojiEmotions
 import androidx.compose.material.icons.filled.FileCopy
 import androidx.compose.material.icons.filled.Folder
-import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.KeyboardVoice
@@ -68,16 +57,10 @@ import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.TaskAlt
 import androidx.compose.material.icons.filled.VideoCall
-import androidx.compose.material.icons.filled.Wifi
-import androidx.compose.material3.AssistChip
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -99,8 +82,6 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -109,6 +90,8 @@ import com.waw.messenger.chat.MessageStatus
 import com.waw.messenger.workspace.WorkspaceShell
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.math.abs
+import kotlin.math.sin
 
 private val WawGreen = Color(0xFF10B981)
 private val WawGreenDark = Color(0xFF059669)
@@ -117,14 +100,27 @@ private val WawText = Color(0xFF15202B)
 private val WawMuted = Color(0xFF6B7280)
 private val WawLine = Color(0xFFE7ECEF)
 private val WawSurface = Color(0xFFF7FAF9)
-private val WawIncoming = Color.White
 private val WawOutgoing = Color(0xFFDDF8EC)
 
 private enum class WawSection { CHAT, CALLS, STATUS, FEATURES, WORKSPACE }
 private enum class HomeTab { ALL, UNREAD, WORKSPACE }
 
-private data class DemoContact(val id: String, val name: String, val status: String, val unread: Int, val preview: String, val online: Boolean)
-private data class UiMessage(val id: String, val text: String, val mine: Boolean, val time: String, val status: MessageStatus)
+private data class Contact(
+    val id: String,
+    val name: String,
+    val status: String,
+    val preview: String,
+    val unread: Int,
+    val online: Boolean
+)
+
+private data class UiMessage(
+    val id: String,
+    val text: String,
+    val mine: Boolean,
+    val time: String,
+    val status: MessageStatus
+)
 
 @Composable
 fun WawChatShell(modifier: Modifier = Modifier) {
@@ -133,15 +129,17 @@ fun WawChatShell(modifier: Modifier = Modifier) {
     var activeChat by remember { mutableStateOf<String?>(null) }
     val contacts = remember {
         listOf(
-            DemoContact("andi", "Andi", "online", 2, "Sedang mengetik…", true),
-            DemoContact("budi", "Budi", "terakhir dilihat 5 mnt lalu", 0, "File sudah saya kirim", false),
-            DemoContact("citra", "Citra", "online", 1, "Oke, nanti saya cek", true),
-            DemoContact("waw", "WAW Assistant", "online • WAW AI", 0, "Workspace siap digunakan", true)
+            Contact("tim", "Tim WAW", "online • sedang mengetik...", "Sedang mengetik...", 3, true),
+            Contact("marketing", "Tim Marketing – Q4 Campaign", "online", "Rina: Deck final sudah di-up...", 3, true),
+            Contact("client", "Client • PT Nusantara", "online", "Oke, nanti saya cek", 1, true),
+            Contact("design", "Design System Team", "kemarin", "You: Approved ✅ Figma link di wor...", 0, false),
+            Contact("dev", "Dev Team", "kemarin", "Linting passed. Deploying...", 0, false),
+            Contact("sari", "Mba Sari", "Sen", "Siap, invoice sudah dikirim ✅", 0, false)
         )
     }
 
-    Crossfade(targetState = activeChat != null, animationSpec = tween(220), label = "chat-open") { chatOpen ->
-        if (chatOpen) {
+    Crossfade(targetState = activeChat != null, animationSpec = tween(220), label = "open-chat") { open ->
+        if (open) {
             ChatScreen(
                 contact = contacts.firstOrNull { it.id == activeChat } ?: contacts.first(),
                 onBack = { activeChat = null }
@@ -149,13 +147,13 @@ fun WawChatShell(modifier: Modifier = Modifier) {
         } else if (section == WawSection.WORKSPACE) {
             WorkspaceShell(modifier)
         } else {
-            WawHome(
+            HomeScreen(
                 section = section,
                 homeTab = homeTab,
+                contacts = contacts,
                 onHomeTab = { homeTab = it },
                 onSection = { section = it },
                 onOpenChat = { activeChat = it },
-                contacts = contacts,
                 modifier = modifier
             )
         }
@@ -164,21 +162,22 @@ fun WawChatShell(modifier: Modifier = Modifier) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun WawHome(
+private fun HomeScreen(
     section: WawSection,
     homeTab: HomeTab,
+    contacts: List<Contact>,
     onHomeTab: (HomeTab) -> Unit,
     onSection: (WawSection) -> Unit,
     onOpenChat: (String) -> Unit,
-    contacts: List<DemoContact>,
-    modifier: Modifier = Modifier
+    modifier: Modifier
 ) {
-    val topTabs = listOf("Chat", "Panggilan", "Status", "Fitur", "Workspace")
-    val topIndex = WawSection.values().indexOf(section)
+    val tabs = listOf("Chat", "Panggilan", "Status", "Fitur", "Workspace")
     val topState = rememberLazyListState()
-    val coroutine = rememberCoroutineScope()
-    LaunchedEffect(topIndex) {
-        topState.animateScrollToItem(topIndex.coerceIn(0, topTabs.lastIndex))
+    val scope = rememberCoroutineScope()
+    val selectedIndex = section.ordinal
+
+    LaunchedEffect(selectedIndex) {
+        topState.animateScrollToItem(selectedIndex)
     }
 
     Scaffold(
@@ -189,11 +188,11 @@ private fun WawHome(
                 TopAppBar(
                     title = {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            WawLogo(38.dp)
-                            Spacer(Modifier.width(10.dp))
+                            WawLogo(40.dp)
+                            Spacer(Modifier.width(9.dp))
                             Column {
-                                Text("WAW", fontWeight = FontWeight.ExtraBold, fontSize = 21.sp, color = WawText)
-                                Text("Work • Assist • WhatsApp companion", fontSize = 10.sp, color = WawMuted)
+                                Text("WAW", fontSize = 21.sp, fontWeight = FontWeight.ExtraBold, color = WawText)
+                                Text("WhatsApp Workspace", fontSize = 10.sp, color = WawMuted)
                             }
                         }
                     },
@@ -205,47 +204,38 @@ private fun WawHome(
                 )
                 LazyRow(
                     state = topState,
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 2.dp),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp),
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    items(topTabs.size) { index ->
-                        val selected = index == topIndex
+                    items(tabs.size) { index ->
+                        val selected = index == selectedIndex
                         Surface(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(22.dp))
-                                .clickable {
-                                    val target = WawSection.values()[index]
-                                    onSection(target)
-                                    coroutine.launch { topState.animateScrollToItem(index) }
-                                },
-                            color = if (selected) WawGreen else Color.Transparent,
-                            shape = RoundedCornerShape(22.dp)
+                            color = if (selected) WawText else WawSurface,
+                            shape = RoundedCornerShape(20.dp),
+                            modifier = Modifier.clickable {
+                                onSection(WawSection.entries[index])
+                                scope.launch { topState.animateScrollToItem(index) }
+                            }
                         ) {
                             Text(
-                                topTabs[index],
-                                modifier = Modifier.padding(horizontal = 18.dp, vertical = 9.dp),
+                                tabs[index],
+                                modifier = Modifier.padding(horizontal = 17.dp, vertical = 9.dp),
                                 color = if (selected) Color.White else WawMuted,
-                                fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-                                fontSize = 13.sp
+                                fontSize = 12.sp,
+                                fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
                             )
                         }
                     }
                 }
-                Spacer(Modifier.height(4.dp))
+                Spacer(Modifier.height(6.dp))
             }
         },
         bottomBar = {
-            NavigationBar(containerColor = Color.White, tonalElevation = 0.dp) {
-                BottomItem("Chat", Icons.Default.Home, WawSection.CHAT, section, onSection)
-                BottomItem("Panggilan", Icons.Default.Call, WawSection.CALLS, section, onSection)
-                BottomItem("Status", Icons.Default.Info, WawSection.STATUS, section, onSection)
-                BottomItem("Fitur", Icons.Default.TaskAlt, WawSection.FEATURES, section, onSection)
-                BottomItem("Workspace", Icons.Default.Folder, WawSection.WORKSPACE, section, onSection)
-            }
+            WawBottomBar(section, onSection)
         }
     ) { padding ->
         when (section) {
-            WawSection.CHAT -> ChatHomeBody(homeTab, onHomeTab, contacts, onOpenChat, Modifier.padding(padding))
+            WawSection.CHAT -> ChatHome(homeTab, contacts, onHomeTab, onOpenChat, Modifier.padding(padding))
             WawSection.CALLS -> CallsBody(Modifier.padding(padding))
             WawSection.STATUS -> StatusBody(Modifier.padding(padding))
             WawSection.FEATURES -> FeaturesBody(Modifier.padding(padding))
@@ -255,53 +245,56 @@ private fun WawHome(
 }
 
 @Composable
-private fun BottomItem(label: String, icon: androidx.compose.ui.graphics.vector.ImageVector, value: WawSection, selected: WawSection, onSelect: (WawSection) -> Unit) {
-    NavigationBarItem(
-        selected = selected == value,
-        onClick = { onSelect(value) },
-        icon = { Icon(icon, null) },
-        label = { Text(label, fontSize = 10.sp) }
-    )
+private fun WawBottomBar(section: WawSection, onSection: (WawSection) -> Unit) {
+    Surface(color = Color.White, shadowElevation = 3.dp) {
+        Row(Modifier.fillMaxWidth().padding(horizontal = 6.dp, vertical = 5.dp), horizontalArrangement = Arrangement.SpaceAround) {
+            BottomItem("Chat", Icons.Default.Home, WawSection.CHAT, section, onSection)
+            BottomItem("Panggilan", Icons.Default.Call, WawSection.CALLS, section, onSection)
+            BottomItem("Status", Icons.Default.Info, WawSection.STATUS, section, onSection)
+            BottomItem("Fitur", Icons.Default.TaskAlt, WawSection.FEATURES, section, onSection)
+            BottomItem("Workspace", Icons.Default.Folder, WawSection.WORKSPACE, section, onSection)
+        }
+    }
 }
 
 @Composable
-private fun ChatHomeBody(
-    homeTab: HomeTab,
-    onHomeTab: (HomeTab) -> Unit,
-    contacts: List<DemoContact>,
-    onOpenChat: (String) -> Unit,
-    modifier: Modifier
-) {
-    val listState = rememberLazyListState()
+private fun BottomItem(label: String, icon: androidx.compose.ui.graphics.vector.ImageVector, value: WawSection, selected: WawSection, onSelect: (WawSection) -> Unit) {
+    val scale by animateFloatAsState(if (selected == value) 1.08f else 1f, tween(180), label = "nav-scale")
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.width(68.dp).clickable { onSelect(value) }.padding(vertical = 3.dp).scale(scale)
+    ) {
+        Icon(icon, null, tint = if (selected == value) WawGreenDark else WawMuted, modifier = Modifier.size(21.dp))
+        Text(label, fontSize = 9.sp, color = if (selected == value) WawText else WawMuted, fontWeight = if (selected == value) FontWeight.Bold else FontWeight.Normal)
+    }
+}
+
+@Composable
+private fun ChatHome(homeTab: HomeTab, contacts: List<Contact>, onHomeTab: (HomeTab) -> Unit, onOpenChat: (String) -> Unit, modifier: Modifier) {
     val visible = when (homeTab) {
         HomeTab.ALL -> contacts
         HomeTab.UNREAD -> contacts.filter { it.unread > 0 }
-        HomeTab.WORKSPACE -> contacts.filter { it.id == "waw" }
+        HomeTab.WORKSPACE -> contacts.filter { it.id == "tim" }
     }
+    val listState = rememberLazyListState()
     LazyColumn(
         state = listState,
         modifier = modifier.fillMaxSize().background(Color.White),
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 16.dp, end = 16.dp, bottom = 20.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 18.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         item {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 10.dp, bottom = 4.dp)) {
-                HomeChip("Semua", homeTab == HomeTab.ALL) { onHomeTab(HomeTab.ALL) }
-                HomeChip("Belum dibaca", homeTab == HomeTab.UNREAD) { onHomeTab(HomeTab.UNREAD) }
-                HomeChip("Workspace", homeTab == HomeTab.WORKSPACE) { onHomeTab(HomeTab.WORKSPACE) }
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(7.dp), modifier = Modifier.padding(top = 9.dp, bottom = 7.dp)) {
+                item { HomeChip("Semua", homeTab == HomeTab.ALL) { onHomeTab(HomeTab.ALL) } }
+                item { HomeChip("Belum dibaca", homeTab == HomeTab.UNREAD) { onHomeTab(HomeTab.UNREAD) } }
+                item { HomeChip("Workspace", homeTab == HomeTab.WORKSPACE) { onHomeTab(HomeTab.WORKSPACE) } }
             }
         }
         item { WorkspaceQuickAccess() }
         item { WawInsight() }
-        item {
-            Text("Pesan", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = WawText, modifier = Modifier.padding(top = 8.dp, bottom = 2.dp))
-        }
+        item { Text("OBROLAN", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = WawMuted, modifier = Modifier.padding(top = 13.dp, bottom = 3.dp)) }
         items(visible, key = { it.id }) { contact ->
-            AnimatedVisibility(
-                visible = true,
-                enter = fadeIn(tween(220)) + slideInVertically(tween(260)) { it / 5 },
-                exit = fadeOut(tween(120))
-            ) {
+            AnimatedVisibility(true, enter = fadeIn(tween(180)) + slideInVertically(tween(240)) { it / 5 }, exit = fadeOut(tween(120))) {
                 ConversationRow(contact, onOpenChat)
             }
         }
@@ -311,230 +304,214 @@ private fun ChatHomeBody(
 @Composable
 private fun HomeChip(text: String, selected: Boolean, onClick: () -> Unit) {
     Surface(
-        color = if (selected) WawGreen else WawSurface,
+        color = if (selected) WawText else WawSurface,
         shape = RoundedCornerShape(18.dp),
-        modifier = Modifier.clip(RoundedCornerShape(18.dp)).clickable(onClick = onClick)
-    ) {
-        Text(text, modifier = Modifier.padding(horizontal = 13.dp, vertical = 8.dp), color = if (selected) Color.White else WawText, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-    }
+        modifier = Modifier.clickable(onClick = onClick)
+    ) { Text(text, modifier = Modifier.padding(horizontal = 13.dp, vertical = 8.dp), color = if (selected) Color.White else WawText, fontSize = 12.sp, fontWeight = FontWeight.SemiBold) }
 }
 
 @Composable
 private fun WorkspaceQuickAccess() {
-    Card(colors = CardDefaults.cardColors(containerColor = WawSurface), shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth().padding(top = 6.dp)) {
-        Column(Modifier.padding(14.dp)) {
+    Surface(color = WawSurface, shape = RoundedCornerShape(19.dp), modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(13.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Workspace", fontWeight = FontWeight.Bold, color = WawText, modifier = Modifier.weight(1f))
-                Text("Quick Access", color = WawGreenDark, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                Text("Workspace Quick Access", color = WawText, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                Text("Lihat semua", color = WawGreenDark, fontSize = 11.sp, fontWeight = FontWeight.Bold)
             }
-            Spacer(Modifier.height(10.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(9.dp), modifier = Modifier.fillMaxWidth()) {
-                WorkspaceTile("Dokumen", Icons.Default.FileCopy, WawBlue)
-                WorkspaceTile("Tugas", Icons.Default.TaskAlt, WawGreen)
-                WorkspaceTile("Kalender", Icons.Default.Info, Color(0xFF8B5CF6))
-                WorkspaceTile("File", Icons.Default.Folder, Color(0xFFF59E0B))
+            Spacer(Modifier.height(9.dp))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                QuickTile("Dokumen", Icons.Default.FileCopy, WawBlue, "12 file")
+                QuickTile("Tugas", Icons.Default.TaskAlt, WawGreen, "8 aktif")
+                QuickTile("Kalender", Icons.Default.Info, Color(0xFF8B5CF6), "3 meeting")
+                QuickTile("File", Icons.Default.Folder, Color(0xFFF59E0B), "2.4 GB")
             }
         }
     }
 }
 
 @Composable
-private fun WorkspaceTile(label: String, icon: androidx.compose.ui.graphics.vector.ImageVector, accent: Color) {
+private fun QuickTile(label: String, icon: androidx.compose.ui.graphics.vector.ImageVector, accent: Color, detail: String) {
     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1f)) {
-        Surface(color = Color.White, shape = RoundedCornerShape(15.dp), modifier = Modifier.size(52.dp)) {
-            Box(contentAlignment = Alignment.Center) { Icon(icon, null, tint = accent, modifier = Modifier.size(25.dp)) }
+        Surface(color = Color.White, shape = RoundedCornerShape(13.dp), modifier = Modifier.size(50.dp)) {
+            Box(contentAlignment = Alignment.Center) { Icon(icon, null, tint = accent, modifier = Modifier.size(24.dp)) }
         }
-        Text(label, fontSize = 10.sp, color = WawMuted, modifier = Modifier.padding(top = 5.dp))
+        Text(label, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = WawText, modifier = Modifier.padding(top = 4.dp))
+        Text(detail, fontSize = 8.sp, color = WawMuted)
     }
 }
 
 @Composable
 private fun WawInsight() {
-    Card(colors = CardDefaults.cardColors(containerColor = Color.White), border = androidx.compose.foundation.BorderStroke(1.dp, WawLine), shape = RoundedCornerShape(18.dp), modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
-        Row(Modifier.padding(13.dp), verticalAlignment = Alignment.CenterVertically) {
-            WawLogo(42.dp)
-            Column(Modifier.weight(1f).padding(start = 10.dp)) {
+    Surface(color = Color.White, shape = RoundedCornerShape(17.dp), modifier = Modifier.fillMaxWidth().padding(top = 7.dp).border(1.dp, WawLine, RoundedCornerShape(17.dp))) {
+        Row(Modifier.padding(11.dp), verticalAlignment = Alignment.CenterVertically) {
+            WawLogo(38.dp)
+            Column(Modifier.weight(1f).padding(start = 9.dp)) {
                 Text("WAW Insight", fontWeight = FontWeight.Bold, color = WawText)
-                Text("Semua aktivitas Workspace tetap terpisah dan dikendalikan WAW.", fontSize = 11.sp, color = WawMuted)
+                Text("Workspace tetap terpisah dan dikendalikan WAW.", fontSize = 10.sp, color = WawMuted)
             }
-            Icon(Icons.Default.Wifi, null, tint = WawGreen)
+            Text("●", color = WawGreen, fontSize = 18.sp)
         }
     }
 }
 
 @Composable
-private fun ConversationRow(contact: DemoContact, onOpenChat: (String) -> Unit) {
-    Row(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(17.dp)).clickable { onOpenChat(contact.id) }.padding(vertical = 7.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
+private fun ConversationRow(contact: Contact, onOpenChat: (String) -> Unit) {
+    Row(Modifier.fillMaxWidth().clickable { onOpenChat(contact.id) }.padding(vertical = 7.dp), verticalAlignment = Alignment.CenterVertically) {
         Avatar(contact.name, contact.online)
-        Column(Modifier.weight(1f).padding(start = 12.dp)) {
-            Text(contact.name, color = WawText, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+        Column(Modifier.weight(1f).padding(start = 11.dp)) {
+            Text(contact.name, color = WawText, fontWeight = FontWeight.Bold, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Row(verticalAlignment = Alignment.CenterVertically) {
                 if (contact.preview.contains("mengetik")) TypingDots()
-                Text(contact.preview, color = if (contact.preview.contains("mengetik")) WawGreenDark else WawMuted, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(contact.preview, color = if (contact.preview.contains("mengetik")) WawGreenDark else WawMuted, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
         Column(horizontalAlignment = Alignment.End) {
-            Text("09:4${contact.name.length}", fontSize = 10.sp, color = WawMuted)
-            if (contact.unread > 0) {
-                Spacer(Modifier.height(5.dp))
-                Surface(color = WawGreen, shape = CircleShape) { Text(contact.unread.toString(), color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)) }
-            }
+            Text(if (contact.unread > 0) "10:42" else "Kemarin", fontSize = 9.sp, color = WawMuted)
+            if (contact.unread > 0) Surface(color = WawGreen, shape = CircleShape, modifier = Modifier.padding(top = 4.dp).size(21.dp)) { Box(contentAlignment = Alignment.Center) { Text(contact.unread.toString(), color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Bold) } }
         }
     }
 }
 
 @Composable
 private fun Avatar(name: String, online: Boolean) {
-    Box(Modifier.size(52.dp)) {
-        if (name == "WAW Assistant") WawLogo(52.dp) else {
-            Surface(color = if (name.length % 2 == 0) Color(0xFFE5F7F0) else Color(0xFFEAF3FF), shape = CircleShape, modifier = Modifier.fillMaxSize()) {
-                Box(contentAlignment = Alignment.Center) { Text(name.take(1), color = if (name.length % 2 == 0) WawGreenDark else WawBlue, fontWeight = FontWeight.ExtraBold, fontSize = 20.sp) }
-            }
-        }
-        if (online) Box(Modifier.size(12.dp).align(Alignment.BottomEnd).background(WawGreen, CircleShape).border(2.dp, Color.White, CircleShape))
-    }
-}
-
-@Composable
-private fun WawLogo(size: androidx.compose.ui.unit.Dp) {
-    // Temporary vector treatment matching the supplied WAW green/blue identity.
-    Box(Modifier.size(size).clip(CircleShape).background(Color(0xFFE9FFF7)), contentAlignment = Alignment.Center) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
-            Surface(color = WawGreen, shape = CircleShape, modifier = Modifier.size(size * .58f)) {}
-            Surface(color = WawBlue, shape = CircleShape, modifier = Modifier.size(size * .58f).padding(start = 1.dp)) {
-                Box(contentAlignment = Alignment.Center) { Text("W", color = Color.White, fontWeight = FontWeight.Black, fontSize = (size.value * .28f).sp) }
-            }
-        }
+    Box {
+        Surface(color = WawGreenDark, shape = CircleShape, modifier = Modifier.size(46.dp)) { Box(contentAlignment = Alignment.Center) { Text(name.take(2).uppercase(), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp) } }
+        if (online) Surface(color = WawGreen, shape = CircleShape, modifier = Modifier.size(12.dp).align(Alignment.BottomEnd).border(2.dp, Color.White, CircleShape)) {}
     }
 }
 
 @Composable
 private fun TypingDots() {
     val transition = rememberInfiniteTransition(label = "typing")
-    val phase by transition.animateFloat(0f, 1f, infiniteRepeatable(tween(650, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "typing-phase")
-    Row(Modifier.width(18.dp), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-        repeat(3) { index ->
-            Box(Modifier.size(4.dp).scale(0.7f + phase * (0.3f + index * .06f)).background(WawGreen, CircleShape))
-        }
+    val pulse by transition.animateFloat(0.45f, 1f, infiniteRepeatable(tween(520), RepeatMode.Reverse), label = "typing-pulse")
+    Row(Modifier.padding(end = 4.dp), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+        repeat(3) { index -> Text("•", color = WawGreen, fontSize = 14.sp, modifier = Modifier.alpha(if (index == 1) pulse else 0.7f)) }
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ChatScreen(contact: DemoContact, onBack: () -> Unit) {
-    val messages = remember(contact.id) {
+private fun ChatScreen(contact: Contact, onBack: () -> Unit) {
+    val messages = remember {
         mutableStateListOf(
-            UiMessage("1", "Halo, selamat datang di WAW 👋", false, "09:41", MessageStatus.READ),
-            UiMessage("2", "Tampilannya sudah putih dan simpel.", true, "09:42", MessageStatus.READ),
-            UiMessage("3", "Iya. Workspace juga tetap ada di dalam WAW.", false, "09:43", MessageStatus.READ)
+            UiMessage("1", "Hai! Logo baru WAW udah aku finalize pakai aset 3D hijau-teal ✨\nMirip vibe Meta AI kan? Clean glass + animasi masuk.", false, "10:42", MessageStatus.READ),
+            UiMessage("2", "Gokil! Jauh lebih premium 🔥 pakai ini buat header + app icon. Jangan pakai WA logo lagi ya.", true, "10:43", MessageStatus.READ),
+            UiMessage("3", "Aku tambahin animasi: pesan masuk slide dari kiri, terkirim slide kanan + double check biru pop!", false, "10:44", MessageStatus.READ),
+            UiMessage("4", "Perfect. Auto-loop tiap 5 detik biar demo keren terus ✨", true, "10:44", MessageStatus.READ)
         )
     }
     var draft by remember { mutableStateOf("") }
-    var typing by remember { mutableStateOf(contact.id == "andi") }
+    var typing by remember { mutableStateOf(true) }
     var recording by remember { mutableStateOf(false) }
-    var sending by remember { mutableStateOf(false) }
+    var attachmentProgress by remember { mutableStateOf(0f) }
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(messages.size, typing) {
         if (messages.isNotEmpty()) listState.animateScrollToItem(messages.lastIndex)
     }
-    LaunchedEffect(contact.id) {
-        delay(1600)
-        typing = false
+    LaunchedEffect(typing) {
+        if (typing) {
+            delay(5000)
+            typing = false
+        }
+    }
+    LaunchedEffect(attachmentProgress) {
+        if (attachmentProgress > 0f && attachmentProgress < 1f) {
+            delay(90)
+            attachmentProgress = (attachmentProgress + 0.035f).coerceAtMost(1f)
+        }
     }
 
     Scaffold(
-        containerColor = WawSurface,
+        containerColor = Color(0xFFF5FAF8),
         topBar = {
             TopAppBar(
                 title = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Avatar(contact.name, contact.online)
                         Column(Modifier.padding(start = 9.dp)) {
-                            Text(contact.name, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                            Text(if (typing) "sedang mengetik…" else if (contact.online) "online" else contact.status, fontSize = 11.sp, color = if (typing) WawGreenDark else WawMuted)
+                            Text(contact.name, color = WawText, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                            Text(if (typing) "online • sedang mengetik..." else contact.status, color = WawGreenDark, fontSize = 10.sp)
                         }
                     }
                 },
                 navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, "Kembali", tint = WawText) } },
                 actions = {
                     IconButton(onClick = {}) { Icon(Icons.Default.VideoCall, "Video", tint = WawText) }
-                    IconButton(onClick = {}) { Icon(Icons.Default.Call, "Panggilan", tint = WawText) }
+                    IconButton(onClick = {}) { Icon(Icons.Default.Phone, "Telepon", tint = WawText) }
+                    IconButton(onClick = {}) { Icon(Icons.Default.MoreVert, "Menu", tint = WawText) }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
             )
-        },
-        bottomBar = {
+        }
+    ) { padding ->
+        Column(Modifier.fillMaxSize().padding(padding)) {
+            LazyColumn(
+                state = listState,
+                modifier = Modifier.weight(1f).fillMaxWidth(),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 14.dp),
+                verticalArrangement = Arrangement.spacedBy(9.dp)
+            ) {
+                item { DayPill("Hari ini") }
+                items(messages, key = { it.id }) { message -> MessageBubble(message) }
+                if (attachmentProgress > 0f && attachmentProgress < 1f) item { AttachmentProgress(attachmentProgress) }
+                if (typing) item { TypingBubble() }
+            }
+            if (recording) VoiceWaveform { recording = false }
             Composer(
                 text = draft,
-                onTextChange = { draft = it; typing = it.isNotBlank() },
+                onText = { draft = it },
                 recording = recording,
-                sending = sending,
                 onRecord = { recording = !recording },
+                onAttach = { attachmentProgress = 0.05f },
                 onSend = {
-                    val clean = draft.trim()
-                    if (clean.isNotEmpty()) {
-                        sending = true
-                        messages.add(UiMessage("m-${messages.size}", clean, true, "09:4${messages.size}", MessageStatus.SENDING))
+                    val value = draft.trim()
+                    if (value.isNotEmpty()) {
+                        val id = "local-${System.currentTimeMillis()}"
+                        messages.add(UiMessage(id, value, true, "10:45", MessageStatus.SENDING))
                         draft = ""
+                        typing = false
                         scope.launch {
-                            delay(260)
-                            val index = messages.lastIndex
-                            messages[index] = messages[index].copy(status = MessageStatus.SENT)
-                            delay(320)
-                            messages[index] = messages[index].copy(status = MessageStatus.DELIVERED)
-                            delay(520)
-                            messages[index] = messages[index].copy(status = MessageStatus.READ)
-                            sending = false
+                            listState.animateScrollToItem(messages.lastIndex)
+                            delay(350)
+                            val i = messages.indexOfFirst { it.id == id }
+                            if (i >= 0) messages[i] = messages[i].copy(status = MessageStatus.SENT)
+                            delay(450)
+                            if (i >= 0) messages[i] = messages[i].copy(status = MessageStatus.DELIVERED)
+                            delay(650)
+                            if (i >= 0) messages[i] = messages[i].copy(status = MessageStatus.READ)
                         }
                     }
                 }
             )
         }
-    ) { padding ->
-        LazyColumn(
-            state = listState,
-            modifier = Modifier.fillMaxSize().padding(padding),
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(14.dp),
-            verticalArrangement = Arrangement.spacedBy(7.dp)
-        ) {
-            item { Text("Hari ini", modifier = Modifier.fillMaxWidth().padding(vertical = 5.dp), color = WawMuted, fontSize = 10.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center) }
-            items(messages, key = { it.id }) { message ->
-                AnimatedMessage(message)
-            }
-            item {
-                AnimatedVisibility(typing, enter = fadeIn() + expandVertically(), exit = fadeOut()) {
-                    TypingBubble()
-                }
-            }
-            item { Spacer(Modifier.height(8.dp)) }
-        }
     }
 }
 
 @Composable
-private fun AnimatedMessage(message: UiMessage) {
-    AnimatedVisibility(
-        visible = true,
-        enter = fadeIn(tween(180)) + slideInHorizontally(tween(230)) { if (message.mine) it / 3 else -it / 3 } + scaleIn(tween(180), initialScale = .96f),
-        exit = fadeOut(tween(120)) + slideOutHorizontally(tween(120)) { if (message.mine) it / 4 else -it / 4 }
-    ) {
+private fun DayPill(text: String) {
+    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { Surface(color = Color.White, shape = RoundedCornerShape(15.dp)) { Text(text, modifier = Modifier.padding(horizontal = 13.dp, vertical = 6.dp), color = WawMuted, fontSize = 10.sp) } }
+}
+
+@Composable
+private fun MessageBubble(message: UiMessage) {
+    val enter = fadeIn(tween(180)) + if (message.mine) slideInHorizontally(tween(260)) { it / 2 } else slideInHorizontally(tween(260)) { -it / 2 }
+    AnimatedVisibility(true, enter = enter + scaleIn(tween(180), initialScale = 0.96f)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = if (message.mine) Arrangement.End else Arrangement.Start) {
             Surface(
-                color = if (message.mine) WawOutgoing else WawIncoming,
-                shape = if (message.mine) RoundedCornerShape(18.dp, 6.dp, 18.dp, 18.dp) else RoundedCornerShape(6.dp, 18.dp, 18.dp, 18.dp),
-                shadowElevation = 1.dp
+                color = if (message.mine) WawOutgoing else Color.White,
+                shape = RoundedCornerShape(17.dp),
+                modifier = Modifier.fillMaxWidth(0.82f).border(1.dp, if (message.mine) Color.Transparent else WawLine, RoundedCornerShape(17.dp))
             ) {
-                Row(Modifier.padding(start = 12.dp, end = 9.dp, top = 8.dp, bottom = 6.dp), verticalAlignment = Alignment.Bottom) {
-                    Text(message.text, color = WawText, fontSize = 14.sp, modifier = Modifier.padding(end = 9.dp))
-                    Text(message.time, color = WawMuted, fontSize = 9.sp)
-                    if (message.mine) {
-                        Spacer(Modifier.width(3.dp))
-                        MessageStatusIcon(message.status)
+                Column(Modifier.padding(horizontal = 13.dp, vertical = 9.dp)) {
+                    Text(message.text, color = WawText, fontSize = 13.sp)
+                    Row(Modifier.fillMaxWidth().padding(top = 4.dp), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
+                        Text(message.time, fontSize = 9.sp, color = WawMuted)
+                        if (message.mine) {
+                            Spacer(Modifier.width(4.dp))
+                            MessageStatusIcon(message.status)
+                        }
                     }
                 }
             }
@@ -544,63 +521,64 @@ private fun AnimatedMessage(message: UiMessage) {
 
 @Composable
 private fun MessageStatusIcon(status: MessageStatus) {
-    when (status) {
-        MessageStatus.SENDING -> Icon(Icons.Default.Check, null, tint = WawMuted, modifier = Modifier.size(12.dp))
-        MessageStatus.SENT -> Icon(Icons.Default.Check, null, tint = WawMuted, modifier = Modifier.size(12.dp))
-        MessageStatus.DELIVERED, MessageStatus.READ -> Icon(Icons.Default.DoneAll, null, tint = if (status == MessageStatus.READ) WawBlue else WawMuted, modifier = Modifier.size(13.dp))
-        MessageStatus.FAILED -> Icon(Icons.Default.Info, null, tint = Color.Red, modifier = Modifier.size(12.dp))
-    }
-}
-
-@Composable
-private fun TypingBubble() {
-    Surface(color = Color.White, shape = RoundedCornerShape(7.dp, 18.dp, 18.dp, 18.dp), shadowElevation = 1.dp) {
-        Row(Modifier.padding(horizontal = 12.dp, vertical = 9.dp), verticalAlignment = Alignment.CenterVertically) {
-            TypingDots()
-            Text(" sedang mengetik…", fontSize = 11.sp, color = WawMuted)
+    AnimatedContent(status, label = "message-status") { current ->
+        when (current) {
+            MessageStatus.SENDING -> Text("◷", color = WawMuted, fontSize = 12.sp)
+            MessageStatus.SENT -> Icon(Icons.Default.Check, null, tint = WawMuted, modifier = Modifier.size(13.dp))
+            MessageStatus.DELIVERED -> Icon(Icons.Default.DoneAll, null, tint = WawBlue, modifier = Modifier.size(14.dp))
+            MessageStatus.READ -> Icon(Icons.Default.DoneAll, null, tint = WawBlue, modifier = Modifier.size(15.dp))
+            MessageStatus.FAILED -> Text("!", color = Color.Red, fontWeight = FontWeight.Bold)
         }
     }
 }
 
 @Composable
-private fun Composer(
-    text: String,
-    onTextChange: (String) -> Unit,
-    recording: Boolean,
-    sending: Boolean,
-    onRecord: () -> Unit,
-    onSend: () -> Unit
-) {
-    Surface(color = Color.White, shadowElevation = 10.dp) {
-        Column(Modifier.fillMaxWidth().padding(horizontal = 9.dp, vertical = 8.dp).padding(WindowInsets.navigationBars.asPaddingValues())) {
-            AnimatedVisibility(recording, enter = fadeIn() + expandVertically(), exit = fadeOut()) {
-                VoiceWaveform(onStop = onRecord)
+private fun TypingBubble() {
+    Surface(color = Color.White, shape = RoundedCornerShape(17.dp), modifier = Modifier.padding(start = 28.dp)) {
+        Row(Modifier.padding(horizontal = 14.dp, vertical = 9.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text("Tim WAW sedang mengetik", color = WawMuted, fontSize = 11.sp)
+            Spacer(Modifier.width(6.dp))
+            TypingDots()
+        }
+    }
+}
+
+@Composable
+private fun AttachmentProgress(progress: Float) {
+    Surface(color = Color.White, shape = RoundedCornerShape(15.dp), modifier = Modifier.fillMaxWidth().border(1.dp, WawLine, RoundedCornerShape(15.dp))) {
+        Column(Modifier.padding(11.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.FileCopy, null, tint = WawBlue)
+                Column(Modifier.weight(1f).padding(start = 8.dp)) {
+                    Text("preview_design.mp4", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = WawText)
+                    Text("12.4 MB • MP4", fontSize = 9.sp, color = WawMuted)
+                }
+                Text("${(progress * 100).toInt()}%", fontSize = 10.sp, color = WawMuted)
             }
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.animateContentSize(animationSpec = spring())) {
-                IconButton(onClick = {}) { Icon(Icons.Default.Add, "Tambah", tint = WawGreenDark) }
-                Surface(color = WawSurface, shape = RoundedCornerShape(24.dp), modifier = Modifier.weight(1f)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        BasicTextField(
-                            value = text,
-                            onValueChange = onTextChange,
-                            modifier = Modifier.weight(1f).padding(horizontal = 14.dp, vertical = 11.dp),
-                            textStyle = TextStyle(fontSize = 14.sp, color = WawText),
-                            singleLine = true,
-                            decorationBox = { inner ->
-                                if (text.isEmpty()) Text("Tulis pesan…", color = WawMuted, fontSize = 14.sp)
-                                inner()
-                            }
-                        )
-                        IconButton(onClick = {}) { Icon(Icons.Default.EmojiEmotions, "Emoji", tint = WawMuted) }
-                    }
+            Spacer(Modifier.height(7.dp))
+            Surface(color = WawLine, shape = RoundedCornerShape(5.dp), modifier = Modifier.fillMaxWidth().height(5.dp)) {
+                Surface(color = WawGreen, shape = RoundedCornerShape(5.dp), modifier = Modifier.fillMaxWidth(progress).height(5.dp)) {}
+            }
+        }
+    }
+}
+
+@Composable
+private fun Composer(text: String, onText: (String) -> Unit, recording: Boolean, onRecord: () -> Unit, onAttach: () -> Unit, onSend: () -> Unit) {
+    Surface(color = Color.White, shadowElevation = 4.dp) {
+        Row(Modifier.fillMaxWidth().padding(horizontal = 9.dp, vertical = 7.dp), verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = onAttach) { Icon(Icons.Default.Add, "Lampiran", tint = WawText) }
+            Surface(color = WawSurface, shape = RoundedCornerShape(23.dp), modifier = Modifier.weight(1f)) {
+                Row(Modifier.padding(horizontal = 13.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                    BasicTextField(value = text, onValueChange = onText, modifier = Modifier.weight(1f), textStyle = MaterialTheme.typography.bodyMedium.copy(color = WawText), singleLine = true, decorationBox = { inner ->
+                        Box { if (text.isEmpty()) Text("Ketik pesan...", color = WawMuted, fontSize = 13.sp); inner() }
+                    })
+                    Icon(Icons.Default.EmojiEmotions, null, tint = WawMuted, modifier = Modifier.size(20.dp))
                 }
-                Spacer(Modifier.width(4.dp))
-                val pulse by animateFloatAsState(if (sending) .88f else 1f, tween(180), label = "send-pulse")
-                Surface(color = WawGreen, shape = CircleShape, modifier = Modifier.size(47.dp).scale(pulse).clickable { if (text.isNotBlank()) onSend() else onRecord() }) {
-                    Box(contentAlignment = Alignment.Center) {
-                        if (text.isBlank()) Icon(Icons.Default.KeyboardVoice, "Rekam suara", tint = Color.White) else Icon(Icons.Default.Send, "Kirim", tint = Color.White)
-                    }
-                }
+            }
+            Spacer(Modifier.width(6.dp))
+            Surface(color = if (text.isNotBlank()) WawGreen else WawGreenDark, shape = CircleShape, modifier = Modifier.size(45.dp).clickable { if (text.isNotBlank()) onSend() else onRecord() }) {
+                Box(contentAlignment = Alignment.Center) { Icon(if (text.isNotBlank()) Icons.Default.Send else Icons.Default.KeyboardVoice, null, tint = Color.White) }
             }
         }
     }
@@ -609,84 +587,71 @@ private fun Composer(
 @Composable
 private fun VoiceWaveform(onStop: () -> Unit) {
     val transition = rememberInfiniteTransition(label = "voice")
-    val phase by transition.animateFloat(0f, 1f, infiniteRepeatable(tween(700), RepeatMode.Reverse), label = "voice-phase")
-    Row(Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 5.dp), verticalAlignment = Alignment.CenterVertically) {
-        IconButton(onClick = onStop) { Icon(Icons.Default.KeyboardVoice, "Selesai", tint = WawGreenDark) }
-        Canvas(Modifier.weight(1f).height(38.dp)) {
-            val bars = 34
-            repeat(bars) { i ->
-                val x = size.width * i / bars
-                val h = size.height * (.18f + .7f * kotlin.math.abs(kotlin.math.sin(i * .75 + phase * 3.2)))
-                drawLine(WawGreen, Offset(x, size.height / 2 - h / 2), Offset(x, size.height / 2 + h / 2), 3.dp.toPx(), StrokeCap.Round)
+    val phase by transition.animateFloat(0f, 1f, infiniteRepeatable(tween(650), RepeatMode.Reverse), label = "voice-phase")
+    Surface(color = Color.White, modifier = Modifier.fillMaxWidth()) {
+        Row(Modifier.padding(horizontal = 10.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = onStop) { Icon(Icons.Default.KeyboardVoice, "Selesai", tint = WawGreenDark) }
+            Canvas(Modifier.weight(1f).height(36.dp)) {
+                repeat(34) { i ->
+                    val x = size.width * i / 34f
+                    val h = size.height * (0.18f + 0.7f * abs(sin(i * 0.75f + phase * 3.2f)))
+                    drawLine(WawGreen, Offset(x, size.height / 2f - h / 2f), Offset(x, size.height / 2f + h / 2f), 3.dp.toPx(), StrokeCap.Round)
+                }
             }
+            Text("0:04", fontSize = 10.sp, color = WawMuted, modifier = Modifier.padding(horizontal = 7.dp))
         }
-        Text("0:04", fontSize = 11.sp, color = WawMuted, modifier = Modifier.padding(horizontal = 6.dp))
     }
 }
 
 @Composable
 private fun CallsBody(modifier: Modifier) {
-    LazyColumn(modifier.fillMaxSize().background(Color.White).padding(horizontal = 16.dp), contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = 18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        item { PageTitle("Panggilan", "Riwayat panggilan WAW") }
-        item { CallRow("Andi", "Panggilan video • 09:31", true) }
-        item { CallRow("Budi", "Panggilan suara • 08:52", false) }
-        item { CallRow("Citra", "Panggilan terjawab • Kemarin", true) }
-    }
-}
-
-@Composable
-private fun CallRow(name: String, detail: String, video: Boolean) {
-    Row(Modifier.fillMaxWidth().padding(vertical = 5.dp), verticalAlignment = Alignment.CenterVertically) {
-        Avatar(name, false)
-        Column(Modifier.weight(1f).padding(start = 12.dp)) { Text(name, fontWeight = FontWeight.Bold); Text(detail, color = WawMuted, fontSize = 11.sp) }
-        Icon(if (video) Icons.Default.VideoCall else Icons.Default.Phone, null, tint = WawGreenDark)
-    }
+    SimpleSection(modifier, "Panggilan", "Riwayat panggilan WAW akan tampil di sini.", Icons.Default.Call)
 }
 
 @Composable
 private fun StatusBody(modifier: Modifier) {
-    LazyColumn(modifier.fillMaxSize().background(Color.White).padding(horizontal = 16.dp), contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = 18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        item { PageTitle("Status", "Update terbaru dari kontak") }
-        item { StatusCard("WAW", "Workspace aktif • 2 menit lalu") }
-        item { StatusCard("Andi", "Sedang bekerja • 12 menit lalu") }
-        item { StatusCard("Citra", "Selesai meeting • 1 jam lalu") }
-    }
-}
-
-@Composable
-private fun StatusCard(name: String, detail: String) {
-    Card(colors = CardDefaults.cardColors(containerColor = WawSurface), shape = RoundedCornerShape(18.dp), modifier = Modifier.fillMaxWidth()) {
-        Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
-            Avatar(name, true)
-            Column(Modifier.padding(start = 12.dp)) { Text(name, fontWeight = FontWeight.Bold); Text(detail, color = WawMuted, fontSize = 11.sp) }
-        }
-    }
+    SimpleSection(modifier, "Status", "Status, update, dan aktivitas tim WAW.", Icons.Default.Info)
 }
 
 @Composable
 private fun FeaturesBody(modifier: Modifier) {
-    LazyColumn(modifier.fillMaxSize().background(Color.White).padding(horizontal = 16.dp), contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = 18.dp), verticalArrangement = Arrangement.spacedBy(11.dp)) {
-        item { PageTitle("Fitur", "Tools WAW yang siap dipakai") }
-        item { FeatureCard("WAW Shield", "Anti-phishing & blocklist berisiko", Icons.Default.Info) }
-        item { FeatureCard("Network Diagnostics", "IP lokal, koneksi dan status jaringan", Icons.Default.Wifi) }
-        item { FeatureCard("Secure Vault", "Kunci Workspace dengan biometrik", Icons.Default.Settings) }
-        item { FeatureCard("File & PDF", "Kelola dokumen tanpa meninggalkan WAW", Icons.Default.FileCopy) }
-        item { FeatureCard("Scanner", "Scan dokumen ke PDF", Icons.Default.CameraAlt) }
+    Column(modifier.fillMaxSize().background(Color.White).padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Text("Fitur WAW", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.ExtraBold, color = WawText)
+        FeatureCard("WAW Shield", "Anti-phishing dan perlindungan link berisiko", Icons.Default.Settings)
+        FeatureCard("Workspace", "Dokumen, tugas, kalender, dan file", Icons.Default.Folder)
+        FeatureCard("Keamanan", "Biometric Gate dan Secure Vault", Icons.Default.TaskAlt)
     }
 }
 
 @Composable
 private fun FeatureCard(title: String, detail: String, icon: androidx.compose.ui.graphics.vector.ImageVector) {
-    Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(WawSurface).padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
-        Surface(color = Color.White, shape = RoundedCornerShape(14.dp), modifier = Modifier.size(48.dp)) { Box(contentAlignment = Alignment.Center) { Icon(icon, null, tint = WawGreenDark) } }
-        Column(Modifier.padding(start = 12.dp)) { Text(title, fontWeight = FontWeight.Bold, color = WawText); Text(detail, color = WawMuted, fontSize = 11.sp) }
+    Surface(color = WawSurface, shape = RoundedCornerShape(18.dp), modifier = Modifier.fillMaxWidth()) {
+        Row(Modifier.padding(15.dp), verticalAlignment = Alignment.CenterVertically) {
+            Surface(color = Color.White, shape = CircleShape, modifier = Modifier.size(44.dp)) { Box(contentAlignment = Alignment.Center) { Icon(icon, null, tint = WawGreenDark) } }
+            Column(Modifier.padding(start = 12.dp)) {
+                Text(title, fontWeight = FontWeight.Bold, color = WawText)
+                Text(detail, fontSize = 11.sp, color = WawMuted)
+            }
+        }
     }
 }
 
 @Composable
-private fun PageTitle(title: String, subtitle: String) {
-    Column(Modifier.padding(bottom = 4.dp)) {
-        Text(title, fontSize = 25.sp, fontWeight = FontWeight.ExtraBold, color = WawText)
-        Text(subtitle, color = WawMuted, fontSize = 12.sp, modifier = Modifier.padding(top = 3.dp))
+private fun SimpleSection(modifier: Modifier, title: String, detail: String, icon: androidx.compose.ui.graphics.vector.ImageVector) {
+    Column(modifier.fillMaxSize().background(Color.White).padding(18.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+        Surface(color = WawSurface, shape = CircleShape, modifier = Modifier.size(70.dp)) { Box(contentAlignment = Alignment.Center) { Icon(icon, null, tint = WawGreenDark, modifier = Modifier.size(34.dp)) } }
+        Text(title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.ExtraBold, color = WawText, modifier = Modifier.padding(top = 14.dp))
+        Text(detail, color = WawMuted, modifier = Modifier.padding(top = 6.dp))
+    }
+}
+
+@Composable
+private fun WawLogo(size: androidx.compose.ui.unit.Dp) {
+    Surface(color = WawGreenDark, shape = CircleShape, modifier = Modifier.size(size)) {
+        Box(contentAlignment = Alignment.Center) {
+            Surface(color = WawBlue, shape = CircleShape, modifier = Modifier.size(size * 0.72f)) {
+                Box(contentAlignment = Alignment.Center) { Text("W", color = Color.White, fontWeight = FontWeight.Black, fontSize = (size.value * 0.32f).sp) }
+            }
+        }
     }
 }
