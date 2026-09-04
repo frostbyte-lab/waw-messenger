@@ -1,6 +1,6 @@
 # WAW — Phase 18 Legacy Standalone Chat Audit
 
-Status: IMPLEMENTED — legacy isolated from the intended production architecture; deletion deferred.
+Status: IMPLEMENTED — legacy isolated from the production UI path; deletion deferred.
 
 ## Scope
 
@@ -12,6 +12,7 @@ The following components were audited:
 - `backend/worker.js`
 - `backend/migrations/0001_auth_chat.sql`
 - `backend/migrations/0002_auth_security.sql`
+- `app/src/main/java/com/waw/messenger/MainActivity.kt`
 
 ## Findings
 
@@ -39,6 +40,12 @@ Implements WAW-owned users, sessions, conversations and messages. This architect
 
 Decision: **LEGACY BACKEND — PRESERVE FOR AUDIT/REFERENCE, DO NOT EXTEND AS WHATSAPP BACKEND.**
 
+### MainActivity production path
+
+The production UI no longer instantiates `LocalChatRepository`, `ChatRepository`, or `WebSocketChatRepository`. Instead, after local app unlock, it explicitly reports that the official linked/companion production path is not yet available.
+
+Decision: **PRODUCTION/LEGACY BOUNDARY ISOLATED.**
+
 ## Production-path rule
 
 Until an official linked/companion-device mechanism is actually available and validated for the target Android implementation:
@@ -61,8 +68,9 @@ No mass deletion was performed. Legacy code remains available until a validated 
 - [x] D1 chat schema/backend audited
 - [x] Legacy classification documented
 - [x] Production/legacy boundary documented
+- [x] MainActivity no longer uses legacy chat repositories
 - [x] No mass deletion
 - [ ] Full Android build validation
 - [ ] Device/instrumentation validation
 
-Phase 18 can only be **LOCKED** after the repository build/test gate is green.
+Phase 18 can only be **LOCKED** after the repository build/test gate is green and device/instrumentation validation is completed.
