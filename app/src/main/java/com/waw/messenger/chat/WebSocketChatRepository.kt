@@ -3,9 +3,11 @@ package com.waw.messenger.chat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.WebSocket
@@ -104,6 +106,6 @@ class WebSocketChatRepository(
         closed = true
         socket?.close(1000, "closed")
         socket = null
-        scope.coroutineContext.cancel()
+        scope.cancel()
     }
 }
