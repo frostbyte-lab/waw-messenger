@@ -1,264 +1,289 @@
 # WAW Messenger
 
-WAW adalah aplikasi Android yang sedang dikembangkan sebagai **linked / companion device** untuk akun WhatsApp yang sah milik pengguna.
+WAW adalah aplikasi Android yang sedang dikembangkan dengan dua bagian utama:
+
+1. **WhatsApp linked / companion-device path** — mengikuti mekanisme linking resmi yang tersedia untuk perangkat yang didukung.
+2. **WAW Workspace** — toolbox produktivitas, dokumen, scanner, keamanan, network diagnostics, dan remote-device management yang merupakan fitur milik WAW sendiri.
 
 > **Status proyek:** Foundation / feasibility & implementation in progress
 >
-> WAW bukan aplikasi messenger mandiri dengan akun WAW sendiri. Target utamanya adalah pengalaman Android yang terhubung ke akun WhatsApp melalui mekanisme linking yang resmi dan didukung.
+> WAW bukan aplikasi messenger mandiri dengan akun WAW sebagai pengganti akun WhatsApp. Fitur Workspace adalah layanan milik WAW dan tidak boleh digunakan untuk mengambil alih otoritas akun WhatsApp.
 
-## Tujuan
-
-Target WAW adalah menyediakan aplikasi Android yang dapat menjadi perangkat pendamping untuk akun WhatsApp pengguna, dengan tetap mempertahankan model keamanan dan otorisasi resmi.
-
-Arsitektur target:
+## Arsitektur Produk
 
 ```text
-WhatsApp Primary Phone
-        │
-        │ Official device linking
-        ▼
-WAW Android
-        │
-        ├── WhatsApp account/session
-        ├── Identity & profile
-        ├── Contacts
-        ├── Chat list
-        ├── Messages & sync
-        ├── Media
-        ├── Notifications
-        ├── Calls
-        └── Device management
+WAW
+│
+├── WhatsApp Linked / Companion Device
+│   ├── Identity
+│   ├── Contacts
+│   ├── Chats
+│   ├── Messages & sync
+│   ├── Media
+│   ├── Notifications
+│   ├── Calls (if officially supported)
+│   └── Device management
+│
+└── WAW Workspace
+    ├── Remote PC / Android
+    ├── Document Editor
+    ├── PDF Tools
+    ├── Camera Scanner
+    ├── Image → PDF
+    ├── Custom Watermark
+    ├── File Manager
+    ├── Notes & Tasks
+    ├── Network / IP Information
+    ├── WAW Shield (Anti-Judol / Anti-Phishing)
+    ├── Secure Vault
+    ├── Fingerprint / Biometric Lock
+    ├── Backup & Sync
+    ├── Clipboard Manager
+    └── Universal Search
 ```
 
-WhatsApp secara resmi mendukung perangkat tertaut, termasuk companion phones, dan memungkinkan beberapa perangkat tertaut pada satu akun. citeturn0search2turn0search3
+WhatsApp secara resmi mendokumentasikan linked devices, termasuk companion phones, serta linking melalui perangkat utama. Kemampuan yang tersedia untuk WAW harus tetap diverifikasi terhadap mekanisme resmi dan kategori perangkat target. citeturn0search0turn0search5
 
 ## Prinsip Utama
 
-1. **Official-first** — hanya menggunakan mekanisme yang resmi, terdokumentasi, atau memang tersedia untuk integrasi yang sah.
-2. **Tidak meminta password WhatsApp** — WAW tidak boleh meminta atau menyimpan password akun WhatsApp pengguna.
-3. **Tidak mengambil token/cookie/private key** — kredensial internal, token sesi, cookie, atau material kunci privat WhatsApp tidak boleh diekstrak, disalin, atau direplay.
-4. **Tidak bypass security** — tidak melakukan bypass terhadap verifikasi, pairing, proteksi, atau mekanisme keamanan WhatsApp.
-5. **Tidak menganggap API internal sebagai API publik** — endpoint/protokol internal yang ditemukan melalui reverse engineering tidak otomatis dianggap sebagai API yang boleh digunakan.
-6. **Blocked berarti blocked** — jika sebuah kemampuan tidak tersedia melalui mekanisme resmi yang dapat digunakan WAW, tandai `BLOCKED / NOT_SUPPORTED`; jangan membuat implementasi palsu yang menyamarkan keterbatasan tersebut.
-7. **Privacy & security first** — data pengguna harus diproses seminimal mungkin dan diamankan di perangkat.
-8. **One feature at a time** — satu fitur harus selesai, diuji, diperbaiki, diuji ulang, lalu di-lock sebelum berpindah ke fitur berikutnya.
+1. **Official-first** — mekanisme WhatsApp hanya melalui jalur resmi/berwenang yang memang tersedia.
+2. **Tidak meminta password WhatsApp.**
+3. **Tidak mengambil token, cookie, private key, session secret, atau credential internal WhatsApp.**
+4. **Tidak bypass, spoof, replay, atau melemahkan kontrol keamanan.**
+5. **Blocked berarti blocked** — jika kemampuan tidak tersedia secara resmi, gunakan status `BLOCKED / NOT_SUPPORTED`.
+6. **Workspace adalah WAW-owned** — backend dan data Workspace tidak boleh menjadi pengganti backend WhatsApp.
+7. **Privacy & security first** — permission dan data collection harus seminimal mungkin.
+8. **Remote access wajib explicit** — perangkat harus dipasangkan dan diotorisasi oleh pemiliknya.
+9. **IP geolocation hanya perkiraan** — tidak boleh dipresentasikan sebagai lokasi GPS seseorang.
+10. **One feature at a time** — implement → build → test → fix → retest → pass → lock → next.
 
-## Mekanisme Linking
+## Roadmap Utama
 
-WhatsApp mendukung linking perangkat dengan QR code pada perangkat yang didukung. Pada alur resmi, perangkat utama mengonfirmasi proses linking dan melakukan pemindaian QR. citeturn0search1
+Urutan besar proyek mengikuti `ROADMAP.md`.
 
-WhatsApp juga mendokumentasikan companion phones sebagai salah satu jenis linked device. citeturn0search2
+### Track A — WhatsApp Linked / Companion Device
 
-**Catatan penting untuk implementasi WAW:** dukungan companion phone pada aplikasi WhatsApp resmi tidak berarti tersedia SDK/API publik untuk membuat aplikasi Android pihak ketiga yang dapat berbicara langsung dengan protokol internal WhatsApp. Karena itu, tahap linking WAW harus diawali dengan audit kelayakan mekanisme resmi yang benar-benar dapat digunakan aplikasi ini.
+1. Audit Android foundation
+2. Audit feasibility official linking
+3. Link Device
+4. Account / Identity Sync
+5. Contacts
+6. Chat Core
+7. Message History & Sync
+8. Chat Features
+9. Media
+10. Voice Notes
+11. Groups
+12. Notifications
+13. Calls jika resmi didukung
+14. Status / Updates jika resmi didukung
+15. Linked Device Management
+16. Local Security
+17. Network Reliability
+18. Full Test Matrix
+19. Production Android
 
-## Scope Produk
+**Catatan:** Track A tidak boleh menggunakan protokol privat WhatsApp sebagai shortcut.
 
-### In scope
+### Track B — WAW Workspace
 
-- Android application foundation
-- Official/authorized device-linking path, jika tersedia
-- Account/identity sync yang tersedia melalui mekanisme resmi
-- Contacts
-- Chat list
-- 1-to-1 chat
-- Message history & synchronization
-- Media
-- Voice notes
-- Groups
-- Reply / forward / delete / reaction / search sesuai dukungan resmi
-- Notifications
-- Voice calls dan video calls jika mekanisme resmi memungkinkan
-- Status / Updates jika didukung
-- Linked-device management
-- Local security
-- Network reliability
-- Testing dan production hardening
+Workspace adalah modul WAW-owned yang dapat dikerjakan tanpa menunggu seluruh fitur WhatsApp selesai, selama tidak bergantung pada kemampuan WhatsApp yang tidak resmi.
 
-### Out of scope
+Urutan pengerjaan Workspace:
 
-- Membuat akun WhatsApp melalui backend WAW
-- Menjadikan username/password WAW sebagai identitas utama produk
-- Mengambil atau menyimpan password WhatsApp
-- Mengambil token/cookie/private key WhatsApp
-- Meniru atau replay protokol privat tanpa otorisasi
-- Membypass pairing, verification, rate limit, atau security control
-- Mengklaim fitur WhatsApp tersedia jika belum lolos pengujian nyata
+1. **W0 — Workspace Foundation**
+2. **W1 — File Manager**
+3. **W2 — Document + PDF Core**
+4. **W3 — Camera Scanner + Image → PDF**
+5. **W4 — Custom Watermark**
+6. **W5 — Fingerprint / Biometric + Secure Vault**
+7. **W6 — Network / IP Diagnostics**
+8. **W7 — WAW Shield / Anti-Judol / Anti-Phishing**
+9. **W8 — Notes + Tasks**
+10. **W9 — Backup / Sync**
+11. **W10 — Remote PC / Android**
+12. **W11 — Universal Search**
+13. **W12 — Workspace Final Integration**
 
-## Roadmap
+Detail checklist dan status Workspace berada di `WORKSPACE_PROGRESS.md`.
 
-Urutan kerja mengikuti `ROADMAP.md`.
+## Workspace Feature Scope
 
-### Phase 1 — Official Linked / Companion Device
+### Remote PC / Android
 
-- Audit Android foundation
-- Audit feasibility mekanisme linking resmi
-- Hentikan WAW username/password sebagai jalur utama
-- Rancang Link Device screen
-- Implementasikan mekanisme linking resmi yang memang tersedia
-- Uji linking menggunakan akun pengujian milik sendiri
-- Lock linking
+- Device pairing
+- Explicit authorization
+- Screen viewing
+- Mouse / keyboard / touch control
+- File transfer
+- Connection status
+- Disconnect
+- Revoke access
 
-### Phase 2 — Account / Identity Sync
+Remote control tidak boleh berjalan diam-diam atau tanpa otorisasi pemilik perangkat.
 
-- Sinkronisasi identitas akun yang tersedia
-- Profile
-- Display name
-- Avatar
-- Account state
-- Session/device state
-- Test identity sync
-- Lock identity
+### Document & PDF
 
-### Phase 3 — Contacts
+- TXT editor
+- Markdown editor
+- PDF viewer
+- PDF annotation
+- Merge PDF
+- Split PDF
+- Rotate/reorder pages
+- Extract pages
+- Compress PDF
+- PDF → image
+- Image → PDF
+- Export/share
 
-- Contact permission
-- Contact discovery/sync
-- Mapping contact ke identitas WhatsApp yang tersedia
-- Test contact sync
-- Lock contacts
+### Camera Scanner
 
-### Phase 4 — Chat Core
+- Camera capture
+- Edge detection
+- Auto crop
+- Perspective correction
+- Image enhancement
+- Multi-page scan
+- Page reorder
+- Image → PDF
+- Preview/export
 
-- Chat list
-- Conversation model
-- 1-to-1 chat
-- Message send/receive
-- Local persistence
-- Sync state
-- Test dua arah
-- Lock chat core
+### Custom Watermark
 
-### Phase 5 — Message History & Sync
+- Text watermark
+- Logo/image watermark
+- Position
+- Size
+- Opacity
+- Rotation
+- Color
+- Repeat/tile
+- Per-page configuration
+- Presets
+- Apply to PDF/image export
 
-- Initial sync
-- Incremental sync
-- Reconnect
-- Offline queue
-- Duplicate protection
-- Delivery/read state
-- History consistency
-- Lock sync
+### Fingerprint / Biometric
 
-### Phase 6 — Chat Features
+- Workspace lock
+- Secure Vault lock
+- Document lock
+- Auto-lock
+- Background lock
+- Device credential fallback where appropriate
 
-- Reply
-- Forward
+WAW menggunakan sistem biometric Android; WAW tidak menyimpan data sidik jari pengguna. Android menyediakan `BiometricPrompt` untuk autentikasi biometrik sistem. citeturn0search2
+
+### File Manager
+
+- Folder
+- Rename
+- Copy/move
 - Delete
-- Reactions
+- Share
+- Sort/filter
+- Favorites
+- Recent files
+- Storage usage
+
+### Network / IP Information
+
+Fitur ini adalah **network diagnostics**, bukan alat pelacakan rahasia.
+
+- Public IP
+- Local IP
+- IPv4/IPv6
+- ISP/ASN bila tersedia
+- Country
+- Region
+- City estimate bila tersedia
+- Timezone
+- Approximate map
+- DNS test
+- Ping/latency
+- Connection diagnostics
+- Speed test
+
+IP geolocation bersifat perkiraan. Lokasi presisi perangkat Android membutuhkan mekanisme location dan permission yang sesuai.
+
+### WAW Shield — Anti-Judol / Anti-Phishing
+
+- Domain reputation
+- Judol/gambling blocklist
+- Custom blocklist
+- Phishing detection
+- Suspicious redirect detection
+- Warning page
+- Block / Allow
+- Block history
+- Report domain
+- Privacy-preserving reputation lookup
+
+Sistem harus membedakan antara **terdeteksi**, **mencurigakan**, dan **tidak diketahui**. Jangan menyatakan sebuah domain berbahaya jika sistem tidak memiliki dasar klasifikasi yang memadai.
+
+### Secure Vault
+
+- Private files
+- Encrypted storage
+- Biometric unlock
+- Auto-lock
+- Secure deletion policy
+- Privacy-aware metadata handling
+
+### Notes / Tasks
+
+- Notes
+- Checklist
+- Tasks
+- Attach files
 - Search
-- Message metadata
-- Lock feature set
+- Local persistence
 
-### Phase 7 — Media
+### Backup / Sync
 
-- Image
-- Video
-- Document
-- Audio
-- Upload/download state
-- Local caching
-- Lock media
+- Backup
+- Restore
+- Export/import
+- Version history
+- Conflict handling
+- Optional WAW-owned sync
 
-### Phase 8 — Voice Notes
+### Clipboard Manager
 
-- Recording
-- Playback
-- Upload/sync
-- Local storage policy
-- Lock voice notes
+- Clipboard history
+- Pin
+- Search
+- Auto-expiration
+- Sensitive-content exclusion
 
-### Phase 9 — Groups
+### Universal Search
 
-- Group list
-- Group members
-- Group messages
-- Group metadata
-- Group permissions where supported
-- Lock groups
+Search lintas data Workspace yang memang dimiliki WAW:
 
-### Phase 10 — Notifications
+- Documents
+- PDFs
+- Notes
+- Tasks
+- Files
+- Workspace items
+- Devices
 
-- Push/event handling
-- Message notifications
-- Notification actions
-- Background handling
-- Notification security
-- Lock notifications
+## Workspace Data Boundary
 
-### Phase 11 — Calls
+```text
+WAW Workspace
+    │
+    ├── WAW-owned files/data
+    ├── WAW-owned settings
+    ├── WAW-owned device pairing
+    └── WAW-owned services
 
-- Voice call feasibility
-- Video call feasibility
-- Implement only through supported mechanisms
-- Network handling
-- Permissions
-- Lock calls only after real testing
+WhatsApp account
+    │
+    └── tetap berada pada mekanisme WhatsApp yang sah
+```
 
-### Phase 12 — Status / Updates
-
-- View status/updates where supported
-- Create/manage status only if officially supported for the target linked device
-- Lock status
-
-### Phase 13 — Linked Device Management
-
-- Device information
-- Connection state
-- Reconnect
-- Logout/unlink
-- Session lifecycle
-- Account safety controls
-
-WhatsApp menyediakan pengelolaan perangkat tertaut dan memungkinkan pengguna mengeluarkan perangkat yang tertaut dari perangkat utama. citeturn0search8
-
-### Phase 14 — Local Security
-
-- Secure local storage
-- Session protection
-- Android Keystore where appropriate
-- Screenshot/privacy policy where appropriate
-- Logging minimization
-- Data deletion
-- Threat-model review
-
-### Phase 15 — Network Reliability
-
-- Retry
-- Timeout
-- Reconnect
-- Offline state
-- Background constraints
-- Error classification
-- Observability tanpa membocorkan data sensitif
-
-### Phase 16 — Full Test Matrix
-
-- Fresh install
-- Link
-- Unlink
-- Reconnect
-- Offline/online transition
-- Send/receive
-- History sync
-- Media
-- Groups
-- Notifications
-- Calls if supported
-- Multiple linked devices
-- Failure recovery
-- Security tests
-
-### Phase 17 — Production Android
-
-- Release configuration
-- Signing
-- Versioning
-- Crash monitoring
-- Performance profiling
-- Battery/network profiling
-- Privacy review
-- Final regression
-- Production release
+Workspace tidak boleh digunakan untuk mengekstrak database, credential, token, cookie, private key, atau session rahasia WhatsApp.
 
 ## Repository Structure
 
@@ -280,201 +305,116 @@ waw-messenger/
 │       ├── 0001_auth_chat.sql
 │       └── 0002_auth_security.sql
 ├── ROADMAP.md
+├── WORKSPACE_PROGRESS.md
 └── README.md
 ```
 
 ## Legacy Backend
 
-Direktori `backend/` saat ini berisi fondasi WAW chat lama yang pernah dibuat, termasuk authentication, session, D1 schema, dan WebSocket.
+Direktori `backend/` saat ini masih berisi fondasi WAW chat lama: authentication, session, D1 schema, dan WebSocket.
 
-Kode tersebut **tidak otomatis menjadi arsitektur final WAW**. Setelah target produk berubah menjadi linked/companion device, komponen lama harus diaudit dan hanya dipertahankan jika memang dibutuhkan untuk layanan milik WAW sendiri.
-
-Jangan menghapus komponen legacy secara massal. Setiap penghapusan atau migrasi harus dilakukan setelah audit dan pengujian.
-
-## Backend WAW
-
-Backend WAW hanya boleh digunakan untuk layanan yang memang dimiliki dan dikendalikan WAW, misalnya:
-
-- konfigurasi aplikasi
-- telemetry yang benar-benar diperlukan dan telah dianonimkan/minimalkan
-- crash/error reporting yang aman
-- layanan WAW sendiri
-- fitur tambahan yang tidak mengambil alih otoritas akun WhatsApp
-
-Backend WAW **bukan** sumber otoritas untuk akun WhatsApp pengguna.
-
-## Android Architecture Direction
-
-Arsitektur Android akan dipisahkan secara bertahap menjadi lapisan yang jelas:
-
-```text
-UI
- │
- ▼
-Presentation / ViewModel
- │
- ▼
-Domain
- │
- ├── Identity
- ├── Contacts
- ├── Conversations
- ├── Messages
- ├── Media
- ├── Notifications
- └── Device / Session
- │
- ▼
-Data
- │
- ├── Official/authorized integration boundary
- ├── Local database
- ├── Secure storage
- └── WAW-owned backend (only where needed)
-```
-
-Implementasi aktual dapat berkembang selama tidak melanggar prinsip pada dokumen ini dan tetap sinkron dengan `ROADMAP.md`.
-
-## Data & Security Rules
-
-### Jangan pernah
-
-- meminta password WhatsApp pengguna
-- menyimpan password WhatsApp
-- meminta OTP WhatsApp untuk diproses oleh backend WAW
-- mengekstrak token sesi internal
-- mengekstrak cookie sesi internal
-- mengekstrak private key
-- menyalin database internal WhatsApp secara tidak sah
-- replay kredensial atau token internal
-- bypass mekanisme keamanan
-- menyimpan data chat lebih lama dari yang diperlukan
-- mengirim isi chat ke server WAW tanpa kebutuhan dan dasar yang jelas
-
-### Wajib
-
-- gunakan secure storage untuk secret yang memang diperlukan
-- minimalkan logging
-- jangan mencetak token/session ke log
-- validasi semua input
-- batasi permission Android
-- encrypt data sensitif saat diperlukan
-- sediakan mekanisme logout/unlink yang jelas
-- hapus data lokal yang tidak lagi diperlukan
-
-WhatsApp menyatakan bahwa pesan, media, dan panggilan pada linked devices tetap menggunakan end-to-end encryption, dan setiap perangkat tertaut terhubung secara independen. citeturn0search2
+Kode tersebut adalah **legacy/prototype architecture**, bukan sumber kebenaran akun WhatsApp. Jangan menghapusnya secara massal. Audit dan migrasi harus dilakukan setelah pengganti tervalidasi.
 
 ## Testing Policy
 
-Tidak boleh menandai fitur sebagai selesai hanya karena kode berhasil dikompilasi.
-
-Setiap milestone harus melalui:
+Setiap fitur mengikuti:
 
 ```text
-Implement
-   ↓
-Build
-   ↓
-Run
-   ↓
-Real test
-   ↓
-Find bugs
-   ↓
-Fix
-   ↓
-Retest
-   ↓
+DESIGN
+  ↓
+IMPLEMENT
+  ↓
+BUILD
+  ↓
+REAL TEST
+  ↓
+FIX
+  ↓
+RETEST
+  ↓
 PASS
-   ↓
+  ↓
 LOCK
+  ↓
+NEXT
 ```
 
 ### Definition of Done
 
-Sebuah fitur hanya boleh diberi status **DONE / LOCKED** apabila:
+Fitur hanya boleh `DONE / LOCKED` jika:
 
-- implementasi selesai
-- build berhasil
-- tidak ada error blocker
-- skenario utama berhasil
-- failure case utama diuji
-- data tidak bocor ke log
-- security review dasar selesai
-- hasil pengujian dicatat
-- tidak ada dependency tersembunyi yang belum diketahui
+- Implementasi selesai
+- Build berhasil
+- Main workflow berhasil pada perangkat nyata
+- Failure case utama diuji
+- Security check lulus
+- Tidak ada secret di log
+- Dokumentasi diperbarui
+- Tidak ada blocker yang diketahui
 
 ## Current Status
 
+### WhatsApp Track
+
 | Area | Status |
 |---|---|
-| Repository foundation | In progress |
-| Android foundation audit | Pending |
-| Official linking feasibility audit | Pending |
-| Link Device | Not started |
-| Identity sync | Not started |
-| Contacts | Not started |
-| Chat core | Not started for target architecture |
-| Message sync | Not started for target architecture |
-| Media | Not started |
-| Voice notes | Not started |
-| Groups | Not started |
-| Notifications | Not started |
-| Calls | Not started |
-| Status / Updates | Not started |
-| Device management | Not started |
-| Security hardening | Not started |
-| Full integration test | Not started |
-| Production release | Not started |
+| Repository foundation | IN PROGRESS |
+| Android foundation audit | PENDING |
+| Official linking feasibility | PENDING |
+| Link Device | NOT STARTED |
+| Identity sync | NOT STARTED |
+| Contacts | NOT STARTED |
+| Chat core | NOT STARTED for target architecture |
+| Message sync | NOT STARTED |
+| Media | NOT STARTED |
+| Voice notes | NOT STARTED |
+| Groups | NOT STARTED |
+| Notifications | NOT STARTED |
+| Calls | NOT STARTED |
+| Status / Updates | NOT STARTED |
+| Device management | NOT STARTED |
+| Security hardening | NOT STARTED |
+| Full integration test | NOT STARTED |
+| Production release | NOT STARTED |
 
-## Important Current Limitation
+### Workspace Track
 
-Pada saat README ini dibuat, belum boleh diasumsikan bahwa WAW dapat langsung menjadi aplikasi companion WhatsApp pihak ketiga hanya dengan membuat QR scanner atau meniru protokol internal WhatsApp.
+| Stage | Status |
+|---|---|
+| W0 Foundation | NOT STARTED |
+| W1 File Manager | NOT STARTED |
+| W2 Document + PDF | NOT STARTED |
+| W3 Scanner | NOT STARTED |
+| W4 Watermark | NOT STARTED |
+| W5 Fingerprint + Vault | NOT STARTED |
+| W6 Network/IP | NOT STARTED |
+| W7 WAW Shield | NOT STARTED |
+| W8 Notes + Tasks | NOT STARTED |
+| W9 Backup/Sync | NOT STARTED |
+| W10 Remote | NOT STARTED |
+| W11 Universal Search | NOT STARTED |
+| W12 Final Integration | NOT STARTED |
 
-Dokumentasi resmi WhatsApp memang menunjukkan dukungan companion phones, tetapi alur resmi tersebut berada dalam ekosistem aplikasi/perangkat yang didukung WhatsApp. citeturn0search2turn0search7
+## Development Rules
 
-Karena itu **Phase 1 dimulai dari feasibility audit**, bukan dari implementasi protokol privat.
-
-Jika mekanisme resmi yang dapat digunakan aplikasi WAW tidak tersedia, status fitur harus menjadi:
-
-```text
-BLOCKED / NOT_SUPPORTED
-```
-
-bukan dipalsukan sebagai `DONE`.
-
-## Development Workflow
-
-Aturan kerja proyek:
-
-1. Jangan melakukan redesign besar tanpa alasan teknis.
+1. Jangan redesign besar tanpa alasan teknis.
 2. Jangan menghapus file tanpa kebutuhan yang jelas.
-3. Fetch kondisi file terbaru sebelum mengubah file.
+3. Fetch file terbaru sebelum melakukan perubahan.
 4. Ubah sesedikit mungkin untuk mencapai milestone.
 5. Satu milestone pada satu waktu.
-6. Test setelah setiap perubahan penting.
-7. Lock fitur yang sudah lulus.
-8. Jangan lanjut ke fitur berikutnya jika fitur sebelumnya masih memiliki blocker.
-9. Dokumentasi harus tetap sinkron dengan `ROADMAP.md`.
-10. Semua klaim `DONE` harus didukung hasil pengujian nyata.
+6. Test setelah perubahan penting.
+7. Lock fitur yang lulus.
+8. Jangan lanjut jika milestone sebelumnya masih blocker.
+9. README, ROADMAP, dan progress file harus tetap sinkron.
+10. Jangan mengklaim `DONE` tanpa hasil pengujian nyata.
 
-## Reference
+## References
 
-- Roadmap proyek: `ROADMAP.md`
-- Backend legacy: `backend/README.md`
-- Migration: `backend/migrations/0001_auth_chat.sql`
-- Security migration: `backend/migrations/0002_auth_security.sql`
+- `ROADMAP.md` — master roadmap produk dan linked-device architecture.
+- `WORKSPACE_PROGRESS.md` — checklist dan progres Workspace.
+- `backend/README.md` — dokumentasi backend legacy.
 
-## Official WhatsApp References
-
-Dokumentasi resmi yang menjadi referensi untuk feasibility linked-device:
-
-- WhatsApp Help Center — About linked devices
-- WhatsApp Help Center — How to link a device
-- WhatsApp Help Center — How to link a device using phone number
-- WhatsApp Help Center — Companion phone / WhatsApp Business linking
-
-Referensi resmi harus diprioritaskan dibanding dokumentasi pihak ketiga ketika menentukan kemampuan linking, supported devices, dan security behavior.
+Official WhatsApp Help Center harus diprioritaskan untuk kemampuan linked devices, companion phones, supported devices, dan device management. citeturn0search0turn0search3turn0search5
 
 ---
 
