@@ -1,750 +1,939 @@
-# WAW — MASTER ROADMAP PEMBANGUNAN
+# WAW — MASTER ROADMAP
 
-## ATURAN UTAMA
+## TARGET UTAMA
 
-> **SATU FITUR → SELESAI → TEST → FIX → LOCK → BARU LANJUT**
+WAW ditujukan sebagai aplikasi Android yang mengikuti **model WhatsApp asli**, dengan fokus utama pada konsep **linked/companion device** terhadap akun WhatsApp yang sah.
 
-WAW adalah aplikasi messenger nyata. Jangan menganggap fitur selesai hanya karena UI sudah tampil. Setiap tahap harus mempunyai implementasi, backend/data bila diperlukan, pengujian, perbaikan, dan status LOCK sebelum tahap berikutnya dimulai.
+WAW **bukan** messenger mandiri dengan akun WAW + backend chat sendiri sebagai jalur utama.
 
-### Status
-- `[ ]` Belum dikerjakan
-- `[~]` Sedang dikerjakan
-- `[✓]` Selesai dan sudah dites
-- `[LOCK]` Selesai, dites, dan fondasinya dikunci
+Target arsitektur:
 
----
+```text
+WhatsApp Primary Phone
+        │
+        │  Link Device / Companion Device
+        │  QR / metode linking resmi
+        ▼
+      WAW Android
+        │
+        │  sesi perangkat tertaut
+        ▼
+ WhatsApp account/session
+        │
+        ├── Chat
+        ├── Contacts
+        ├── Groups
+        ├── Media
+        ├── Notifications
+        ├── Calls
+        └── Device management
+```
 
-# PHASE 0 — FONDASI PROJECT
+### ATURAN PALING PENTING
 
-## Repository
-- [✓] Repository resmi: `frostbyte-lab/waw-messenger`
-- [ ] Struktur project final
-- [ ] README utama
-- [ ] Dokumentasi arsitektur
-- [ ] Aturan perubahan project
+1. WAW harus mengikuti **mekanisme resmi yang tersedia** untuk linked/companion device.
+2. Jangan membuat server WAW sebagai pengganti jaringan WhatsApp.
+3. Jangan meminta password WhatsApp pengguna.
+4. Jangan mengambil, menyalin, atau membundel credential, token, cookie, private key, atau session rahasia WhatsApp.
+5. Jangan bypass, spoof, replay, atau melemahkan kontrol keamanan WhatsApp.
+6. Jangan reverse-engineer protokol privat untuk menghindari mekanisme resmi.
+7. Bila suatu kemampuan tidak tersedia melalui mekanisme resmi, fitur tersebut diberi status `BLOCKED / NOT_SUPPORTED`, bukan dipaksa melalui bypass.
+8. Semua pengujian menggunakan akun dan perangkat yang memang berhak digunakan oleh penguji.
+9. Jangan menganggap fitur selesai hanya karena UI sudah tampil.
+10. Setiap tahap wajib: **IMPLEMENT → BUILD → TEST → FIX → RETEST → PASS → LOCK → NEXT**.
 
-## Android
-- [✓] Kotlin
-- [✓] Jetpack Compose
-- [ ] Build configuration stabil
-- [ ] AndroidManifest
-- [ ] Permission dasar
-- [ ] Debug/release configuration
-
-## Backend
-- [✓] Cloudflare Worker dasar
-- [ ] Wrangler configuration
-- [ ] Cloudflare D1
-- [ ] Environment development
-- [ ] Environment production
-- [ ] API routing
-
-### CHECKPOINT
-- [ ] Android build berhasil
-- [ ] Worker berjalan
-- [ ] D1 dapat diakses
-- [ ] Tidak ada error fundamental
-
-**STATUS: LOCK**
+WhatsApp mendokumentasikan linked devices, termasuk companion phones, serta proses linking melalui perangkat utama. WhatsApp juga menyatakan bahwa perangkat tertaut dapat bekerja tanpa telepon utama tetap online, dengan batasan dan aturan koneksi tertentu. Dokumentasi resmi harus menjadi sumber acuan ketika menentukan perilaku WAW. 
 
 ---
 
-# PHASE 1 — AUTHENTICATION
+# 0. PRODUCT DEFINITION
 
-## Database
-- [ ] `users`
-- [ ] `sessions`
-- [ ] Password hash
-- [ ] Created/updated timestamps
+## Identitas
 
-## Registration
-- [ ] Username
-- [ ] Email
-- [ ] Password
-- [ ] Validasi input
-- [ ] Cek duplikat
-- [ ] Simpan user
+- [✓] Nama project: WAW
+- [✓] Repository: `frostbyte-lab/waw-messenger`
+- [ ] Android production identity
+- [ ] Product documentation
+- [ ] Architecture documentation
 
-## Login
-- [ ] Login username/email
-- [ ] Verifikasi password
-- [ ] Session/token
-- [ ] Expiration
-- [ ] Logout
+## Prinsip Produk
 
-## Android
-- [ ] Login screen
-- [ ] Register screen
-- [ ] Auth repository
-- [ ] Session storage
-- [ ] Auto-login
-- [ ] Logout
-- [ ] Auth state
+WAW harus terasa seperti **client WhatsApp yang sah dan aman**, bukan aplikasi yang membuat jaringan messaging baru.
 
-### TEST
-- [ ] User A register
-- [ ] User B register
-- [ ] A login
-- [ ] B login
-- [ ] Logout
-- [ ] Login ulang
-- [ ] Token invalid ditolak
+### Yang menjadi sumber kebenaran
 
-**STATUS: LOCK**
+```text
+WhatsApp account
+      ↓
+WhatsApp linked-device state
+      ↓
+WAW local state/UI
+```
+
+Bukan:
+
+```text
+WAW database
+      ↓
+menjadi sumber kebenaran akun WhatsApp
+```
 
 ---
 
-# PHASE 2 — USER PROFILE
+# 1. OFFICIAL LINKED / COMPANION DEVICE
 
-- [ ] Profile API
-- [ ] Get profile
-- [ ] Update nama
-- [ ] Update username
-- [ ] Update avatar
-- [ ] Online/offline
-- [ ] Last seen
-- [ ] Profile screen Android
+Ini adalah fase paling penting dan harus selesai sebelum membangun fitur chat sebagai fitur utama.
 
-### TEST
-- [ ] A melihat profile A
-- [ ] B melihat profile A
-- [ ] Update profile
-- [ ] Data tetap setelah logout/login
+## Device Linking
 
-**STATUS: LOCK**
+- [ ] Tentukan mekanisme linking resmi yang tersedia untuk target WAW
+- [ ] QR linking bila didukung untuk target perangkat
+- [ ] Phone-number/code linking bila didukung untuk target perangkat
+- [ ] Tampilkan status `Waiting for link`
+- [ ] Tampilkan status `Linked`
+- [ ] Tampilkan status `Expired`
+- [ ] Tampilkan status `Disconnected`
+- [ ] Unlink/logout
+- [ ] Device name
+- [ ] Device identity lokal
+- [ ] Device state persistence
 
----
+## Primary Phone Flow
 
-# PHASE 3 — CONTACTS
+```text
+PRIMARY PHONE
+   ↓
+WhatsApp
+   ↓
+Linked Devices
+   ↓
+Link Device
+   ↓
+Authorize WAW
+   ↓
+WAW menjadi perangkat tertaut
+```
 
-- [ ] User search
-- [ ] Contact relationship
-- [ ] Add contact
-- [ ] Remove contact
-- [ ] List contacts
-- [ ] Contact screen
-- [ ] Search UI
+## Security
 
-### TEST
-- [ ] A mencari B
-- [ ] A menambahkan B
-- [ ] B tampil sebagai contact
-- [ ] Remove berhasil
-
-**STATUS: LOCK**
-
----
-
-# PHASE 4 — 1-TO-1 CHAT
-
-## Database
-- [ ] `conversations`
-- [ ] `conversation_members`
-- [ ] `messages`
-
-## Message
-- [ ] ID
-- [ ] Conversation ID
-- [ ] Sender ID
-- [ ] Text
-- [ ] Created time
-- [ ] Status
-- [ ] Deleted state
-
-## Backend
-- [ ] Create conversation
-- [ ] List conversations
-- [ ] Get messages
-- [ ] Send message
-- [ ] Conversation authorization
-- [ ] Message pagination/history
-
-## Android
-- [ ] Conversation list
-- [ ] Chat screen
-- [ ] Message bubble
-- [ ] Input
-- [ ] Send
-- [ ] Load history
-- [ ] Loading state
-- [ ] Error state
-- [ ] Empty state
-
-### TEST
-- [ ] A kirim pesan ke B
-- [ ] B menerima
-- [ ] Tutup aplikasi
-- [ ] Buka kembali
-- [ ] History masih ada
-- [ ] Login ulang
-- [ ] History tetap ada
-
-**STATUS: LOCK**
-
----
-
-# PHASE 5 — REAL-TIME CHAT
-
-## WebSocket
-- [✓] WebSocket dasar
-- [ ] Authentication WebSocket
-- [ ] User identity binding
-- [ ] Conversation authorization
-- [ ] Persist sebelum broadcast
-- [ ] Broadcast ke anggota conversation
-- [ ] Reconnect
-- [ ] Connection state
-- [ ] Duplicate protection
-
-## Message State
-
-`SENDING → SENT → DELIVERED → READ`
-
-- [ ] Sending state
-- [ ] Sent ACK
-- [ ] Delivered ACK
-- [ ] Read ACK
-- [ ] Retry
-
-## Sync
-- [ ] Reconnect sync
-- [ ] Ambil pesan tertinggal
-- [ ] Sinkronisasi message ID/time
-- [ ] Hindari duplicate
+- [ ] Tidak meminta password WhatsApp
+- [ ] Tidak menyimpan OTP WhatsApp sebagai credential permanen
+- [ ] Tidak mengekstrak session dari aplikasi WhatsApp
+- [ ] Tidak menyimpan cookie/session rahasia WhatsApp
+- [ ] Secure local key storage
+- [ ] Device unlink support
+- [ ] Local app lock
 
 ### TEST WAJIB
-- [ ] Device A kirim
-- [ ] Device B menerima real-time
-- [ ] SENT berhasil
-- [ ] DELIVERED berhasil
-- [ ] READ berhasil
-- [ ] Internet diputus
-- [ ] Internet disambungkan
-- [ ] Pesan tersinkron
-- [ ] Tidak ada duplicate
 
-**STATUS: LOCK**
+- [ ] Link WAW ke akun penguji
+- [ ] Primary phone menampilkan WAW sebagai perangkat tertaut
+- [ ] WAW mendapatkan state linked
+- [ ] Restart WAW
+- [ ] Session/device state tetap valid sesuai mekanisme resmi
+- [ ] Unlink dari primary phone
+- [ ] WAW mendeteksi disconnected
+- [ ] Link ulang berhasil
 
-> Setelah tahap ini lulus, Chat Core dianggap selesai.
+**STATUS: LOCK setelah seluruh test lulus.**
 
 ---
 
-# PHASE 6 — CHAT CORE FEATURES
+# 2. ACCOUNT / IDENTITY SYNC
 
-Kerjakan satu per satu. Setiap subfitur: **IMPLEMENT → TEST → LOCK**.
+Tidak menggunakan `username + password` WAW sebagai identitas utama.
+
+## Identity
+
+- [ ] WhatsApp account identity
+- [ ] Phone number identity sesuai data yang diberikan oleh mekanisme resmi
+- [ ] Device identity
+- [ ] Profile name
+- [ ] Profile photo/avatar
+- [ ] About/status profile jika tersedia
+- [ ] Online/offline state sesuai data yang tersedia
+- [ ] Last seen sesuai izin/availability
+
+## Local State
+
+- [ ] Linked account ID/reference
+- [ ] Linked device ID/reference
+- [ ] Session state
+- [ ] Sync cursor/state bila mekanisme resmi menyediakannya
+- [ ] Local encrypted storage
+
+### TEST
+
+- [ ] Account tampil benar
+- [ ] Profile berubah di WhatsApp → WAW mengikuti sinkronisasi yang tersedia
+- [ ] Unlink → local account state dibersihkan dengan aman
+
+**STATUS: LOCK**
+
+---
+
+# 3. CONTACTS
+
+Kontak mengikuti model WhatsApp, bukan tabel contact WAW yang berdiri sendiri sebagai sumber kebenaran.
+
+- [ ] Permission contacts bila diperlukan
+- [ ] Contact sync
+- [ ] Phone-number identity
+- [ ] Contact name
+- [ ] Profile photo
+- [ ] Search contact
+- [ ] Start chat
+- [ ] Blocked contact state bila tersedia
+- [ ] Contact refresh/sync
+
+### TEST
+
+- [ ] Kontak tersinkron
+- [ ] Cari nomor
+- [ ] Buka profile
+- [ ] Mulai chat
+- [ ] Perubahan contact tidak merusak identity
+
+**STATUS: LOCK**
+
+---
+
+# 4. CHAT CORE
+
+## Conversation List
+
+- [ ] Chat list
+- [ ] Pinned chat bila tersedia
+- [ ] Archived chat bila tersedia
+- [ ] Unread count
+- [ ] Last message preview
+- [ ] Timestamp
+- [ ] Mute state bila tersedia
+- [ ] Search chat
+
+## Message
+
+- [ ] Text message
+- [ ] Sender
+- [ ] Receiver/group context
+- [ ] Message ID/reference
+- [ ] Timestamp
+- [ ] Sending state
+- [ ] Sent state
+- [ ] Delivered state
+- [ ] Read state
+- [ ] Failed state
+- [ ] Retry
+
+## Chat Screen
+
+- [ ] Header
+- [ ] Contact/group information
+- [ ] Message list
+- [ ] Composer
+- [ ] Send button
+- [ ] Attachment button
+- [ ] Voice button
+- [ ] Scroll position
+- [ ] Date separator
+- [ ] Unread separator
+
+### TEST WAJIB
+
+```text
+ACCOUNT A
+   ↓
+WAW
+   ↓
+WhatsApp network
+   ↓
+ACCOUNT B
+```
+
+- [ ] A mengirim ke B
+- [ ] B menerima
+- [ ] B membalas A
+- [ ] Status SENT
+- [ ] Status DELIVERED
+- [ ] Status READ
+- [ ] Tutup WAW
+- [ ] Buka WAW
+- [ ] Chat tetap tersinkron sesuai kemampuan linked device
+
+**STATUS: LOCK**
+
+---
+
+# 5. MESSAGE HISTORY & SYNC
+
+- [ ] Initial history sync
+- [ ] Incremental sync
+- [ ] Message pagination
+- [ ] Local cache
+- [ ] Sync cursor
+- [ ] Duplicate prevention
+- [ ] Missing-message recovery
+- [ ] Timestamp ordering
+- [ ] Conversation ordering
+- [ ] Reconnect sync
+
+### Catatan
+
+Jangan membuat history palsu dari D1. History harus berasal dari state/data yang memang diberikan oleh sistem WhatsApp melalui mekanisme yang sah.
+
+**STATUS: LOCK**
+
+---
+
+# 6. CHAT FEATURES
+
+Kerjakan satu per satu: **IMPLEMENT → TEST → LOCK**.
 
 ## Reply
+
 - [ ] Reply message
-- [ ] Preview pesan asli
-- [ ] Jump ke pesan asli
+- [ ] Quoted preview
+- [ ] Jump to original
 
 ## Forward
-- [ ] Pilih pesan
-- [ ] Pilih tujuan
+
+- [ ] Select message
+- [ ] Select destination
 - [ ] Forward
-- [ ] Simpan sebagai pesan baru
+- [ ] Preserve appropriate metadata
 
 ## Delete
-- [ ] Delete for me
-- [ ] Delete for everyone
-- [ ] Permission
-- [ ] Placeholder pesan dihapus
 
-## Unread
-- [ ] Unread counter
-- [ ] Mark read
-- [ ] Conversation unread
-- [ ] Global unread
+- [ ] Delete for me
+- [ ] Delete for everyone bila tersedia
+- [ ] Permission/state validation
+- [ ] Deleted placeholder
+
+## Reactions
+
+- [ ] Add reaction
+- [ ] Remove reaction
+- [ ] Reaction display
+- [ ] Sync
 
 ## Search
-- [ ] Search conversation
-- [ ] Search message
+
+- [ ] Search chats
+- [ ] Search messages
 - [ ] Highlight result
+- [ ] Open result
 
 **STATUS: LOCK**
 
 ---
 
-# PHASE 7 — LOCAL CACHE & OFFLINE SYNC
-
-- [ ] Room database
-- [ ] Local message cache
-- [ ] Conversation cache
-- [ ] Offline message queue
-- [ ] Sync engine
-- [ ] Conflict handling
-- [ ] Retry strategy
-
-### TEST
-- [ ] Airplane mode
-- [ ] Buka chat
-- [ ] Pesan lama tetap terlihat
-- [ ] Kirim saat offline
-- [ ] Internet kembali
-- [ ] Pesan terkirim
-- [ ] Sync berhasil
-
-**STATUS: LOCK**
-
----
-
-# PHASE 8 — ATTACHMENT
+# 7. MEDIA & ATTACHMENTS
 
 ## Image
-- [ ] Picker
-- [ ] Preview
-- [ ] Upload
-- [ ] Download
-- [ ] Display
 
-## File
-- [ ] File picker
-- [ ] Upload
-- [ ] Download
-- [ ] Metadata
+- [ ] Image picker
+- [ ] Preview
+- [ ] Send
+- [ ] Receive
+- [ ] Download/cache
+- [ ] Fullscreen viewer
 
 ## Video
-- [ ] Upload
-- [ ] Thumbnail
-- [ ] Playback
 
-## Storage
-- [ ] Object storage
-- [ ] Signed URL
-- [ ] Access control
-- [ ] Expiration
-
-Setiap subfitur: **IMPLEMENT → TEST → LOCK**.
-
----
-
-# PHASE 9 — VOICE NOTE
-
-- [ ] Record audio
-- [ ] Microphone permission
-- [ ] Stop recording
-- [ ] Playback
-- [ ] Upload
-- [ ] Download
-- [ ] Audio message bubble
-- [ ] Progress
-- [ ] Cancel
-
-### TEST
-- [ ] Record
+- [ ] Picker
+- [ ] Preview
 - [ ] Send
 - [ ] Receive
 - [ ] Playback
+
+## Document
+
+- [ ] File picker
+- [ ] Send
+- [ ] Receive
+- [ ] File metadata
+- [ ] Open/share
+
+## Audio
+
+- [ ] Audio message
+- [ ] Playback
+- [ ] Progress
+- [ ] Pause/resume
+
+Media transport must follow the official supported linked-device behavior. Do not implement private-media endpoints by guessing or replaying undocumented credentials.
+
+**STATUS: LOCK**
+
+---
+
+# 8. VOICE NOTE
+
+- [ ] Microphone permission
+- [ ] Record
+- [ ] Cancel
+- [ ] Preview/playback
+- [ ] Send
+- [ ] Receive
+- [ ] Progress
+- [ ] Retry
+
+### TEST
+
+- [ ] Record A
+- [ ] Send A → B
+- [ ] Receive B
+- [ ] Playback B
 - [ ] Reopen app
-- [ ] Playback kembali
+- [ ] Message remains synchronized
 
 **STATUS: LOCK**
 
 ---
 
-# PHASE 10 — PUSH NOTIFICATION
+# 9. GROUP CHAT
 
-- [ ] Push token
-- [ ] Register device
-- [ ] Save token
-- [ ] Send notification
-- [ ] Background notification
-- [ ] Notification saat app ditutup
-- [ ] Tap notification → buka chat
-- [ ] Token refresh
+- [ ] Group list
+- [ ] Group profile
+- [ ] Group members
+- [ ] Group messages
+- [ ] Add participant where supported
+- [ ] Remove participant where supported
+- [ ] Admin state
+- [ ] Group invite/state where supported
+- [ ] Group media
+- [ ] Group sync
 
 **STATUS: LOCK**
 
 ---
 
-# PHASE 11 — VOICE CALL
+# 10. NOTIFICATION
 
-> Jangan dikerjakan sebelum Chat Core benar-benar LOCK.
+- [ ] New message notification
+- [ ] Group notification
+- [ ] Mention notification
+- [ ] Notification grouping
+- [ ] Tap notification → open chat
+- [ ] Background state
+- [ ] App killed state
+- [ ] Notification permission
+- [ ] Device token handling
 
-## Signaling
-- [ ] Call request
+Notification implementation must not create a second unofficial messaging backend.
+
+**STATUS: LOCK**
+
+---
+
+# 11. VOICE CALL
+
+Only implement capabilities that are officially available to the target linked/companion device model.
+
+- [ ] Incoming call UI
+- [ ] Outgoing call UI
+- [ ] Ringing
 - [ ] Accept
 - [ ] Reject
 - [ ] End
-- [ ] Timeout
-
-## WebRTC
-- [ ] Peer connection
-- [ ] ICE
-- [ ] STUN
-- [ ] TURN
-- [ ] Audio stream
-
-## UI
-- [ ] Incoming call
-- [ ] Calling
-- [ ] Connected
 - [ ] Mute
 - [ ] Speaker
-- [ ] End
+- [ ] Network recovery
 
 ### TEST
-- [ ] A → B
+
+- [ ] WAW → WhatsApp account
+- [ ] WhatsApp account → WAW
 - [ ] Ring
 - [ ] Accept
-- [ ] Bicara
+- [ ] Audio
 - [ ] Mute
-- [ ] Speaker
 - [ ] End
 
 **STATUS: LOCK**
 
 ---
 
-# PHASE 12 — VIDEO CALL
+# 12. VIDEO CALL
 
 - [ ] Camera permission
+- [ ] Incoming video call
+- [ ] Outgoing video call
 - [ ] Local video
 - [ ] Remote video
 - [ ] Switch camera
 - [ ] Mute
 - [ ] Disable camera
 - [ ] Speaker
-- [ ] End call
+- [ ] End
 - [ ] Network recovery
 
 **STATUS: LOCK**
 
 ---
 
-# PHASE 13 — STATUS / STORY
+# 13. STATUS / STORY
 
-## Status
-- [ ] Create status
-- [ ] Text
-- [ ] Image
-- [ ] Video
+Implement only features officially available to the selected linked/companion device type.
+
 - [ ] Status list
+- [ ] Text status where supported
+- [ ] Image status where supported
+- [ ] Video status where supported
 - [ ] Viewed/unviewed
-- [ ] Viewer
-- [ ] 24-hour expiration
-- [ ] Delete status
-
-## Backend
-- [ ] Status table
-- [ ] Media
-- [ ] Views
-- [ ] Expiration cleanup
+- [ ] Viewer information where supported
+- [ ] Expiration
+- [ ] Delete
+- [ ] Sync
 
 **STATUS: LOCK**
 
 ---
 
-# PHASE 14 — WORK SPACE
+# 14. MULTI-DEVICE MANAGEMENT
 
-> Dikerjakan setelah Messenger Core stabil.
+- [ ] Current device information
+- [ ] Linked-device list if available
+- [ ] Device name
+- [ ] Device status
+- [ ] Last active
+- [ ] Unlink current device
+- [ ] Detect remote unlink
+- [ ] Re-link
+- [ ] Session recovery
 
-## Workspace
-- [ ] Workspace
-- [ ] Members
-- [ ] Roles
-- [ ] Permissions
-- [ ] Workspace chat
-
-## Tools
-- [ ] Remote
-- [ ] Scan dokumen
-- [ ] Fingerprint/biometric lock
-- [ ] Location
-- [ ] Convert image
-- [ ] Print document
-- [ ] Screen sharing
-- [ ] MP3 player
-
-Setiap tool: **SATU TOOL → TEST → LOCK**.
-
----
-
-# PHASE 15 — SECURITY HARDENING
-
-- [ ] HTTPS
-- [ ] WSS
-- [ ] Secure token handling
-- [ ] Password hashing
-- [ ] Session expiration
-- [ ] Authorization
-- [ ] Rate limiting
-- [ ] Input validation
-- [ ] SQL injection protection
-- [ ] File validation
-- [ ] Access control
-- [ ] Secure local storage
-- [ ] Biometric protection
-- [ ] Logging tanpa password/token
+WhatsApp currently documents support for multiple linked devices and companion phones. The exact capabilities available to WAW must be verified against the official documentation and the actual target device category before implementation. 
 
 **STATUS: LOCK**
 
 ---
 
-# PHASE 16 — END-TO-END ENCRYPTION
+# 15. LOCAL STORAGE & SECURITY
 
-- [ ] Identity key
-- [ ] Session key
-- [ ] Message encryption
-- [ ] Message decryption
-- [ ] Key rotation
-- [ ] Device management
-- [ ] Secure key storage
-- [ ] Recovery strategy
+## Secure Storage
 
-### TEST
-- [ ] A → B
-- [ ] Server tidak menyimpan plaintext message
-- [ ] B dapat decrypt
-- [ ] Key/session behavior diuji
-- [ ] Multi-device diuji
+- [ ] Android Keystore
+- [ ] Encrypted local database/cache
+- [ ] No plaintext secret storage
+- [ ] No WhatsApp password storage
+- [ ] No raw OTP storage
+- [ ] No exported session secrets
+- [ ] App lock / biometric lock
 
-**STATUS: LOCK**
+## Data Handling
 
----
-
-# PHASE 17 — MULTI-DEVICE
-
-- [ ] Device registration
-- [ ] Device ID
-- [ ] Multiple sessions
-- [ ] Message sync
-- [ ] Push per device
-- [ ] Logout one device
-- [ ] Logout all devices
-- [ ] Device management
+- [ ] Minimize stored data
+- [ ] Secure deletion
+- [ ] Log sanitization
+- [ ] No tokens in logs
+- [ ] No credentials in logs
+- [ ] No personal data in debug logs
 
 **STATUS: LOCK**
 
 ---
 
-# PHASE 18 — PRODUCTION BACKEND
+# 16. NETWORK / TRANSPORT
 
-- [ ] Worker production
-- [ ] D1 production
-- [ ] D1 migrations
-- [ ] Storage production
-- [ ] Environment secrets
-- [ ] Domain
-- [ ] HTTPS
-- [ ] WSS
-- [ ] Monitoring
-- [ ] Error logging
-- [ ] Backup/recovery
+- [ ] HTTPS where applicable
+- [ ] TLS validation
+- [ ] Official endpoint/interface only
+- [ ] Network timeout
+- [ ] Retry policy
+- [ ] Reconnect
+- [ ] Offline state
+- [ ] Connection state UI
+- [ ] Network error handling
 
-Gunakan migration SQL berurutan untuk perubahan schema D1 agar perubahan database dapat dilacak dan diterapkan dengan aman. Cloudflare mendokumentasikan migration versioning dan `wrangler d1 migrations apply` untuk alur ini.
+### DILARANG
+
+```text
+Unknown endpoint
+      ↓
+Guess request
+      ↓
+Replay token
+      ↓
+Bypass auth
+```
+
+Jika interface resmi tidak menyediakan suatu operasi, tandai sebagai `NOT_SUPPORTED`.
+
+---
+
+# 17. BACKEND WAW
+
+Backend WAW **bukan pengganti backend WhatsApp**.
+
+Backend milik WAW hanya boleh digunakan untuk fungsi yang memang merupakan milik WAW, misalnya:
+
+- [ ] Crash/diagnostic telemetry dengan privasi yang sesuai
+- [ ] Remote configuration WAW
+- [ ] Release metadata
+- [ ] Optional WAW workspace features
+- [ ] Operational monitoring
+
+Jangan membuat:
+
+```text
+WAW D1
+ ├── users WhatsApp
+ ├── WhatsApp passwords
+ ├── WhatsApp sessions
+ ├── WhatsApp messages
+ └── WhatsApp private keys
+```
+
+Database WAW tidak boleh menjadi tempat penyalinan database internal WhatsApp.
 
 **STATUS: LOCK**
 
 ---
 
-# PHASE 19 — ANDROID PRODUCTION
+# 18. OLD STANDALONE CHAT CODE
 
-- [ ] App icon
-- [ ] Splash screen
-- [ ] Production package
-- [ ] Release signing
-- [ ] ProGuard/R8
-- [ ] Crash reporting
-- [ ] Network security
-- [ ] Background strategy
-- [ ] Push notification
-- [ ] Battery optimization handling
-- [ ] Permission handling
+Kode lama yang menggunakan:
+
+```text
+WAW username
+WAW password
+WAW sessions
+WAW conversations
+WAW messages
+WAW WebSocket
+Cloudflare D1 sebagai chat authority
+```
+
+harus diperlakukan sebagai **legacy/prototype architecture**, bukan target utama produk.
+
+- [ ] Audit `AuthRepository`
+- [ ] Audit `ChatRepository`
+- [ ] Audit `WebSocketChatRepository`
+- [ ] Audit D1 chat schema
+- [ ] Tentukan kode yang masih berguna
+- [ ] Jangan hapus sebelum pengganti tervalidasi
+- [ ] Pisahkan legacy dari production path
+
+**Tidak boleh melakukan penghapusan massal.**
+
+---
+
+# 19. UI / UX
+
+WAW mengikuti pola UX WhatsApp secara fungsional, tetapi tidak menyalin asset/kode proprietari WhatsApp.
+
+## Main Navigation
+
+- [ ] Chats
+- [ ] Updates/Status bila didukung
+- [ ] Calls bila didukung
+- [ ] Settings
+
+## Chat UI
+
+- [ ] Header
+- [ ] Avatar
+- [ ] Online/last seen state
+- [ ] Message bubbles
+- [ ] Check marks/status
+- [ ] Composer
+- [ ] Attachments
+- [ ] Voice
+- [ ] Search
+- [ ] Context actions
+
+## Design Rule
+
+```text
+FUNCTIONAL PARITY
+       ≠
+COPY PROPRIETARY CODE/ASSET
+```
+
+WAW menggunakan implementasi UI native milik sendiri.
 
 **STATUS: LOCK**
 
 ---
 
-# PHASE 20 — FULL TESTING
+# 20. SECURITY / COMPLIANCE GATE
 
-## Authentication
-- [ ] Register
-- [ ] Login
-- [ ] Logout
-- [ ] Session
+Release wajib gagal jika ditemukan:
+
+- [ ] Password WhatsApp disimpan
+- [ ] OTP disimpan sebagai credential permanen
+- [ ] Credential pihak lain
+- [ ] Token aktif dibundel
+- [ ] Cookie/session rahasia dibundel
+- [ ] Private key pihak lain
+- [ ] Mekanisme bypass authentication
+- [ ] Replay credential/session
+- [ ] Endpoint privat yang digunakan tanpa otorisasi
+- [ ] Data pribadi yang tidak diperlukan
+- [ ] Kode/asset proprietari yang tidak berizin
+
+Release hanya boleh lanjut jika:
+
+- [ ] Semua credential/secret dibersihkan
+- [ ] Permission/scope terdokumentasi
+- [ ] Interface resmi/berizin teridentifikasi
+- [ ] Security scan PASS
+- [ ] Secret scan PASS
+- [ ] Test linking PASS
+- [ ] Test unlink PASS
+- [ ] Test chat PASS
+- [ ] Audit trail tersedia
+
+---
+
+# 21. TEST MATRIX
+
+## Linking
+
+- [ ] QR/code linking
+- [ ] Invalid code
+- [ ] Expired code
+- [ ] Cancel linking
+- [ ] Successful linking
+- [ ] Remote unlink
+- [ ] Local logout
+- [ ] Re-link
 
 ## Chat
-- [ ] Send
-- [ ] Receive
-- [ ] Reply
-- [ ] Forward
-- [ ] Delete
+
+- [ ] WAW → WhatsApp
+- [ ] WhatsApp → WAW
+- [ ] Sent
+- [ ] Delivered
 - [ ] Read
-- [ ] Unread
-- [ ] Search
+- [ ] Failed
+- [ ] Retry
+- [ ] Reconnect
+- [ ] History sync
 
 ## Network
-- [ ] WiFi
+
+- [ ] Wi-Fi
 - [ ] Mobile data
 - [ ] Slow network
 - [ ] Offline
 - [ ] Reconnect
-
-## Device
-- [ ] Device 1
-- [ ] Device 2
-- [ ] Background
 - [ ] App killed
 - [ ] Device restart
 
+## Device
+
+- [ ] Android phone
+- [ ] Primary phone
+- [ ] Linked-device state
+- [ ] Battery saver
+- [ ] Background restrictions
+- [ ] Notification permission
+
 ## Security
-- [ ] Invalid token
-- [ ] Unauthorized conversation
-- [ ] Invalid request
-- [ ] Rate limit
-- [ ] File validation
+
+- [ ] No secret in logs
+- [ ] No plaintext credentials
+- [ ] Secure storage
+- [ ] Remote unlink
+- [ ] Invalid session state
+- [ ] Unauthorized operation rejected
+
+**STATUS: LOCK setelah seluruh matrix lulus.**
+
+---
+
+# 22. PRODUCTION ANDROID
+
+- [ ] Production application ID
+- [ ] App icon
+- [ ] Splash screen
+- [ ] Release signing
+- [ ] R8/ProGuard
+- [ ] Secure network configuration
+- [ ] Crash reporting
+- [ ] Background behavior
+- [ ] Notification handling
+- [ ] Battery optimization handling
+- [ ] Permission handling
+- [ ] Real-device test
+- [ ] APK
+- [ ] AAB
 
 **STATUS: LOCK**
 
 ---
 
-# PHASE 21 — RELEASE 1.0
+# 23. RELEASE CHECKLIST
 
-- [ ] Version 1.0
-- [ ] Release build
-- [ ] APK test
-- [ ] AAB build
-- [ ] Real device test
-- [ ] Production backend
-- [ ] Final DB migration
-- [ ] Backup
-- [ ] Monitoring
-- [ ] Release notes
-- [ ] Documentation
+```text
+PRODUCT DEFINITION
+      ↓
+LINKED DEVICE
+      ↓
+IDENTITY SYNC
+      ↓
+CONTACTS
+      ↓
+CHAT CORE
+      ↓
+MESSAGE SYNC
+      ↓
+MEDIA
+      ↓
+VOICE NOTE
+      ↓
+GROUP
+      ↓
+NOTIFICATION
+      ↓
+CALLS
+      ↓
+STATUS
+      ↓
+DEVICE MANAGEMENT
+      ↓
+SECURITY
+      ↓
+FULL TEST
+      ↓
+RELEASE
+```
 
 ---
 
-# URUTAN BESAR
+# 24. IMPLEMENTATION WORKFLOW WAJIB
 
 ```text
-01. FONDASI PROJECT
-        ↓
-02. AUTHENTICATION
-        ↓
-03. USER PROFILE
-        ↓
-04. CONTACTS
-        ↓
-05. 1-TO-1 CHAT
-        ↓
-06. REAL-TIME CHAT
-        ↓
-07. REPLY / FORWARD / DELETE / UNREAD / SEARCH
-        ↓
-08. LOCAL CACHE + OFFLINE SYNC
-        ↓
-09. ATTACHMENT
-        ↓
-10. VOICE NOTE
-        ↓
-11. PUSH NOTIFICATION
-        ↓
-12. VOICE CALL
-        ↓
-13. VIDEO CALL
-        ↓
-14. STATUS / STORY
-        ↓
-15. WORK SPACE
-        ↓
-16. SECURITY HARDENING
-        ↓
-17. END-TO-END ENCRYPTION
-        ↓
-18. MULTI-DEVICE
-        ↓
-19. PRODUCTION BACKEND
-        ↓
-20. FULL TEST
-        ↓
-21. RELEASE 1.0
-```
-
-# WORKFLOW WAJIB
-
-```text
+PILIH 1 FITUR
+      ↓
 IMPLEMENT
-   ↓
+      ↓
 BUILD
-   ↓
-TEST
-   ↓
+      ↓
+TEST REAL DEVICE
+      ↓
+CATAT ERROR
+      ↓
 FIX
-   ↓
+      ↓
 RETEST
-   ↓
+      ↓
 PASS
-   ↓
+      ↓
 LOCK
-   ↓
-NEXT FEATURE
+      ↓
+FITUR BERIKUTNYA
 ```
 
-## Larangan
-
-Jangan:
+Tidak boleh:
 
 ```text
-Chat belum selesai
-↓
-lompat Call
-↓
-lompat Story
-↓
-balik Chat
-↓
-ubah fondasi
+Feature A belum PASS
+        ↓
+Feature B
+        ↓
+Feature C
+        ↓
+ubah fondasi lagi
 ```
 
-Yang benar:
+---
+
+# 25. CURRENT PRIORITY
+
+Karena target produk telah ditetapkan sebagai **linked/companion device**, prioritas implementasi sekarang adalah:
 
 ```text
-FEATURE A
-→ SELESAI
-→ TEST
-→ LOCK
-
-↓
-
-FEATURE B
-→ SELESAI
-→ TEST
-→ LOCK
-
-↓
-
-FEATURE C
-→ ...
+1. Audit fondasi Android yang ada
+        ↓
+2. Hentikan penggunaan Auth WAW sebagai jalur utama
+        ↓
+3. Rancang layar Link Device
+        ↓
+4. Implementasikan mekanisme linking resmi yang memang tersedia
+        ↓
+5. Test linking dengan akun penguji
+        ↓
+6. LOCK LINKING
+        ↓
+7. Identity/Profile sync
+        ↓
+8. LOCK IDENTITY
+        ↓
+9. Chat sync
+        ↓
+10. LOCK CHAT CORE
 ```
+
+**Jangan melanjutkan fitur chat mandiri berbasis D1/WebSocket sebagai target production sebelum audit arsitektur ini selesai.**
+
+---
 
 # TARGET AKHIR
 
-WAW ditargetkan menjadi aplikasi Android messenger nyata dengan:
+WAW harus menjadi aplikasi Android nyata dengan model penggunaan:
 
-- Chat real-time
-- Authentication
-- User profile
+```text
+Pengguna mempunyai akun WhatsApp
+            ↓
+Primary WhatsApp phone
+            ↓
+Authorize / Link WAW
+            ↓
+WAW menjadi linked/companion device
+            ↓
+Pengguna mengakses akun yang sama
+            ↓
+Chat dengan kontak WhatsApp asli
+```
+
+Fitur yang ditargetkan, **sejauh resmi didukung oleh tipe perangkat linked/companion yang digunakan**:
+
+- Linked device
+- Account/profile
 - Contacts
-- Persistent messages
-- Delivery/read status
-- Offline sync
+- 1-to-1 chat
+- Group chat
+- Message sync
+- Delivery/read state
 - Reply
 - Forward
 - Delete
-- Attachment
-- Voice note
-- Push notification
+- Reactions
+- Search
+- Image
+- Video
+- Document
+- Audio/voice note
+- Notifications
 - Voice call
 - Video call
-- Status
-- Workspace
-- Security
-- E2E encryption
-- Multi-device
-- Production backend
-- APK/AAB production
+- Status/Updates
+- Device management
+- Secure local storage
+- Production Android
 
-**PRINSIP:**
+## DEFINISI SELESAI
 
-> Jangan mengejar banyak fitur sekaligus. Kejar satu fitur yang benar-benar selesai, dites, dan dikunci.
+WAW tidak dianggap selesai karena tampil seperti WhatsApp.
+
+WAW dianggap selesai bila fitur yang ditargetkan:
+
+```text
+BENAR-BENAR TERHUBUNG
+        ↓
+BENAR-BENAR TERSINKRON
+        ↓
+BENAR-BENAR DAPAT DITES
+        ↓
+AMAN
+        ↓
+PASS
+        ↓
+LOCK
+```
+
+**PRINSIP FINAL:**
+
+> Ikuti model dan kemampuan WhatsApp yang resmi tersedia. Bangun WAW dengan kode native milik sendiri. Jangan mengganti sistem WhatsApp dengan backend WAW dan jangan melewati mekanisme keamanan WhatsApp.
