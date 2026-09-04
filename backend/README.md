@@ -16,20 +16,34 @@
 
 ## Database
 
-Migration `migrations/0001_auth_chat.sql` defines the initial users, sessions, conversations, members, messages, and message receipts tables.
+- `migrations/0001_auth_chat.sql` defines users, sessions, conversations, members, messages, and receipts.
+- `migrations/0002_auth_security.sql` adds password salt, user status, and session revocation.
+- Apply both migrations through the Cloudflare D1 migration workflow before production traffic.
 
-Apply migrations through the Cloudflare D1 migration workflow before connecting production traffic.
+## Authentication API
+
+- `POST /auth/register`
+- `POST /auth/login`
+- `GET /auth/me` with `Authorization: Bearer <token>`
+- `POST /auth/logout` with `Authorization: Bearer <token>`
+
+Passwords are derived with Web Crypto PBKDF2 using a per-user random salt. Session tokens are random and only their SHA-256 hashes are persisted.
 
 ## Status
 
 - [x] Initial schema written
+- [x] Security migration written
+- [x] Registration API
+- [x] Login API
+- [x] Session validation
+- [x] Logout/revocation
+- [x] Authenticated WebSocket handshake
+- [x] Conversation membership check for WebSocket messages
+- [x] Persistent WebSocket message insert
 - [ ] Migration applied to development D1
-- [ ] Registration API
-- [ ] Login API
-- [ ] Session validation
-- [ ] Authenticated chat API
-- [ ] Persistent WebSocket chat
-- [ ] Delivery/read ACK
+- [ ] Android authentication integration test
 - [ ] Two-account integration test
+- [ ] Delivery/read ACK
+- [ ] Reconnect and sync
 
-Do not mark the Chat phase complete until the integration test with two authenticated accounts passes.
+Do not mark the Chat phase complete until the two-account integration test passes.
