@@ -27,6 +27,7 @@ dependencies {
     implementation("androidx.biometric:biometric:1.1.0")
     implementation("androidx.fragment:fragment-ktx:1.8.9")
     implementation("androidx.core:core-ktx:1.17.0")
+    implementation("androidx.documentfile:documentfile:1.1.0")
     implementation("androidx.work:work-runtime-ktx:2.11.2")
     debugImplementation("androidx.compose.ui:ui-tooling")
 }
