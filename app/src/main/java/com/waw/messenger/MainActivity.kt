@@ -2,7 +2,6 @@ package com.waw.messenger
 
 import android.os.Bundle
 import androidx.activity.compose.setContent
-import androidx.fragment.app.FragmentActivity
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -12,7 +11,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -21,9 +19,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.waw.messenger.security.BiometricGate
+import com.waw.messenger.workspace.WorkspaceShell
 
 class MainActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -59,11 +59,8 @@ fun WawApp() {
     }
 
     MaterialTheme {
-        if (!unlocked) {
-            LockedScreen(onUnlock = ::requestUnlock)
-        } else {
-            ProductionPathUnavailableScreen()
-        }
+        if (!unlocked) LockedScreen(onUnlock = ::requestUnlock)
+        else WorkspaceShell()
     }
 }
 
@@ -80,24 +77,5 @@ private fun LockedScreen(onUnlock: () -> Unit) {
             modifier = Modifier.padding(top = 8.dp, bottom = 20.dp)
         )
         Button(onClick = onUnlock) { Text("Buka WAW") }
-    }
-}
-
-@Composable
-private fun ProductionPathUnavailableScreen() {
-    Column(
-        Modifier.fillMaxSize().padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Text("WAW", style = MaterialTheme.typography.headlineMedium)
-        Text(
-            "Linked/companion device resmi belum tersedia untuk production path WAW.",
-            modifier = Modifier.padding(top = 12.dp)
-        )
-        Text(
-            "Chat standalone lama tidak digunakan sebagai sumber data production.",
-            modifier = Modifier.padding(top = 8.dp)
-        )
     }
 }
