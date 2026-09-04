@@ -18,6 +18,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -44,9 +45,9 @@ import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.PictureAsPdf
-import androidx.documentfile.provider.DocumentFile
 import java.util.Locale
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WorkspaceShell(modifier: Modifier = Modifier) {
     val context = LocalContext.current
@@ -121,7 +122,7 @@ fun WorkspaceShell(modifier: Modifier = Modifier) {
         modifier = modifier.fillMaxSize(),
         topBar = {
             TopAppBar(
-                title = { Text(if (currentUri == null) "WAW Workspace" else manager.displayName(currentUri!!) ?: "File Manager") },
+                title = { Text(if (currentUri == null) "WAW Workspace" else "File Manager") },
                 navigationIcon = {
                     if (currentUri != null) IconButton(onClick = {
                         if (backStack.isNotEmpty()) {
@@ -171,7 +172,6 @@ fun WorkspaceShell(modifier: Modifier = Modifier) {
                     items(visible, key = { it.uri.toString() }) { item ->
                         FileRow(
                             item = item,
-                            menuOpen = menuUri == item.uri,
                             onOpen = {
                                 if (item.isDirectory) {
                                     backStack = backStack + listOf(currentUri!!)
@@ -270,7 +270,7 @@ fun WorkspaceShell(modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun FileRow(item: WorkspaceFileItem, menuOpen: Boolean, onOpen: () -> Unit, onMenu: () -> Unit) {
+private fun FileRow(item: WorkspaceFileItem, onOpen: () -> Unit, onMenu: () -> Unit) {
     Card(Modifier.fillMaxWidth().clickable(onClick = onOpen)) {
         Row(Modifier.padding(14.dp)) {
             Icon(if (item.isDirectory) Icons.Default.Folder else Icons.Default.Description, contentDescription = null)
