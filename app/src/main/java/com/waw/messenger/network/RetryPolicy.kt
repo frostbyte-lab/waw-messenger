@@ -1,6 +1,8 @@
 package com.waw.messenger.network
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
+import java.io.IOException
 import kotlin.math.min
 
 object RetryPolicy {
@@ -11,12 +13,17 @@ object RetryPolicy {
         block: suspend (attempt: Int) -> T
     ): T {
         require(maxAttempts > 0)
+        require(initialDelayMs >= 0)
+        require(maxDelayMs >= initialDelayMs)
+
         var attempt = 1
         var delayMs = initialDelayMs
         while (true) {
             try {
                 return block(attempt)
-            } catch (error: Throwable) {
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: IOException) {
                 if (attempt >= maxAttempts) throw error
                 delay(delayMs)
                 delayMs = min(maxDelayMs, delayMs * 2)
