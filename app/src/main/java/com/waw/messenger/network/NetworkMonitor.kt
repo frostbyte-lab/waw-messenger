@@ -16,9 +16,14 @@ class NetworkMonitor(context: Context) : AutoCloseable {
     val status: StateFlow<Status> = _status.asStateFlow()
 
     private val callback = object : ConnectivityManager.NetworkCallback() {
+        override fun onAvailable(network: Network) {
+            // Wait for onCapabilitiesChanged; synchronous capability queries here can race.
+        }
+
         override fun onCapabilitiesChanged(network: Network, capabilities: NetworkCapabilities) {
             update(capabilities)
         }
+
         override fun onLost(network: Network) {
             _status.value = currentStatus()
         }
