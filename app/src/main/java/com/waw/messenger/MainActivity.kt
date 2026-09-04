@@ -23,7 +23,7 @@ import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.waw.messenger.security.BiometricGate
-import com.waw.messenger.workspace.WorkspaceShell
+import com.waw.messenger.ui.WawChatShell
 
 class MainActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -60,7 +60,7 @@ fun WawApp() {
 
     MaterialTheme {
         if (!unlocked) LockedScreen(onUnlock = ::requestUnlock)
-        else WorkspaceShell()
+        else WawChatShell()
     }
 }
 
