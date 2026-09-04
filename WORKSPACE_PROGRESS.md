@@ -12,7 +12,43 @@ Setiap fitur wajib mengikuti:
 DESIGN → IMPLEMENT → BUILD → TEST → FIX → RETEST → PASS → LOCK → NEXT
 ```
 
-Tidak boleh mengerjakan fitur berikutnya jika fitur sebelumnya masih memiliki blocker.
+Tidak boleh menganggap fitur selesai hanya karena UI sudah tampil.
+
+## Status Saat Ini
+
+### W0 — Workspace Foundation
+
+**Status: 🟡 IMPLEMENTED — PENDING VALIDATION**
+
+Sudah dibuat:
+
+- Workspace feature/status model.
+- Workspace shell UI.
+- Security boundary.
+- Storage policy.
+- WAW-owned data boundary.
+- Feature catalog untuk tahap Workspace berikutnya.
+
+Files:
+
+- `app/src/main/java/com/waw/messenger/workspace/WorkspaceModels.kt`
+- `app/src/main/java/com/waw/messenger/workspace/WorkspaceShell.kt`
+- `app/src/main/java/com/waw/messenger/workspace/WorkspaceSecurityBoundary.kt`
+- `app/src/main/java/com/waw/messenger/workspace/WorkspaceStoragePolicy.kt`
+- `WORKSPACE_W0.md`
+
+Validation yang masih diperlukan:
+
+- [ ] Android build PASS
+- [ ] Unit tests PASS
+- [ ] Install pada emulator/perangkat
+- [ ] Workspace shell smoke test
+- [ ] Background/back behavior test
+- [ ] Security regression test
+- [ ] PASS
+- [ ] LOCK
+
+W0 belum boleh disebut `LOCKED` sebelum seluruh validation gate lulus.
 
 ## Modul Workspace
 
@@ -69,10 +105,10 @@ Tidak boleh mengerjakan fitur berikutnya jika fitur sebelumnya masih memiliki bl
 - [ ] Workspace lock
 - [ ] Secure Vault lock
 - [ ] Document lock
-- [ ] BiometricPrompt integration
-- [ ] Device credential fallback where appropriate
+- [x] BiometricPrompt integration
+- [x] Device credential fallback where appropriate
 - [ ] Auto-lock timeout
-- [ ] Lock after background
+- [x] Lock after background foundation
 - [ ] Failed-auth handling
 
 Use Android's system biometric authentication rather than implementing or storing fingerprint data inside WAW.
@@ -182,13 +218,12 @@ Search across WAW-owned Workspace data:
 ## Recommended Implementation Order
 
 ### Stage W0 — Workspace Foundation
-- [ ] Define Workspace navigation
-- [ ] Define local data model
-- [ ] Define permission model
-- [ ] Define security boundaries
-- [ ] Define Workspace storage structure
-- [ ] Create feature flags/status model
-- [ ] Build Workspace shell
+- [x] Define Workspace navigation
+- [x] Define local data model
+- [x] Define permission/security boundaries
+- [x] Define Workspace storage structure
+- [x] Create feature status model
+- [x] Build Workspace shell
 - [ ] TEST
 - [ ] PASS
 - [ ] LOCK
@@ -318,13 +353,13 @@ Remote control is intentionally later in the Workspace sequence because it has t
 
 | Stage | Status |
 |---|---|
-| W0 Foundation | NOT STARTED |
+| W0 Foundation | IMPLEMENTED — PENDING VALIDATION |
 | W1 File Manager | NOT STARTED |
 | W2 Document + PDF | NOT STARTED |
 | W3 Scanner | NOT STARTED |
 | W4 Watermark | NOT STARTED |
-| W5 Fingerprint + Vault | NOT STARTED |
-| W6 Network/IP | NOT STARTED |
+| W5 Fingerprint + Vault | PARTIAL FOUNDATION |
+| W6 Network/IP | PARTIAL FOUNDATION |
 | W7 WAW Shield | NOT STARTED |
 | W8 Notes + Tasks | NOT STARTED |
 | W9 Backup/Sync | NOT STARTED |
