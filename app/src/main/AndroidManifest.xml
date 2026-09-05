@@ -9,6 +9,8 @@
     <application
         android:theme="@style/Theme.WAW"
         android:label="WAW"
+        android:icon="@drawable/ic_waw_logo"
+        android:roundIcon="@drawable/ic_waw_logo"
         android:allowBackup="false"
         android:usesCleartextTraffic="false"
         android:hardwareAccelerated="true"

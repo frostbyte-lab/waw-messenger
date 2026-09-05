@@ -19,6 +19,7 @@ import android.view.Gravity
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.ImageView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.FragmentActivity
 import androidx.core.content.ContextCompat
@@ -86,12 +87,19 @@ open class LinkedDeviceWebViewActivity : FragmentActivity() {
             orientation = LinearLayout.VERTICAL
             setPadding(20, 14, 12, 8)
             setBackgroundColor(Color.WHITE)
-            addView(TextView(context).apply {
-                text = "◉  WAW  BUSINESS"
+            val brand = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
+            brand.addView(ImageView(context).apply {
+                setImageResource(com.waw.messenger.R.drawable.ic_waw_logo)
+                contentDescription = "Logo WAW"
+            }, LinearLayout.LayoutParams(44, 44))
+            brand.addView(TextView(context).apply {
+                text = "WAW  BUSINESS"
                 textSize = 21f
                 setTextColor(Color.rgb(20, 30, 35))
                 setTypeface(typeface, android.graphics.Typeface.BOLD)
+                setPadding(10, 0, 0, 0)
             })
+            addView(brand, LinearLayout.LayoutParams(-1, 48))
             addView(TextView(context).apply {
                 text = "WhatsApp Workspace"
                 textSize = 13f
