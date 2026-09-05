@@ -1,6 +1,7 @@
 package com.waw.messenger.auth
 
 import com.waw.messenger.BuildConfig
+import com.waw.messenger.security.SecureStore
 
 import android.content.Context
 import kotlinx.coroutines.Dispatchers
@@ -21,9 +22,23 @@ data class AuthUser(
 
 data class AuthSession(val token: String, val expiresAt: Long)
 data class AuthResult(val user: AuthUser, val session: AuthSession)
+data class SavedAccount(
+    val id: String,
+    val username: String,
+    val displayName: String,
+    val email: String,
+    val token: String,
+    val expiresAt: Long
+) {
+    fun toJson() = JSONObject().apply {
+        put("id", id); put("username", username); put("displayName", displayName)
+        put("email", email); put("token", token); put("expiresAt", expiresAt)
+    }
+}
 
 class AuthRepository(context: Context) {
     private val prefs = context.getSharedPreferences("waw_auth", Context.MODE_PRIVATE)
+    private val secureStore = SecureStore(context)
     private val client = OkHttpClient()
     private val jsonType = "application/json; charset=utf-8".toMediaType()
 
@@ -33,6 +48,35 @@ class AuthRepository(context: Context) {
 
     fun hasSession(): Boolean = !prefs.getString("token", null).isNullOrBlank()
     fun token(): String? = prefs.getString("token", null)
+
+    fun savedAccounts(): List<SavedAccount> = runCatching {
+        val raw = secureStore.get("account_sessions") ?: return emptyList()
+        val array = org.json.JSONArray(raw)
+        (0 until array.length()).map { index ->
+            val item = array.getJSONObject(index)
+            SavedAccount(
+                id = item.getString("id"),
+                username = item.getString("username"),
+                displayName = item.getString("displayName"),
+                email = item.getString("email"),
+                token = item.getString("token"),
+                expiresAt = item.getLong("expiresAt")
+            )
+        }.filter { it.expiresAt > System.currentTimeMillis() }
+    }.getOrDefault(emptyList())
+
+    fun switchAccount(accountId: String): Boolean {
+        val account = savedAccounts().firstOrNull { it.id == accountId } ?: return false
+        prefs.edit().putString("token", account.token).putLong("expires_at", account.expiresAt).apply()
+        return true
+    }
+
+    fun removeSavedAccount(accountId: String) {
+        val retained = savedAccounts().filterNot { it.id == accountId }
+        val array = org.json.JSONArray()
+        retained.forEach { array.put(it.toJson()) }
+        secureStore.put("account_sessions", array.toString())
+    }
 
     suspend fun register(username: String, email: String, password: String, displayName: String): AuthResult =
         requestAuth("/auth/register", JSONObject().apply {
@@ -75,6 +119,7 @@ class AuthRepository(context: Context) {
         val sessionJson = root.getJSONObject("session")
         val session = AuthSession(sessionJson.getString("token"), sessionJson.getLong("expiresAt"))
         prefs.edit().putString("token", session.token).putLong("expires_at", session.expiresAt).apply()
+        rememberAccount(user, session)
         AuthResult(user, session)
     }
 
@@ -84,6 +129,14 @@ class AuthRepository(context: Context) {
         if (payload != null) builder.method(method, payload.toString().toRequestBody(jsonType)) else builder.method(method, null)
         if (!bearer.isNullOrBlank()) builder.header("Authorization", "Bearer $bearer")
         return client.newCall(builder.build()).execute()
+    }
+
+    private fun rememberAccount(user: AuthUser, session: AuthSession) {
+        val accounts = savedAccounts().filterNot { it.id == user.id }.toMutableList()
+        accounts.add(0, SavedAccount(user.id, user.username, user.displayName, user.email, session.token, session.expiresAt))
+        val array = org.json.JSONArray()
+        accounts.take(5).forEach { array.put(it.toJson()) }
+        secureStore.put("account_sessions", array.toString())
     }
 
     private fun parseUser(json: JSONObject) = AuthUser(

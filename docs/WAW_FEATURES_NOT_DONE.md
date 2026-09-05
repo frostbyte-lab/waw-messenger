@@ -44,12 +44,14 @@ PRIORITAS 1 — AKUN, PROFIL, CHAT, DAN NETWORK RECOVERY
 - Layar input token/password baru belum selesai.
 - Rate limit khusus dan audit event reset masih perlu ditambahkan.
 
-[NOT STARTED] Pergantian akun
-- Account switcher.
-- Penyimpanan beberapa session secara aman.
-- Pemisahan cache, draft, database lokal, dan notification per akun.
-- Logout satu akun tanpa menghapus akun lain.
-- Penghapusan session tersimpan.
+[PARTIAL] Pergantian akun
+- Account switcher dasar sudah ditambahkan pada layar terkunci.
+- Maksimal lima session akun disimpan terenkripsi menggunakan Android Keystore.
+- Switch account mengganti token aktif tanpa menampilkan token ke UI.
+- Pemisahan cache, draft, database lokal, dan notification per akun masih belum selesai.
+- Logout satu akun tanpa menghapus akun lain masih perlu flow UI khusus.
+- Penghapusan session tersimpan belum memiliki tombol UI khusus.
+- Session expiry dan revocation lintas perangkat masih perlu sinkronisasi server.
 
 [PARTIAL] Validasi form dan pesan error
 - Error schema API yang konsisten.
