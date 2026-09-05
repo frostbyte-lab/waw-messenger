@@ -5,14 +5,13 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -27,16 +26,15 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.waw.messenger.auth.AuthRepository
 import com.waw.messenger.auth.AuthScreen
+import com.waw.messenger.auth.AuthUser
 import com.waw.messenger.auth.SavedAccount
+import com.waw.messenger.chat.LiveChatRepository
 import com.waw.messenger.security.BiometricGate
 import com.waw.messenger.ui.WawChatShell
 import kotlinx.coroutines.launch
 
 class MainActivity : FragmentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContent { WawApp() }
-    }
+    override fun onCreate(savedInstanceState: Bundle?) { super.onCreate(savedInstanceState); setContent { WawApp() } }
 }
 
 @Composable
@@ -48,15 +46,17 @@ fun WawApp() {
     val scope = rememberCoroutineScope()
     var authenticated by remember { mutableStateOf(repository.hasSession()) }
     var unlocked by remember { mutableStateOf(false) }
+    var user by remember { mutableStateOf<AuthUser?>(null) }
 
     fun requestUnlock() {
-        if (!authenticated) return
-        if (activity == null) return
-        if (!biometric.canAuthenticate()) {
-            unlocked = true
-            return
-        }
+        if (!authenticated || activity == null) return
+        if (!biometric.canAuthenticate()) { unlocked = true; return }
         biometric.authenticate(activity) { success -> unlocked = success }
+    }
+
+    LaunchedEffect(authenticated, unlocked) {
+        if (authenticated && unlocked && user == null) user = runCatching { repository.me() }.getOrNull()
+        if (!authenticated) user = null
     }
 
     DisposableEffect(activity, authenticated) {
@@ -71,55 +71,31 @@ fun WawApp() {
 
     MaterialTheme {
         when {
-            !authenticated -> AuthScreen {
-                authenticated = true
-                unlocked = false
-            }
-            !unlocked -> LockedScreen(
-                onUnlock = ::requestUnlock,
-                accounts = repository.savedAccounts(),
-                onSwitchAccount = { accountId ->
-                    if (repository.switchAccount(accountId)) {
-                        unlocked = false
-                    }
-                },
-                onRemoveAccount = repository::removeSavedAccount
-            )
-            else -> WawChatShell(onLogout = {
-                scope.launch {
-                    repository.logout()
-                    authenticated = false
-                    unlocked = false
-                }
-            })
+            !authenticated -> AuthScreen { authenticated = true; unlocked = false }
+            !unlocked -> LockedScreen(::requestUnlock, repository.savedAccounts(), { id -> if (repository.switchAccount(id)) { user = null; unlocked = false } }, repository::removeSavedAccount)
+            user == null -> LoadingScreen()
+            else -> WawChatShell(user!!.id, user!!.displayName, repository.baseUrl, repository.token().orEmpty()) { scope.launch { repository.logout(); authenticated = false; unlocked = false } }
         }
     }
 }
 
+@Composable private fun LoadingScreen() {
+    Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+        CircularProgressIndicator(); Text("Memuat akun…", modifier = Modifier.padding(top = 12.dp))
+    }
+}
+
 @Composable
-private fun LockedScreen(
-    onUnlock: () -> Unit,
-    accounts: List<SavedAccount>,
-    onSwitchAccount: (String) -> Unit,
-    onRemoveAccount: (String) -> Unit
-) {
-    Column(
-        Modifier.fillMaxSize().padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
+private fun LockedScreen(onUnlock: () -> Unit, accounts: List<SavedAccount>, onSwitchAccount: (String) -> Unit, onRemoveAccount: (String) -> Unit) {
+    Column(Modifier.fillMaxSize().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
         Text("WAW terkunci", style = MaterialTheme.typography.headlineSmall)
         Text("Gunakan fingerprint atau kunci perangkat untuk melanjutkan.", modifier = Modifier.padding(top = 8.dp, bottom = 20.dp))
-        Button(onClick = onUnlock) { Text("Buka WAW") }
+        androidx.compose.material3.Button(onClick = onUnlock) { Text("Buka WAW") }
         if (accounts.size > 1) {
             Text("Akun tersimpan", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 28.dp, bottom = 8.dp))
             accounts.forEach { account ->
-                Button(onClick = { onSwitchAccount(account.id) }, modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-                    Text("${account.displayName} (@${account.username})")
-                }
-                TextButton(onClick = { onRemoveAccount(account.id) }, modifier = Modifier.align(Alignment.End)) {
-                    Text("Hapus session tersimpan")
-                }
+                androidx.compose.material3.Button(onClick = { onSwitchAccount(account.id) }) { Text("${account.displayName} (@${account.username})") }
+                androidx.compose.material3.TextButton(onClick = { onRemoveAccount(account.id) }) { Text("Hapus session tersimpan") }
             }
         }
     }
