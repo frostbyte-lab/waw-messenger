@@ -60,6 +60,7 @@ open class LinkedDeviceWebViewActivity : FragmentActivity() {
         webView = WebView(this)
         setContentView(webView)
         configureWebView()
+        if (intent.getBooleanExtra(EXTRA_SKIP_INITIAL_LOAD, false)) return
         requestRuntimePermissionsIfNeeded()
     }
 
@@ -140,6 +141,7 @@ open class LinkedDeviceWebViewActivity : FragmentActivity() {
     }
 
     companion object {
+        const val EXTRA_SKIP_INITIAL_LOAD = "com.waw.messenger.extra.SKIP_INITIAL_LOAD"
         private const val OFFICIAL_URL = "https://web.whatsapp.com"
         private const val OFFICIAL_HOST = "web.whatsapp.com"
         private const val DESKTOP_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
