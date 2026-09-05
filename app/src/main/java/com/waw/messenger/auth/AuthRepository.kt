@@ -42,6 +42,20 @@ class AuthRepository(context: Context) {
     suspend fun login(identifier: String, password: String): AuthResult =
         requestAuth("/auth/login", JSONObject().apply { put("identifier", identifier); put("password", password) })
 
+    suspend fun requestPasswordReset(identifier: String): String = withContext(Dispatchers.IO) {
+        val response = request("POST", "/auth/forgot-password", JSONObject().apply { put("identifier", identifier) }, null)
+        if (!response.isSuccessful) error(readError(response))
+        JSONObject(response.body?.string().orEmpty()).optString("message", "Jika akun ditemukan, instruksi pemulihan akan dikirim.")
+    }
+
+    suspend fun resetPassword(resetToken: String, password: String) = withContext(Dispatchers.IO) {
+        val response = request("POST", "/auth/reset-password", JSONObject().apply {
+            put("token", resetToken)
+            put("password", password)
+        }, null)
+        if (!response.isSuccessful) error(readError(response))
+    }
+
     suspend fun me(): AuthUser = withContext(Dispatchers.IO) {
         val response = request("GET", "/auth/me", null, token())
         if (!response.isSuccessful) error(readError(response))

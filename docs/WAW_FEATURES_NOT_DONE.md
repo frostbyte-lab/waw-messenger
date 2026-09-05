@@ -34,13 +34,15 @@ PRIORITAS 1 — AKUN, PROFIL, CHAT, DAN NETWORK RECOVERY
 - Uji logout dari banyak perangkat.
 - Uji session yang sudah dicabut tidak dapat digunakan kembali.
 
-[NOT STARTED] Pemulihan password
-- Endpoint forgot-password.
-- Token reset sekali pakai dengan expiry.
-- Pengiriman email reset.
-- Layar input token/password baru.
-- Proteksi enumeration akun.
-- Rate limit dan audit event reset.
+[PARTIAL] Pemulihan password
+- Endpoint forgot-password sudah ditambahkan.
+- Endpoint reset-password sudah ditambahkan.
+- Token reset disimpan sebagai hash, sekali pakai, dengan expiry 15 menit.
+- Session aktif dicabut setelah password berhasil diubah.
+- Respons forgot-password bersifat generik untuk mencegah account enumeration.
+- Delivery email masih memerlukan konfigurasi server-side `RESET_EMAIL_WEBHOOK`.
+- Layar input token/password baru belum selesai.
+- Rate limit khusus dan audit event reset masih perlu ditambahkan.
 
 [NOT STARTED] Pergantian akun
 - Account switcher.

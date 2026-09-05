@@ -92,6 +92,65 @@ async function register(request, env) {
   }, 201);
 }
 
+async function forgotPassword(request, env) {
+  const data = await body(request);
+  const generic = { ok: true, message: "Jika akun ditemukan, instruksi pemulihan akan dikirim." };
+  if (!data) return json(generic);
+
+  const identifier = String(data.identifier || data.email || data.username || "").trim().toLowerCase();
+  if (!identifier || identifier.length > 128) return json(generic);
+  const user = await env.DB.prepare(
+    "SELECT id,email,display_name FROM users WHERE username=? OR email=? LIMIT 1"
+  ).bind(identifier, identifier).first();
+  if (!user) return json(generic);
+
+  const rawToken = token(crypto.getRandomValues(new Uint8Array(32)));
+  const now = Date.now();
+  const expiresAt = now + 15 * 60 * 1000;
+  await env.DB.prepare(
+    "INSERT INTO password_reset_tokens (id,user_id,token_hash,expires_at,created_at) VALUES (?,?,?,?,?)"
+  ).bind(id("rst"), user.id, await sha256(rawToken), expiresAt, now).run();
+
+  // Delivery is intentionally server-side only. Never return the raw token to clients or logs.
+  if (env.RESET_EMAIL_WEBHOOK) {
+    await fetch(env.RESET_EMAIL_WEBHOOK, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        to: user.email,
+        displayName: user.display_name,
+        token: rawToken,
+        expiresAt
+      })
+    }).catch(() => undefined);
+  }
+  return json(generic);
+}
+
+async function resetPassword(request, env) {
+  const data = await body(request);
+  if (!data) return json({ error: "INVALID_JSON" }, 400);
+  const rawToken = String(data.token || "").trim();
+  const password = String(data.password || "");
+  if (!rawToken || password.length < 8 || password.length > 128) {
+    return json({ error: "INVALID_RESET_REQUEST" }, 400);
+  }
+  const reset = await env.DB.prepare(
+    `SELECT id,user_id FROM password_reset_tokens
+     WHERE token_hash=? AND expires_at>? AND used_at IS NULL LIMIT 1`
+  ).bind(await sha256(rawToken), Date.now()).first();
+  if (!reset) return json({ error: "INVALID_OR_EXPIRED_RESET_TOKEN" }, 400);
+
+  const { hash, salt } = await newPassword(password);
+  const now = Date.now();
+  await env.DB.batch([
+    env.DB.prepare("UPDATE users SET password_hash=?,password_salt=?,updated_at=? WHERE id=?").bind(hash, salt, now, reset.user_id),
+    env.DB.prepare("UPDATE password_reset_tokens SET used_at=? WHERE id=? AND used_at IS NULL").bind(now, reset.id),
+    env.DB.prepare("UPDATE sessions SET revoked_at=? WHERE user_id=? AND revoked_at IS NULL").bind(now, reset.user_id)
+  ]);
+  return json({ ok: true });
+}
+
 async function login(request, env) {
   const data = await body(request);
   if (!data) return json({ error: "INVALID_JSON" }, 400);
@@ -228,6 +287,8 @@ export default {
     if (url.pathname === "/health") return json({ ok: true, service: "waw-chat" });
     if (url.pathname === "/auth/register" && request.method === "POST") return register(request, env);
     if (url.pathname === "/auth/login" && request.method === "POST") return login(request, env);
+    if (url.pathname === "/auth/forgot-password" && request.method === "POST") return forgotPassword(request, env);
+    if (url.pathname === "/auth/reset-password" && request.method === "POST") return resetPassword(request, env);
     if (url.pathname === "/auth/logout" && request.method === "POST") return logout(request, env);
     if (url.pathname === "/auth/me" && request.method === "GET") return me(request, env);
     if (url.pathname === "/users" && request.method === "GET") return users(request, env);

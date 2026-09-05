@@ -120,7 +120,18 @@ fun AuthScreen(onAuthenticated: () -> Unit) {
                     Spacer(Modifier.height(10.dp))
                     OutlinedTextField(password, { password = it }, Modifier.fillMaxWidth(), label = { Text("Password") }, singleLine = true, visualTransformation = PasswordVisualTransformation())
                     if (tab == 0) {
-                        TextButton(onClick = { notice = "Pemulihan password memerlukan endpoint email/reset pada backend. Silakan hubungi administrator sementara endpoint belum dikonfigurasi." }, modifier = Modifier.align(Alignment.End)) { Text("Lupa password?") }
+                        TextButton(onClick = {
+                            if (identifier.trim().isBlank()) {
+                                notice = "Masukkan email atau username terlebih dahulu."
+                            } else {
+                                loading = true
+                                scope.launch {
+                                    runCatching { repository.requestPasswordReset(identifier.trim()) }
+                                        .onSuccess { message -> loading = false; notice = message }
+                                        .onFailure { failure -> loading = false; notice = failure.message ?: "Permintaan pemulihan gagal." }
+                                }
+                            }
+                        }, enabled = !loading, modifier = Modifier.align(Alignment.End)) { Text("Lupa password?") }
                     }
                     error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(vertical = 8.dp)) }
                     Button(onClick = ::submit, enabled = !loading, modifier = Modifier.fillMaxWidth().height(50.dp)) {
