@@ -125,7 +125,7 @@ private data class UiMessage(
 )
 
 @Composable
-fun WawChatShell(modifier: Modifier = Modifier) {
+fun WawChatShell(modifier: Modifier = Modifier, onLogout: () -> Unit = {}) {
     var section by remember { mutableStateOf(WawSection.CHAT) }
     var homeTab by remember { mutableStateOf(HomeTab.ALL) }
     var activeChat by remember { mutableStateOf<String?>(null) }
@@ -156,6 +156,7 @@ fun WawChatShell(modifier: Modifier = Modifier) {
                 onHomeTab = { homeTab = it },
                 onSection = { section = it },
                 onOpenChat = { activeChat = it },
+                onLogout = onLogout,
                 modifier = modifier
             )
         }
@@ -171,9 +172,11 @@ private fun HomeScreen(
     onHomeTab: (HomeTab) -> Unit,
     onSection: (WawSection) -> Unit,
     onOpenChat: (String) -> Unit,
+    onLogout: () -> Unit,
     modifier: Modifier
 ) {
     var actionMessage by remember { mutableStateOf<String?>(null) }
+    var showAccountMenu by remember { mutableStateOf(false) }
     val tabs = listOf("Chat", "Panggilan", "Status", "Fitur", "Workspace")
     val topState = rememberLazyListState()
     val scope = rememberCoroutineScope()
@@ -201,7 +204,7 @@ private fun HomeScreen(
                     },
                     actions = {
                         IconButton(onClick = { actionMessage = "Pencarian WAW siap digunakan dari daftar chat." }) { Icon(Icons.Default.Search, "Cari", tint = WawText) }
-                        IconButton(onClick = { actionMessage = "Menu akun dan pengaturan akan tersedia di sini." }) { Icon(Icons.Default.MoreVert, "Menu", tint = WawText) }
+                        IconButton(onClick = { showAccountMenu = true }) { Icon(Icons.Default.MoreVert, "Menu", tint = WawText) }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
                 )
@@ -244,6 +247,17 @@ private fun HomeScreen(
             WawSection.FEATURES -> FeaturesBody(Modifier.padding(padding)) { actionMessage = it }
             WawSection.WORKSPACE -> Unit
         }
+    }
+    if (showAccountMenu) {
+        AlertDialog(
+            onDismissRequest = { showAccountMenu = false },
+            title = { Text("Akun WAW") },
+            text = { Text("Sesi Anda aktif. Keluar untuk berganti akun atau masuk kembali.") },
+            confirmButton = {
+                TextButton(onClick = { showAccountMenu = false; onLogout() }) { Text("Keluar") }
+            },
+            dismissButton = { TextButton(onClick = { showAccountMenu = false }) { Text("Tutup") } }
+        )
     }
     actionMessage?.let { message ->
         AlertDialog(
