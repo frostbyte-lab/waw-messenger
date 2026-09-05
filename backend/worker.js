@@ -1,6 +1,13 @@
+import { handleMetaWebhook, sendMetaText, verifyMetaWebhook } from "./meta.js";
+
 const json = (data, status = 200) => Response.json(data, {
   status,
-  headers: { "Cache-Control": "no-store" }
+  headers: {
+    "Cache-Control": "no-store",
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Hub-Signature-256",
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS"
+  }
 });
 
 const enc = new TextEncoder();
@@ -145,16 +152,32 @@ export default {
       status: 204,
       headers: {
         "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Hub-Signature-256",
         "Access-Control-Allow-Methods": "GET, POST, OPTIONS"
       }
     });
 
-    if (url.pathname === "/health") return json({ ok: true, service: "waw-chat" });
+    if (url.pathname === "/meta/webhook" && request.method === "GET") return verifyMetaWebhook(request, env);
+    if (url.pathname === "/meta/webhook" && request.method === "POST") return handleMetaWebhook(request, env);
+
+    if (url.pathname === "/health") return json({ ok: true, service: "waw-chat", metaCloudApi: Boolean(env.META_PHONE_NUMBER_ID && env.META_ACCESS_TOKEN) });
     if (url.pathname === "/auth/register" && request.method === "POST") return register(request, env);
     if (url.pathname === "/auth/login" && request.method === "POST") return login(request, env);
     if (url.pathname === "/auth/logout" && request.method === "POST") return logout(request, env);
     if (url.pathname === "/auth/me" && request.method === "GET") return me(request, env);
+
+    if (url.pathname === "/meta/send-text" && request.method === "POST") {
+      const user = await currentUser(request, env);
+      if (!user) return json({ error: "UNAUTHORIZED" }, 401);
+      const data = await body(request);
+      if (!data) return json({ error: "INVALID_JSON" }, 400);
+      try {
+        const result = await sendMetaText(env, data.to, data.body);
+        return json({ ok: true, result });
+      } catch (error) {
+        return json({ error: String(error?.message || "META_SEND_FAILED") }, 502);
+      }
+    }
 
     if (url.pathname === "/ws") {
       if (request.headers.get("Upgrade") !== "websocket") return new Response("WebSocket required", { status: 426 });

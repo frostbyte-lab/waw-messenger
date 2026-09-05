@@ -47,3 +47,20 @@ Passwords are derived with Web Crypto PBKDF2 using a per-user random salt. Sessi
 - [ ] Reconnect and sync
 
 Do not mark the Chat phase complete until the two-account integration test passes.
+
+
+## Official WhatsApp Business Cloud API bridge
+
+The `/meta/webhook` endpoint is intended only for an official WhatsApp Business Platform integration. It verifies `hub.verify_token` for subscription and `X-Hub-Signature-256` using `META_APP_SECRET` before storing inbound message, status, and call events idempotently in `meta_events`.
+
+The `/meta/send-text` endpoint requires an authenticated WAW session and sends a text message through the official Graph API using these server-side environment secrets:
+
+- `META_GRAPH_VERSION`, for example `v23.0`
+- `META_PHONE_NUMBER_ID`
+- `META_ACCESS_TOKEN`
+- `META_APP_SECRET`
+- `META_VERIFY_TOKEN`
+
+Never put these values in the Android APK or expose them to clients. Configure them only in the Worker/secret manager. Apply migration `0003_meta_events.sql` before enabling the webhook.
+
+This bridge supports the official WhatsApp Business Platform channel only. It does not link personal WhatsApp accounts, scan QR codes, copy sessions, read local WhatsApp databases, or implement private WhatsApp protocols. WAW Messenger users remain on the WAW-owned network; WhatsApp Business messages enter through the verified Cloud API webhook.
