@@ -18,6 +18,7 @@ import kotlin.math.min
 
 class WebSocketChatRepository(
     private val endpoint: String,
+    private val tokenProvider: () -> String?,
     private val client: OkHttpClient = OkHttpClient()
 ) : ChatRepository {
     private val messagesState = MutableStateFlow<List<Message>>(emptyList())
@@ -30,7 +31,12 @@ class WebSocketChatRepository(
     @Synchronized
     fun connect() {
         if (closed || socket != null) return
-        socket = client.newWebSocket(Request.Builder().url(endpoint).build(), listener)
+        val token = tokenProvider()
+        if (token.isNullOrBlank()) return
+        val request = Request.Builder().url(endpoint)
+            .header("Authorization", "Bearer $token")
+            .build()
+        socket = client.newWebSocket(request, listener)
     }
 
     private val listener = object : WebSocketListener() {
@@ -84,6 +90,8 @@ class WebSocketChatRepository(
         messagesState.map { messages -> messages.filter { message -> message.conversationId == conversationId } }
 
     override suspend fun sendMessage(conversationId: String, senderId: String, text: String): Message {
+        require(text.isNotBlank()) { "MESSAGE_EMPTY" }
+        require(text.length <= 4096) { "MESSAGE_TOO_LONG" }
         val message = Message(conversationId = conversationId, senderId = senderId, text = text)
         val payload = JSONObject().apply {
             put("type", "message")

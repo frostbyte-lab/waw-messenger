@@ -22,6 +22,7 @@ data class AuthResult(val user: AuthUser, val session: AuthSession)
 
 class AuthRepository(context: Context) {
     private val prefs = context.getSharedPreferences("waw_auth", Context.MODE_PRIVATE)
+    private val secureStore = com.waw.messenger.security.SecureStore(context)
     private val client = OkHttpClient()
     private val jsonType = "application/json; charset=utf-8".toMediaType()
 
@@ -29,8 +30,8 @@ class AuthRepository(context: Context) {
         get() = prefs.getString("base_url", "") ?: ""
         set(value) = prefs.edit().putString("base_url", value.trim().removeSuffix("/")).apply()
 
-    fun hasSession(): Boolean = !prefs.getString("token", null).isNullOrBlank()
-    fun token(): String? = prefs.getString("token", null)
+    fun hasSession(): Boolean = !secureStore.get("auth_token").isNullOrBlank()
+    fun token(): String? = secureStore.get("auth_token")
 
     suspend fun register(username: String, email: String, password: String, displayName: String): AuthResult =
         requestAuth("/auth/register", JSONObject().apply {
@@ -48,7 +49,10 @@ class AuthRepository(context: Context) {
 
     suspend fun logout() = withContext(Dispatchers.IO) {
         try { request("POST", "/auth/logout", JSONObject(), token()) }
-        finally { prefs.edit().remove("token").remove("expires_at").apply() }
+        finally {
+            secureStore.remove("auth_token")
+            prefs.edit().remove("expires_at").apply()
+        }
     }
 
     private suspend fun requestAuth(path: String, payload: JSONObject): AuthResult = withContext(Dispatchers.IO) {
@@ -58,7 +62,8 @@ class AuthRepository(context: Context) {
         val user = parseUser(root.getJSONObject("user"))
         val sessionJson = root.getJSONObject("session")
         val session = AuthSession(sessionJson.getString("token"), sessionJson.getLong("expiresAt"))
-        prefs.edit().putString("token", session.token).putLong("expires_at", session.expiresAt).apply()
+        secureStore.put("auth_token", session.token)
+        prefs.edit().putLong("expires_at", session.expiresAt).apply()
         AuthResult(user, session)
     }
 

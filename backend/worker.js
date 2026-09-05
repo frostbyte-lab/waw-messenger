@@ -177,9 +177,10 @@ export default {
           const now = Date.now();
           const messageId = id("msg");
           const text = String(message.text).trim();
+          if (text.length > 4096) return server.send(JSON.stringify({ type: "error", error: "MESSAGE_TOO_LONG" }));
           await env.DB.prepare(
             `INSERT INTO messages (id,conversation_id,sender_id,client_id,text,status,created_at,updated_at)
-             VALUES (?,?,?,?,?,'SENT',?,?,?)`
+             VALUES (?,?,?,?,?,'SENT',?,?)`
           ).bind(messageId, message.conversationId, user.id, message.clientId || null, text, now, now).run();
 
           server.send(JSON.stringify({ type: "message", id: messageId, conversationId: message.conversationId,
