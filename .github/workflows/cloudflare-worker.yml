@@ -31,6 +31,9 @@ jobs:
         with:
           node-version: 22
 
+      - name: Run backend tests
+        run: npm test
+
       - name: Install Wrangler
         run: npm install --global wrangler@latest
 

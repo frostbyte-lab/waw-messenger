@@ -1,0 +1,48 @@
+# Android / Gradle
+.gradle/
+**/build/
+local.properties
+captures/
+.externalNativeBuild/
+.cxx/
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Local secrets and environment files
+.env
+.env.*
+!.env.example
+*.keystore
+*.jks
+*.p12
+
+# Reports and generated artifacts
+*.log
+coverage/
+backend/node_modules/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary audit/build output
+/tmp/
+out/
+dist/
+
+# Keep the repository free of generated APKs
+*.apk
+*.aab
+
+# Local Cloudflare state
+.wrangler/
+.cloudflare/
+
+# Editor swap files
+*.swp
+*.swo
+*~
