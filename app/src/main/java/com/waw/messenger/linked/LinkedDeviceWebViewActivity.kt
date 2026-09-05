@@ -30,6 +30,7 @@ import androidx.core.content.ContextCompat
 open class LinkedDeviceWebViewActivity : FragmentActivity() {
     private lateinit var webView: WebView
     private lateinit var root: FrameLayout
+    private lateinit var dashboard: LinearLayout
     private var pendingFileCallback: ValueCallback<Array<Uri>>? = null
     private var pendingWebPermission: PermissionRequest? = null
 
@@ -75,6 +76,7 @@ open class LinkedDeviceWebViewActivity : FragmentActivity() {
         setContentView(root)
         configureWebView()
         addBlueprintChrome()
+        addBlueprintDashboard()
         requestRuntimePermissionsIfNeeded()
     }
 
@@ -132,6 +134,64 @@ open class LinkedDeviceWebViewActivity : FragmentActivity() {
             }
         }
         root.addView(bottom, FrameLayout.LayoutParams(-1, 68, Gravity.BOTTOM))
+    }
+
+    private fun addBlueprintDashboard() {
+        dashboard = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(20, 18, 20, 12)
+            setBackgroundColor(Color.WHITE)
+            addView(TextView(context).apply {
+                text = "Workspace Quick Access"
+                textSize = 17f
+                setTextColor(Color.rgb(25, 35, 40))
+                setTypeface(typeface, android.graphics.Typeface.BOLD)
+            })
+            addView(TextView(context).apply {
+                text = "Kelola dokumen, tugas, kalender, dan file lokal WAW"
+                textSize = 13f
+                setTextColor(Color.DKGRAY)
+                setPadding(0, 4, 0, 12)
+            })
+            val grid = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL }
+            listOf(
+                listOf("Dokumen", "Editor teks & PDF", false),
+                listOf("Tugas", "Catatan absensi & pekerjaan", false),
+                listOf("Kalender", "Agenda lokal", false),
+                listOf("File", "File Manager Workspace", true)
+            ).chunked(2).forEach { rowItems ->
+                val row = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL }
+                rowItems.forEach { item ->
+                    val card = TextView(context).apply {
+                        text = "${item[0]}\n${item[1]}"
+                        textSize = 14f
+                        setTextColor(Color.rgb(30, 35, 40))
+                        setBackgroundColor(Color.rgb(247, 249, 250))
+                        setPadding(18, 18, 12, 18)
+                        setOnClickListener {
+                            if (item[2] as Boolean) startActivity(Intent(this@LinkedDeviceWebViewActivity, WorkspaceActivity::class.java))
+                        }
+                    }
+                    row.addView(card, LinearLayout.LayoutParams(0, 100, 1f).apply { setMargins(0, 0, 8, 10) })
+                }
+                grid.addView(row)
+            }
+            addView(grid, LinearLayout.LayoutParams(-1, -2))
+            addView(TextView(context).apply {
+                text = "Buka Chat WhatsApp Web"
+                textSize = 15f
+                gravity = Gravity.CENTER
+                setTextColor(Color.WHITE)
+                setBackgroundColor(Color.rgb(0, 150, 90))
+                setPadding(12, 16, 12, 16)
+                setOnClickListener { dashboard.visibility = android.view.View.GONE }
+            }, LinearLayout.LayoutParams(-1, 54).apply { setMargins(0, 12, 0, 0) })
+        }
+        val params = FrameLayout.LayoutParams(-1, -1).apply {
+            topMargin = 154
+            bottomMargin = 68
+        }
+        root.addView(dashboard, params)
     }
 
     private fun requestRuntimePermissionsIfNeeded() {
