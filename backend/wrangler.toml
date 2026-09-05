@@ -1,0 +1,16 @@
+name = "waw-messenger-api"
+main = "worker.js"
+compatibility_date = "2026-09-05"
+workers_dev = true
+
+[[d1_databases]]
+binding = "DB"
+database_name = "waw-messenger-db"
+database_id = "11eed290-e311-40c3-9890-7b2453f77c0a"
+migrations_dir = "migrations"
+
+[observability]
+enabled = true
+
+[vars]
+SERVICE_NAME = "waw-messenger-api"
