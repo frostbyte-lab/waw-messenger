@@ -57,12 +57,14 @@ import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.TaskAlt
 import androidx.compose.material.icons.filled.VideoCall
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -171,6 +173,7 @@ private fun HomeScreen(
     onOpenChat: (String) -> Unit,
     modifier: Modifier
 ) {
+    var actionMessage by remember { mutableStateOf<String?>(null) }
     val tabs = listOf("Chat", "Panggilan", "Status", "Fitur", "Workspace")
     val topState = rememberLazyListState()
     val scope = rememberCoroutineScope()
@@ -197,8 +200,8 @@ private fun HomeScreen(
                         }
                     },
                     actions = {
-                        IconButton(onClick = {}) { Icon(Icons.Default.Search, "Cari", tint = WawText) }
-                        IconButton(onClick = {}) { Icon(Icons.Default.MoreVert, "Menu", tint = WawText) }
+                        IconButton(onClick = { actionMessage = "Pencarian WAW siap digunakan dari daftar chat." }) { Icon(Icons.Default.Search, "Cari", tint = WawText) }
+                        IconButton(onClick = { actionMessage = "Menu akun dan pengaturan akan tersedia di sini." }) { Icon(Icons.Default.MoreVert, "Menu", tint = WawText) }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
                 )
@@ -235,12 +238,20 @@ private fun HomeScreen(
         }
     ) { padding ->
         when (section) {
-            WawSection.CHAT -> ChatHome(homeTab, contacts, onHomeTab, onOpenChat, Modifier.padding(padding))
-            WawSection.CALLS -> CallsBody(Modifier.padding(padding))
-            WawSection.STATUS -> StatusBody(Modifier.padding(padding))
-            WawSection.FEATURES -> FeaturesBody(Modifier.padding(padding))
+            WawSection.CHAT -> ChatHome(homeTab, contacts, onHomeTab, onOpenChat, { actionMessage = it }, Modifier.padding(padding))
+            WawSection.CALLS -> CallsBody(Modifier.padding(padding)) { actionMessage = it }
+            WawSection.STATUS -> StatusBody(Modifier.padding(padding)) { actionMessage = it }
+            WawSection.FEATURES -> FeaturesBody(Modifier.padding(padding)) { actionMessage = it }
             WawSection.WORKSPACE -> Unit
         }
+    }
+    actionMessage?.let { message ->
+        AlertDialog(
+            onDismissRequest = { actionMessage = null },
+            title = { Text("WAW") },
+            text = { Text(message) },
+            confirmButton = { TextButton(onClick = { actionMessage = null }) { Text("Mengerti") } }
+        )
     }
 }
 
@@ -270,7 +281,7 @@ private fun BottomItem(label: String, icon: androidx.compose.ui.graphics.vector.
 }
 
 @Composable
-private fun ChatHome(homeTab: HomeTab, contacts: List<Contact>, onHomeTab: (HomeTab) -> Unit, onOpenChat: (String) -> Unit, modifier: Modifier) {
+private fun ChatHome(homeTab: HomeTab, contacts: List<Contact>, onHomeTab: (HomeTab) -> Unit, onOpenChat: (String) -> Unit, onAction: (String) -> Unit, modifier: Modifier) {
     val visible = when (homeTab) {
         HomeTab.ALL -> contacts
         HomeTab.UNREAD -> contacts.filter { it.unread > 0 }
@@ -290,7 +301,7 @@ private fun ChatHome(homeTab: HomeTab, contacts: List<Contact>, onHomeTab: (Home
                 item { HomeChip("Workspace", homeTab == HomeTab.WORKSPACE) { onHomeTab(HomeTab.WORKSPACE) } }
             }
         }
-        item { WorkspaceQuickAccess() }
+        item { WorkspaceQuickAccess(onAction) }
         item { WawInsight() }
         item { Text("OBROLAN", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = WawMuted, modifier = Modifier.padding(top = 13.dp, bottom = 3.dp)) }
         items(visible, key = { it.id }) { contact ->
@@ -311,7 +322,7 @@ private fun HomeChip(text: String, selected: Boolean, onClick: () -> Unit) {
 }
 
 @Composable
-private fun WorkspaceQuickAccess() {
+private fun WorkspaceQuickAccess(onAction: (String) -> Unit) {
     Surface(color = WawSurface, shape = RoundedCornerShape(19.dp), modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(13.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -320,18 +331,18 @@ private fun WorkspaceQuickAccess() {
             }
             Spacer(Modifier.height(9.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                QuickTile("Dokumen", Icons.Default.FileCopy, WawBlue, "12 file", Modifier.weight(1f))
-                QuickTile("Tugas", Icons.Default.TaskAlt, WawGreen, "8 aktif", Modifier.weight(1f))
-                QuickTile("Kalender", Icons.Default.Info, Color(0xFF8B5CF6), "3 meeting", Modifier.weight(1f))
-                QuickTile("File", Icons.Default.Folder, Color(0xFFF59E0B), "2.4 GB", Modifier.weight(1f))
+                QuickTile("Dokumen", Icons.Default.FileCopy, WawBlue, "12 file", Modifier.weight(1f)) { onAction("Dokumen Workspace dibuka") }
+                QuickTile("Tugas", Icons.Default.TaskAlt, WawGreen, "8 aktif", Modifier.weight(1f)) { onAction("Daftar tugas dibuka") }
+                QuickTile("Kalender", Icons.Default.Info, Color(0xFF8B5CF6), "3 meeting", Modifier.weight(1f)) { onAction("Kalender dibuka") }
+                QuickTile("File", Icons.Default.Folder, Color(0xFFF59E0B), "2.4 GB", Modifier.weight(1f)) { onAction("File Manager dibuka") }
             }
         }
     }
 }
 
 @Composable
-private fun QuickTile(label: String, icon: androidx.compose.ui.graphics.vector.ImageVector, accent: Color, detail: String, modifier: Modifier = Modifier) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = modifier) {
+private fun QuickTile(label: String, icon: androidx.compose.ui.graphics.vector.ImageVector, accent: Color, detail: String, modifier: Modifier = Modifier, onClick: () -> Unit = {}) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = modifier.clickable(onClick = onClick)) {
         Surface(color = Color.White, shape = RoundedCornerShape(13.dp), modifier = Modifier.size(50.dp)) {
             Box(contentAlignment = Alignment.Center) { Icon(icon, null, tint = accent, modifier = Modifier.size(24.dp)) }
         }
@@ -401,6 +412,7 @@ private fun ChatScreen(contact: Contact, onBack: () -> Unit) {
         )
     }
     var draft by remember { mutableStateOf("") }
+    var chatAction by remember { mutableStateOf<String?>(null) }
     var typing by remember { mutableStateOf(true) }
     var recording by remember { mutableStateOf(false) }
     var attachmentProgress by remember { mutableStateOf(0f) }
@@ -438,9 +450,9 @@ private fun ChatScreen(contact: Contact, onBack: () -> Unit) {
                 },
                 navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, "Kembali", tint = WawText) } },
                 actions = {
-                    IconButton(onClick = {}) { Icon(Icons.Default.VideoCall, "Video", tint = WawText) }
-                    IconButton(onClick = {}) { Icon(Icons.Default.Phone, "Telepon", tint = WawText) }
-                    IconButton(onClick = {}) { Icon(Icons.Default.MoreVert, "Menu", tint = WawText) }
+                    IconButton(onClick = { chatAction = "Panggilan video untuk ${contact.name} siap disiapkan." }) { Icon(Icons.Default.VideoCall, "Video", tint = WawText) }
+                    IconButton(onClick = { chatAction = "Panggilan suara untuk ${contact.name} siap disiapkan." }) { Icon(Icons.Default.Phone, "Telepon", tint = WawText) }
+                    IconButton(onClick = { chatAction = "Menu chat: cari pesan, media, dan pengaturan percakapan." }) { Icon(Icons.Default.MoreVert, "Menu", tint = WawText) }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
             )
@@ -486,6 +498,14 @@ private fun ChatScreen(contact: Contact, onBack: () -> Unit) {
                 }
             )
         }
+    }
+    chatAction?.let { message ->
+        AlertDialog(
+            onDismissRequest = { chatAction = null },
+            title = { Text("Chat WAW") },
+            text = { Text(message) },
+            confirmButton = { TextButton(onClick = { chatAction = null }) { Text("Mengerti") } }
+        )
     }
 }
 
@@ -604,28 +624,28 @@ private fun VoiceWaveform(onStop: () -> Unit) {
 }
 
 @Composable
-private fun CallsBody(modifier: Modifier) {
-    SimpleSection(modifier, "Panggilan", "Riwayat panggilan WAW akan tampil di sini.", Icons.Default.Call)
+private fun CallsBody(modifier: Modifier, onAction: (String) -> Unit) {
+    SimpleSection(modifier, "Panggilan", "Riwayat panggilan WAW akan tampil di sini.", Icons.Default.Call, "Mulai panggilan") { onAction("Pilih kontak untuk memulai panggilan") }
 }
 
 @Composable
-private fun StatusBody(modifier: Modifier) {
-    SimpleSection(modifier, "Status", "Status, update, dan aktivitas tim WAW.", Icons.Default.Info)
+private fun StatusBody(modifier: Modifier, onAction: (String) -> Unit) {
+    SimpleSection(modifier, "Status", "Status, update, dan aktivitas tim WAW.", Icons.Default.Info, "Buat status") { onAction("Editor status WAW dibuka") }
 }
 
 @Composable
-private fun FeaturesBody(modifier: Modifier) {
+private fun FeaturesBody(modifier: Modifier, onAction: (String) -> Unit) {
     Column(modifier.fillMaxSize().background(Color.White).padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text("Fitur WAW", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.ExtraBold, color = WawText)
-        FeatureCard("WAW Shield", "Anti-phishing dan perlindungan link berisiko", Icons.Default.Settings)
-        FeatureCard("Workspace", "Dokumen, tugas, kalender, dan file", Icons.Default.Folder)
-        FeatureCard("Keamanan", "Biometric Gate dan Secure Vault", Icons.Default.TaskAlt)
+        FeatureCard("WAW Shield", "Anti-phishing dan perlindungan link berisiko", Icons.Default.Settings) { onAction("WAW Shield dibuka") }
+        FeatureCard("Workspace", "Dokumen, tugas, kalender, dan file", Icons.Default.Folder) { onAction("Buka tab Workspace untuk mengakses file") }
+        FeatureCard("Keamanan", "Biometric Gate dan Secure Vault", Icons.Default.TaskAlt) { onAction("Pengaturan keamanan dibuka") }
     }
 }
 
 @Composable
-private fun FeatureCard(title: String, detail: String, icon: androidx.compose.ui.graphics.vector.ImageVector) {
-    Surface(color = WawSurface, shape = RoundedCornerShape(18.dp), modifier = Modifier.fillMaxWidth()) {
+private fun FeatureCard(title: String, detail: String, icon: androidx.compose.ui.graphics.vector.ImageVector, onClick: () -> Unit) {
+    Surface(color = WawSurface, shape = RoundedCornerShape(18.dp), modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)) {
         Row(Modifier.padding(15.dp), verticalAlignment = Alignment.CenterVertically) {
             Surface(color = Color.White, shape = CircleShape, modifier = Modifier.size(44.dp)) { Box(contentAlignment = Alignment.Center) { Icon(icon, null, tint = WawGreenDark) } }
             Column(Modifier.padding(start = 12.dp)) {
@@ -637,11 +657,12 @@ private fun FeatureCard(title: String, detail: String, icon: androidx.compose.ui
 }
 
 @Composable
-private fun SimpleSection(modifier: Modifier, title: String, detail: String, icon: androidx.compose.ui.graphics.vector.ImageVector) {
+private fun SimpleSection(modifier: Modifier, title: String, detail: String, icon: androidx.compose.ui.graphics.vector.ImageVector, actionLabel: String, onAction: () -> Unit) {
     Column(modifier.fillMaxSize().background(Color.White).padding(18.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
         Surface(color = WawSurface, shape = CircleShape, modifier = Modifier.size(70.dp)) { Box(contentAlignment = Alignment.Center) { Icon(icon, null, tint = WawGreenDark, modifier = Modifier.size(34.dp)) } }
         Text(title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.ExtraBold, color = WawText, modifier = Modifier.padding(top = 14.dp))
         Text(detail, color = WawMuted, modifier = Modifier.padding(top = 6.dp))
+        androidx.compose.material3.Button(onClick = onAction, modifier = Modifier.padding(top = 16.dp)) { Text(actionLabel) }
     }
 }
 
