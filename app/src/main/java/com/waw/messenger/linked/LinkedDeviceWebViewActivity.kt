@@ -17,21 +17,8 @@ import android.webkit.WebViewClient
 import android.graphics.Color
 import android.view.Gravity
 import android.widget.FrameLayout
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.ComposeView
-import androidx.compose.ui.platform.setContent
-import androidx.compose.ui.unit.dp
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.FragmentActivity
-import com.waw.messenger.workspace.WorkspaceShell
 import androidx.core.content.ContextCompat
 
 /**
@@ -89,7 +76,7 @@ open class LinkedDeviceWebViewActivity : FragmentActivity() {
     private fun addWorkspaceButton() {
         val button = android.widget.Button(this).apply {
             text = "Workspace"
-            setOnClickListener { openWorkspaceOverlay() }
+            setOnClickListener { startActivity(Intent(this@LinkedDeviceWebViewActivity, WorkspaceActivity::class.java)) }
             contentDescription = "Buka WAW Workspace"
         }
         val params = FrameLayout.LayoutParams(
@@ -98,17 +85,6 @@ open class LinkedDeviceWebViewActivity : FragmentActivity() {
             Gravity.TOP or Gravity.END
         ).apply { setMargins(0, 24, 16, 0) }
         root.addView(button, params)
-    }
-
-    private fun openWorkspaceOverlay() {
-        if (root.findViewWithTag<ComposeView>(WORKSPACE_TAG) != null) return
-        val overlay = ComposeView(this).apply {
-            tag = WORKSPACE_TAG
-            setContent {
-                WorkspaceOverlay(onClose = { root.removeView(this) })
-            }
-        }
-        root.addView(overlay, FrameLayout.LayoutParams(-1, -1))
     }
 
     private fun requestRuntimePermissionsIfNeeded() {
@@ -189,23 +165,11 @@ open class LinkedDeviceWebViewActivity : FragmentActivity() {
 
     companion object {
         const val EXTRA_SKIP_INITIAL_LOAD = "com.waw.messenger.extra.SKIP_INITIAL_LOAD"
-        private const val WORKSPACE_TAG = "waw-workspace-overlay"
         private const val OFFICIAL_URL = "https://web.whatsapp.com"
         private const val OFFICIAL_HOST = "web.whatsapp.com"
         private const val DESKTOP_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
 
         private fun isAllowedWhatsAppNavigation(uri: Uri): Boolean =
             uri.scheme == "https" && uri.host == OFFICIAL_HOST
-    }
-}
-
-@Composable
-private fun WorkspaceOverlay(onClose: () -> Unit) {
-    Box(Modifier.fillMaxSize().background(androidx.compose.material3.MaterialTheme.colorScheme.background)) {
-        WorkspaceShell(Modifier.fillMaxSize())
-        TextButton(
-            onClick = onClose,
-            modifier = Modifier.align(Alignment.TopEnd).padding(top = 8.dp, end = 8.dp)
-        ) { Text("Tutup") }
     }
 }
