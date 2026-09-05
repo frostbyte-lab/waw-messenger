@@ -57,10 +57,10 @@ open class LinkedDeviceWebViewActivity : FragmentActivity() {
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (intent.getBooleanExtra(EXTRA_SKIP_INITIAL_LOAD, false)) return
         webView = WebView(this)
         setContentView(webView)
         configureWebView()
-        if (intent.getBooleanExtra(EXTRA_SKIP_INITIAL_LOAD, false)) return
         requestRuntimePermissionsIfNeeded()
     }
 
