@@ -14,6 +14,9 @@ import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.graphics.Color
+import android.view.Gravity
+import android.widget.FrameLayout
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.FragmentActivity
 import androidx.core.content.ContextCompat
@@ -24,6 +27,7 @@ import androidx.core.content.ContextCompat
  */
 open class LinkedDeviceWebViewActivity : FragmentActivity() {
     private lateinit var webView: WebView
+    private lateinit var root: FrameLayout
     private var pendingFileCallback: ValueCallback<Array<Uri>>? = null
     private var pendingWebPermission: PermissionRequest? = null
 
@@ -57,11 +61,33 @@ open class LinkedDeviceWebViewActivity : FragmentActivity() {
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        if (intent.getBooleanExtra(EXTRA_SKIP_INITIAL_LOAD, false)) return
+        if (intent.getBooleanExtra(EXTRA_SKIP_INITIAL_LOAD, false)) {
+            setContentView(FrameLayout(this))
+            return
+        }
         webView = WebView(this)
-        setContentView(webView)
+        root = FrameLayout(this).apply {
+            setBackgroundColor(Color.BLACK)
+            addView(webView, FrameLayout.LayoutParams(-1, -1))
+        }
+        setContentView(root)
         configureWebView()
+        addWorkspaceButton()
         requestRuntimePermissionsIfNeeded()
+    }
+
+    private fun addWorkspaceButton() {
+        val button = android.widget.Button(this).apply {
+            text = "Workspace"
+            setOnClickListener { startActivity(Intent(this@LinkedDeviceWebViewActivity, WorkspaceActivity::class.java)) }
+            contentDescription = "Buka WAW Workspace"
+        }
+        val params = FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.WRAP_CONTENT,
+            FrameLayout.LayoutParams.WRAP_CONTENT,
+            Gravity.TOP or Gravity.END
+        ).apply { setMargins(0, 24, 16, 0) }
+        root.addView(button, params)
     }
 
     private fun requestRuntimePermissionsIfNeeded() {
