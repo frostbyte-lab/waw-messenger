@@ -258,7 +258,7 @@ export default {
           const text = String(message.text).trim();
           await env.DB.prepare(
             `INSERT INTO messages (id,conversation_id,sender_id,client_id,text,status,created_at,updated_at)
-             VALUES (?,?,?,?,?,'SENT',?,?,?)`
+             VALUES (?,?,?,?,?,'SENT',?,?)`
           ).bind(messageId, message.conversationId, user.id, message.clientId || null, text, now, now).run();
 
           server.send(JSON.stringify({ type: "message", id: messageId, conversationId: message.conversationId,
