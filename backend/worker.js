@@ -145,6 +145,64 @@ async function me(request, env) {
   }});
 }
 
+async function listConversations(request, env) {
+  const user = await currentUser(request, env);
+  if (!user) return json({ error: "UNAUTHORIZED" }, 401);
+  const rows = await env.DB.prepare(
+    `SELECT c.id,c.type,c.created_at,c.updated_at,
+            u.id AS participant_id,u.username,u.display_name,u.avatar_url,
+            (SELECT text FROM messages m WHERE m.conversation_id=c.id ORDER BY m.created_at DESC LIMIT 1) AS last_message,
+            (SELECT COUNT(*) FROM messages m WHERE m.conversation_id=c.id AND m.sender_id<>? AND m.status<>'READ') AS unread_count
+     FROM conversations c
+     JOIN conversation_members cm ON cm.conversation_id=c.id AND cm.user_id=?
+     JOIN conversation_members other_cm ON other_cm.conversation_id=c.id AND other_cm.user_id<>cm.user_id
+     JOIN users u ON u.id=other_cm.user_id
+     ORDER BY c.updated_at DESC`
+  ).bind(user.id, user.id).all();
+  return json({ conversations: rows.results || [] });
+}
+
+async function createDirectConversation(request, env) {
+  const user = await currentUser(request, env);
+  if (!user) return json({ error: "UNAUTHORIZED" }, 401);
+  const data = await body(request);
+  const participantId = String(data?.participantId || "").trim();
+  if (!participantId || participantId === user.id) return json({ error: "INVALID_PARTICIPANT" }, 400);
+  const participant = await env.DB.prepare("SELECT id FROM users WHERE id=? LIMIT 1").bind(participantId).first();
+  if (!participant) return json({ error: "USER_NOT_FOUND" }, 404);
+  const existing = await env.DB.prepare(
+    `SELECT c.id FROM conversations c
+     JOIN conversation_members a ON a.conversation_id=c.id AND a.user_id=?
+     JOIN conversation_members b ON b.conversation_id=c.id AND b.user_id=?
+     WHERE c.type='direct' LIMIT 1`
+  ).bind(user.id, participantId).first();
+  if (existing) return json({ conversationId: existing.id });
+
+  const conversationId = id("conv");
+  const now = Date.now();
+  await env.DB.batch([
+    env.DB.prepare("INSERT INTO conversations (id,type,created_at,updated_at) VALUES (?,'direct',?,?)").bind(conversationId, now, now),
+    env.DB.prepare("INSERT INTO conversation_members (conversation_id,user_id,joined_at) VALUES (?,?,?)").bind(conversationId, user.id, now),
+    env.DB.prepare("INSERT INTO conversation_members (conversation_id,user_id,joined_at) VALUES (?,?,?)").bind(conversationId, participantId, now)
+  ]);
+  return json({ conversationId }, 201);
+}
+
+async function conversationMessages(request, env, conversationId) {
+  const user = await currentUser(request, env);
+  if (!user) return json({ error: "UNAUTHORIZED" }, 401);
+  const member = await env.DB.prepare("SELECT 1 FROM conversation_members WHERE conversation_id=? AND user_id=? LIMIT 1")
+    .bind(conversationId, user.id).first();
+  if (!member) return json({ error: "FORBIDDEN_CONVERSATION" }, 403);
+  const url = new URL(request.url);
+  const limit = Math.min(100, Math.max(1, Number(url.searchParams.get("limit") || 50)));
+  const rows = await env.DB.prepare(
+    `SELECT id,conversation_id,sender_id,client_id,text,status,created_at,updated_at,deleted_at
+     FROM messages WHERE conversation_id=? ORDER BY created_at DESC LIMIT ?`
+  ).bind(conversationId, limit).all();
+  return json({ messages: (rows.results || []).reverse() });
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -165,6 +223,12 @@ export default {
     if (url.pathname === "/auth/login" && request.method === "POST") return login(request, env);
     if (url.pathname === "/auth/logout" && request.method === "POST") return logout(request, env);
     if (url.pathname === "/auth/me" && request.method === "GET") return me(request, env);
+    if (url.pathname === "/conversations" && request.method === "GET") return listConversations(request, env);
+    if (url.pathname === "/conversations/direct" && request.method === "POST") return createDirectConversation(request, env);
+    if (url.pathname.startsWith("/conversations/") && url.pathname.endsWith("/messages") && request.method === "GET") {
+      const conversationId = url.pathname.slice("/conversations/".length, -"/messages".length).replace(/\/$/, "");
+      return conversationMessages(request, env, conversationId);
+    }
 
     if (url.pathname === "/meta/send-text" && request.method === "POST") {
       const user = await currentUser(request, env);
