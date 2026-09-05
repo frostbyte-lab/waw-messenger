@@ -2,8 +2,10 @@ package com.waw.messenger.chat
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.WebSocket
 import okhttp3.WebSocketListener
 import okhttp3.Response
@@ -16,7 +18,6 @@ class LiveChatRepository(
     private val client: OkHttpClient = OkHttpClient()
 ) {
     private var socket: WebSocket? = null
-
     private fun url(path: String) = baseUrl.trimEnd('/') + path
 
     suspend fun users(): List<User> = withContext(Dispatchers.IO) {
@@ -40,25 +41,17 @@ class LiveChatRepository(
     suspend fun messages(conversationId: String): List<Message> = withContext(Dispatchers.IO) {
         get("/conversations/$conversationId/messages").let { root ->
             val a = root.optJSONArray("messages") ?: return@withContext emptyList()
-            buildList {
-                for (i in 0 until a.length()) {
-                    val x = a.getJSONObject(i)
-                    add(Message(x.getString("id"), x.getString("conversationId"), x.getString("senderId"), x.optString("text"), x.optLong("createdAt"), runCatching { MessageStatus.valueOf(x.optString("status", "SENT")) }.getOrDefault(MessageStatus.SENT), deleted = x.optString("deletedAt").isNotBlank() && x.optString("deletedAt") != "null"))
-                }
-            }
+            buildList { for (i in 0 until a.length()) { val x = a.getJSONObject(i); add(Message(x.getString("id"), x.getString("conversationId"), x.getString("senderId"), x.optString("text"), x.optLong("createdAt"), runCatching { MessageStatus.valueOf(x.optString("status", "SENT")) }.getOrDefault(MessageStatus.SENT), deleted = x.optString("deletedAt").isNotBlank() && x.optString("deletedAt") != "null"))) } }
         }
     }
 
     suspend fun sendMessage(conversationId: String, text: String): String = withContext(Dispatchers.IO) {
-        val clientId = UUID.randomUUID().toString()
-        ensureSocket()
+        val clientId = UUID.randomUUID().toString(); ensureSocket()
         val sent = socket?.send(JSONObject().apply { put("type", "message"); put("id", clientId); put("clientId", clientId); put("conversationId", conversationId); put("text", text.trim()) }.toString()) ?: false
-        if (!sent) error("MESSAGE_SEND_FAILED")
-        clientId
+        if (!sent) error("MESSAGE_SEND_FAILED"); clientId
     }
 
     suspend fun markRead(conversationId: String) = withContext(Dispatchers.IO) { post("/conversations/$conversationId/read", JSONObject()) }
-
     fun close() { socket?.close(1000, "closed"); socket = null }
 
     @Synchronized private fun ensureSocket() {
@@ -74,9 +67,7 @@ class LiveChatRepository(
     private fun post(path: String, body: JSONObject): JSONObject = execute("POST", path, body)
     private fun execute(method: String, path: String, body: JSONObject?): JSONObject {
         val builder = Request.Builder().url(url(path)).header("Authorization", "Bearer $token")
-        if (body != null) builder.method(method, okhttp3.RequestBody.create("application/json; charset=utf-8".toMediaTypeCompat(), body.toString())) else builder.method(method, null)
+        if (body != null) builder.method(method, body.toString().toRequestBody("application/json; charset=utf-8".toMediaType())) else builder.method(method, null)
         client.newCall(builder.build()).execute().use { r -> val raw = r.body?.string().orEmpty(); if (!r.isSuccessful) error("HTTP_${r.code}"); return JSONObject(raw) }
     }
 }
-
-private fun String.toMediaTypeCompat() = okhttp3.MediaType.Companion.toMediaType(this)
