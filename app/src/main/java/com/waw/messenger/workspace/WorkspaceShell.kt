@@ -294,6 +294,7 @@ private fun FileMenu(item: WorkspaceFileItem, onDismiss: () -> Unit, onRename: (
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun DocumentEditor(name: String, text: String, onTextChange: (String) -> Unit, onBack: () -> Unit, onSave: () -> Unit, onExportPdf: () -> Unit, modifier: Modifier) {
     Scaffold(modifier = modifier.fillMaxSize(), topBar = {
