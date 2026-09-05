@@ -13,7 +13,7 @@ permissions:
   contents: read
 
 env:
-  RELEASE_APK: app/build/outputs/apk/release/app-release.apk
+  RELEASE_APK: app/build/outputs/apk/release/app-release-unsigned.apk
 
 jobs:
   release:
