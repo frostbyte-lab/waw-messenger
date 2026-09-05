@@ -408,6 +408,20 @@ Fitur hanya boleh `DONE / LOCKED` jika:
 9. README, ROADMAP, dan progress file harus tetap sinkron.
 10. Jangan mengklaim `DONE` tanpa hasil pengujian nyata.
 
+## Repository Consolidation
+
+`waw-messenger` adalah repository utama dan sumber kebenaran tunggal untuk implementasi Android, backend, CI/CD, dan dokumentasi WAW. Materi dari repository pendukung telah ditempatkan di folder berikut:
+
+- `docs/CONSOLIDATION_INDEX.md` — indeks dan aturan konsolidasi.
+- `docs/product/WAW_ANDROID_PRD.md` — PRD workspace Android.
+- `docs/product/WA_WORKSPACE_SPEC.md` — spesifikasi WA.W Workspace.
+- `docs/product/WA_WORKSPACE_TODO.md` — TODO workspace.
+- `docs/architecture/WAW_ANDROID_ARCHITECTURE.md` — arsitektur awal Android.
+- `docs/architecture/WAW_ANDROID_MODULES.md` — daftar modul.
+- `docs/ui/WAW_ANDROID_UI_GUIDE.md` — panduan UI.
+
+Setelah Tahap 1, commit fitur dan dokumentasi baru wajib diarahkan ke repository ini. `waw-android` dan `wa-workspace-v4-2-saas-lengkap` belum dihapus atau diubah menjadi arsip agar riwayat dan sumber asli tetap aman sampai konsolidasi diverifikasi.
+
 ## References
 
 - `ROADMAP.md` — master roadmap produk dan linked-device architecture.
