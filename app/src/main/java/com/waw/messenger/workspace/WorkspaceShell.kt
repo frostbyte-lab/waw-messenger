@@ -45,6 +45,7 @@ import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.PictureAsPdf
+import androidx.compose.material.icons.filled.Fingerprint
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -64,6 +65,8 @@ fun WorkspaceShell(modifier: Modifier = Modifier) {
     var dialog by remember { mutableStateOf<FileDialog?>(null) }
     var menuUri by remember { mutableStateOf<Uri?>(null) }
     var pendingTransfer by remember { mutableStateOf<Transfer?>(null) }
+    var attendanceDialog by remember { mutableStateOf(false) }
+    val attendanceManager = remember(context) { AttendanceManager(context) }
 
     fun refresh(uri: Uri) {
         currentUri = uri
@@ -157,6 +160,10 @@ fun WorkspaceShell(modifier: Modifier = Modifier) {
                 Text("WAW Workspace", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(top = 12.dp))
                 Text("File Manager + Documents & PDF", modifier = Modifier.padding(top = 4.dp, bottom = 16.dp))
                 Button(onClick = { folderPicker.launch(null) }, modifier = Modifier.fillMaxWidth()) { Text("Pilih Folder") }
+                OutlinedButton(onClick = { attendanceDialog = true }, modifier = Modifier.fillMaxWidth().padding(top = 10.dp)) {
+                    Icon(Icons.Default.Fingerprint, contentDescription = null)
+                    Text("  Fingerprint Attendance")
+                }
                 Text("Akses hanya ke folder yang kamu pilih melalui Android Storage Access Framework.", modifier = Modifier.padding(top = 12.dp), style = MaterialTheme.typography.bodySmall)
             } else {
                 OutlinedTextField(
@@ -267,6 +274,44 @@ fun WorkspaceShell(modifier: Modifier = Modifier) {
     notice?.let { message ->
         AlertDialog(onDismissRequest = { notice = null }, title = { Text("WAW") }, text = { Text(message) }, confirmButton = { TextButton(onClick = { notice = null }) { Text("OK") } })
     }
+
+    if (attendanceDialog) {
+        AttendanceDialog(
+            records = attendanceManager.recent(),
+            onDismiss = { attendanceDialog = false },
+            onRecord = { type ->
+                val activity = context as? androidx.fragment.app.FragmentActivity
+                if (activity == null) {
+                    notice = "Absensi hanya tersedia pada Activity Android."
+                } else {
+                    com.waw.messenger.security.BiometricGate(context).authenticate(activity, onResult = { success ->
+                        notice = if (success) "Absensi $type tercatat pada ${attendanceManager.record(type)}" else "Verifikasi fingerprint dibatalkan atau gagal"
+                    })
+                }
+                attendanceDialog = false
+            }
+        )
+    }
+}
+
+@Composable
+private fun AttendanceDialog(records: List<String>, onDismiss: () -> Unit, onRecord: (String) -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Fingerprint Attendance") },
+        text = {
+            Column {
+                Text("Fingerprint hanya digunakan untuk mencatat absensi. Data sidik jari tidak disimpan oleh WAW.")
+                TextButton(onClick = { onRecord("MASUK") }) { Text("Catat Masuk") }
+                TextButton(onClick = { onRecord("PULANG") }) { Text("Catat Pulang") }
+                if (records.isNotEmpty()) {
+                    Text("Riwayat lokal", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 8.dp))
+                    records.take(5).forEach { Text(it, style = MaterialTheme.typography.bodySmall) }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Tutup") } }
+    )
 }
 
 @Composable
