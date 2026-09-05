@@ -2,6 +2,9 @@ package com.waw.messenger.chat
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -18,6 +21,11 @@ class LiveChatRepository(
     private val client: OkHttpClient = OkHttpClient()
 ) {
     private var socket: WebSocket? = null
+    private val incomingState = MutableSharedFlow<Message>(extraBufferCapacity = 64)
+
+    fun incomingMessages(): SharedFlow<Message> = incomingState.asSharedFlow()
+
+    fun connect() { ensureSocket() }
 
     private fun url(path: String) = baseUrl.trimEnd('/') + path
 
@@ -96,17 +104,11 @@ class LiveChatRepository(
         val value = text.trim()
         require(value.isNotEmpty()) { "MESSAGE_EMPTY" }
         val clientId = UUID.randomUUID().toString()
-        ensureSocket()
-        val payload = JSONObject()
-            .put("type", "message")
-            .put("id", clientId)
-            .put("clientId", clientId)
-            .put("conversationId", conversationId)
-            .put("text", value)
-            .toString()
-        val sent = socket?.send(payload) ?: false
-        if (!sent) error("MESSAGE_SEND_FAILED")
-        clientId
+        val response = post(
+            "/conversations/$conversationId/messages",
+            JSONObject().put("clientId", clientId).put("text", value)
+        )
+        response.getJSONObject("message").getString("id")
     }
 
     suspend fun markRead(conversationId: String) = withContext(Dispatchers.IO) {
