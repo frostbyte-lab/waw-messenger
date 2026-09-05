@@ -1,5 +1,7 @@
 package com.waw.messenger.auth
 
+import com.waw.messenger.BuildConfig
+
 import android.content.Context
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -26,7 +28,7 @@ class AuthRepository(context: Context) {
     private val jsonType = "application/json; charset=utf-8".toMediaType()
 
     var baseUrl: String
-        get() = prefs.getString("base_url", "") ?: ""
+        get() = prefs.getString("base_url", BuildConfig.WAW_API_BASE_URL) ?: BuildConfig.WAW_API_BASE_URL
         set(value) = prefs.edit().putString("base_url", value.trim().removeSuffix("/")).apply()
 
     fun hasSession(): Boolean = !prefs.getString("token", null).isNullOrBlank()

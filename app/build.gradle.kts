@@ -12,6 +12,7 @@ android {
         targetSdk = 37
         versionCode = 1
         versionName = "0.1.0"
+        buildConfigField("String", "WAW_API_BASE_URL", "\"https://waw-messenger-api.technologiesfrostbyte.workers.dev\"")
     }
 }
 
