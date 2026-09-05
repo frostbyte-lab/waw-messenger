@@ -1,0 +1,14 @@
+name = "waw-messenger-api"
+main = "worker.js"
+compatibility_date = "2026-09-05"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "waw-messenger-db"
+database_id = "11eed290-e311-40c3-9890-7b2453f77c0a"
+
+[vars]
+META_GRAPH_VERSION = "v23.0"
+META_APP_ID = "1345138840735889"
+META_WABA_ID = "1052129637421270"
+META_PHONE_NUMBER_ID = "1360119473844917"
