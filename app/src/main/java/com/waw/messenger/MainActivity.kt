@@ -28,7 +28,7 @@ import com.waw.messenger.auth.AuthRepository
 import com.waw.messenger.auth.AuthScreen
 import com.waw.messenger.auth.AuthUser
 import com.waw.messenger.auth.SavedAccount
-import com.waw.messenger.chat.LiveChatRepository
+import com.waw.messenger.network.NetworkWorkScheduler
 import com.waw.messenger.security.BiometricGate
 import com.waw.messenger.ui.WawChatShell
 import kotlinx.coroutines.launch
@@ -52,6 +52,13 @@ fun WawApp() {
         if (!authenticated || activity == null) return
         if (!biometric.canAuthenticate()) { unlocked = true; return }
         biometric.authenticate(activity) { success -> unlocked = success }
+    }
+
+    LaunchedEffect(authenticated) {
+        if (authenticated) {
+            NetworkWorkScheduler.ensurePeriodic(context)
+            NetworkWorkScheduler.enqueue(context)
+        }
     }
 
     LaunchedEffect(authenticated, unlocked) {
