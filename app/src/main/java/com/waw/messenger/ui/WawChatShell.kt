@@ -28,7 +28,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.weight
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -321,18 +320,18 @@ private fun WorkspaceQuickAccess() {
             }
             Spacer(Modifier.height(9.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                QuickTile("Dokumen", Icons.Default.FileCopy, WawBlue, "12 file")
-                QuickTile("Tugas", Icons.Default.TaskAlt, WawGreen, "8 aktif")
-                QuickTile("Kalender", Icons.Default.Info, Color(0xFF8B5CF6), "3 meeting")
-                QuickTile("File", Icons.Default.Folder, Color(0xFFF59E0B), "2.4 GB")
+                QuickTile("Dokumen", Icons.Default.FileCopy, WawBlue, "12 file", Modifier.weight(1f))
+                QuickTile("Tugas", Icons.Default.TaskAlt, WawGreen, "8 aktif", Modifier.weight(1f))
+                QuickTile("Kalender", Icons.Default.Info, Color(0xFF8B5CF6), "3 meeting", Modifier.weight(1f))
+                QuickTile("File", Icons.Default.Folder, Color(0xFFF59E0B), "2.4 GB", Modifier.weight(1f))
             }
         }
     }
 }
 
 @Composable
-private fun QuickTile(label: String, icon: androidx.compose.ui.graphics.vector.ImageVector, accent: Color, detail: String) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1f)) {
+private fun QuickTile(label: String, icon: androidx.compose.ui.graphics.vector.ImageVector, accent: Color, detail: String, modifier: Modifier = Modifier) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = modifier) {
         Surface(color = Color.White, shape = RoundedCornerShape(13.dp), modifier = Modifier.size(50.dp)) {
             Box(contentAlignment = Alignment.Center) { Icon(icon, null, tint = accent, modifier = Modifier.size(24.dp)) }
         }
