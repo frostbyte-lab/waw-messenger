@@ -39,6 +39,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -81,9 +82,11 @@ fun WawChatShell(userId: String, displayName: String, baseUrl: String, token: St
     var showNewChat by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     fun refresh() = scope.launch { runCatching { conversations = repo.conversations(); users = repo.users(); error = null }.onFailure { error = it.message ?: "Gagal memuat data" }; loading = false }
-    LaunchedEffect(repo) { refresh(); while (true) { delay(5000); runCatching { conversations = repo.conversations(); users = repo.users() } } }
-    LaunchedEffect(active?.id) { val c = active ?: return@LaunchedEffect; while (true) { runCatching { messages = repo.messages(c.id); repo.markRead(c.id) }.onFailure { error = it.message }; delay(2000) } }
-    if (active != null) ChatDetail(userId, active!!, messages, repo) { active = null; messages = emptyList(); refresh() }
+    DisposableEffect(repo) { repo.connect(); onDispose { repo.close() } }
+    LaunchedEffect(repo) { refresh(); while (true) { delay(2500); runCatching { conversations = repo.conversations(); users = repo.users() } } }
+    LaunchedEffect(repo, active?.id) { repo.incomingMessages().collect { incoming -> if (active?.id == incoming.conversationId) messages = (messages + incoming).distinctBy { it.id }.sortedBy { it.timestamp }; refresh() } }
+    LaunchedEffect(active?.id) { val c = active ?: return@LaunchedEffect; while (true) { runCatching { messages = repo.messages(c.id); repo.markRead(c.id) }.onFailure { error = it.message }; delay(1500) } }
+    if (active != null) ChatDetail(userId, active!!, messages, repo, onSent = { scope.launch { runCatching { messages = repo.messages(active!!.id); conversations = repo.conversations() } } }, onBack = { active = null; messages = emptyList(); refresh() })
     else Home(displayName, conversations.filter { search.isBlank() || it.participant.name.contains(search, true) || it.lastMessage.contains(search, true) }, search, loading, error, { search = it }, { active = it }, { showNewChat = true }, { refresh() }, onLogout)
     if (showNewChat) AlertDialog(onDismissRequest = { showNewChat = false }, title = { Text("Chat baru") }, text = { if (users.isEmpty()) Text("Tidak ada pengguna lain yang tersedia.") else Column { users.filter { it.id != userId }.forEach { u -> Row(Modifier.fillMaxWidth().clickable { scope.launch { runCatching { val id = repo.openConversation(u.id); conversations = repo.conversations(); active = conversations.firstOrNull { it.id == id } }; showNewChat = false } }.padding(10.dp), verticalAlignment = Alignment.CenterVertically) { Avatar(u.name, u.online); Text(u.name, Modifier.padding(start = 10.dp), fontWeight = FontWeight.SemiBold) } } } }, confirmButton = { TextButton(onClick = { showNewChat = false }) { Text("Tutup") } })
 }
@@ -104,14 +107,14 @@ fun WawChatShell(userId: String, displayName: String, baseUrl: String, token: St
 @Composable private fun ConversationRow(c: Conversation, onOpen: (Conversation) -> Unit) { Row(Modifier.fillMaxWidth().clickable { onOpen(c) }.padding(vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) { Avatar(c.participant.name, c.participant.online); Column(Modifier.weight(1f).padding(start = 11.dp)) { Text(c.participant.name, fontWeight = FontWeight.Bold, color = TextDark); Text(c.lastMessage.ifBlank { "Belum ada pesan" }, color = Muted, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) }; if (c.unreadCount > 0) Surface(Modifier.size(22.dp), CircleShape, color = Green) { Box(contentAlignment = Alignment.Center) { Text(c.unreadCount.toString(), color = Color.White, fontSize = 10.sp) } } } }
 
 @OptIn(ExperimentalMaterial3Api::class)
-@Composable private fun ChatDetail(userId: String, conversation: Conversation, messages: List<Message>, repo: LiveChatRepository, onBack: () -> Unit) {
+@Composable private fun ChatDetail(userId: String, conversation: Conversation, messages: List<Message>, repo: LiveChatRepository, onSent: () -> Unit, onBack: () -> Unit) {
     var draft by remember { mutableStateOf("") }; var sending by remember { mutableStateOf(false) }; var error by remember { mutableStateOf<String?>(null) }; val scope = rememberCoroutineScope(); val list = rememberLazyListState()
     LaunchedEffect(messages.size) { if (messages.isNotEmpty()) list.animateScrollToItem(messages.lastIndex) }
     Scaffold(topBar = { TopAppBar(title = { Row(verticalAlignment = Alignment.CenterVertically) { Avatar(conversation.participant.name, conversation.participant.online); Column(Modifier.padding(start = 9.dp)) { Text(conversation.participant.name, fontWeight = FontWeight.Bold); Text(if (conversation.participant.online) "online" else "offline", fontSize = 10.sp, color = Muted) } } }, navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, "Kembali") } }, actions = { IconButton(onClick = {}) { Icon(Icons.Default.MoreVert, "Menu") } }, colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)) }, containerColor = Background) { p ->
         Column(Modifier.fillMaxSize().padding(p)) {
             LazyColumn(state = list, modifier = Modifier.weight(1f).fillMaxWidth(), contentPadding = PaddingValues(12.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) { items(messages, key = { it.id }) { m -> MessageBubble(m, m.senderId == userId) } }
             error?.let { Text(it, color = Color.Red, fontSize = 11.sp, modifier = Modifier.padding(horizontal = 12.dp)) }
-            Surface(color = Color.White, shadowElevation = 3.dp) { Row(Modifier.fillMaxWidth().padding(8.dp), verticalAlignment = Alignment.CenterVertically) { BasicTextField(draft, { draft = it }, Modifier.weight(1f).clip(RoundedCornerShape(22.dp)).background(Background).padding(horizontal = 15.dp, vertical = 12.dp), singleLine = false, decorationBox = { inner -> if (draft.isBlank()) Text("Ketik pesan…", color = Muted); inner() }); IconButton(enabled = draft.trim().isNotEmpty() && !sending, onClick = { val text = draft.trim(); scope.launch { sending = true; error = null; runCatching { repo.sendMessage(conversation.id, text) }.onSuccess { draft = "" }.onFailure { error = it.message ?: "Pesan gagal dikirim" }; sending = false } }) { Icon(Icons.Default.Send, "Kirim", tint = if (draft.trim().isNotEmpty()) Green else Muted) } } }
+            Surface(color = Color.White, shadowElevation = 3.dp) { Row(Modifier.fillMaxWidth().padding(8.dp), verticalAlignment = Alignment.CenterVertically) { BasicTextField(draft, { draft = it }, Modifier.weight(1f).clip(RoundedCornerShape(22.dp)).background(Background).padding(horizontal = 15.dp, vertical = 12.dp), singleLine = false, decorationBox = { inner -> if (draft.isBlank()) Text("Ketik pesan…", color = Muted); inner() }); IconButton(enabled = draft.trim().isNotEmpty() && !sending, onClick = { val text = draft.trim(); scope.launch { sending = true; error = null; runCatching { repo.sendMessage(conversation.id, text) }.onSuccess { draft = ""; onSent() }.onFailure { error = it.message ?: "Pesan gagal dikirim" }; sending = false } }) { Icon(Icons.Default.Send, "Kirim", tint = if (draft.trim().isNotEmpty()) Green else Muted) } } }
         }
     }
 }
