@@ -17,8 +17,8 @@ class BiometricGate(private val context: Context) {
 
     fun authenticate(
         activity: FragmentActivity,
-        title: String = "Unlock WAW",
-        subtitle: String = "Authenticate to continue",
+        title: String = "Fingerprint Attendance",
+        subtitle: String = "Verifikasi sidik jari untuk mencatat absensi",
         onResult: (Boolean) -> Unit
     ) {
         val executor = ContextCompat.getMainExecutor(context)

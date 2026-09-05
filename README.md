@@ -17,7 +17,8 @@ WAW App [ LinkedDeviceWebViewActivity ]
     |
     '---> WAW Workspace (Frostbyte)
             |-- File Manager, PDF, Scanner, Watermark
-            |-- Secure Vault + Biometric
+            |-- Secure Vault
+            |-- Fingerprint Attendance
             |-- WAW Shield (Anti-Judol/Phishing)
             |-- Notes, Tasks, Backup, Remote, Universal Search
 3. Setup Android agar Fitur Asli WA Jalan 100%
@@ -144,7 +145,7 @@ Setelah linked, session disimpan oleh WebView via CookieManager (bukan oleh WAW 
 Jangan upload cookie/session ke backend worker.js. Session tetap lokal.
 6. Batasan Keamanan & Compliance
 backend/worker.js & migrations/*.sql yang ada sekarang (legacy auth/chat) HARUS DIARSIPKAN / DINONAKTIFKAN untuk Track A. Jangan pakai untuk simpan chat WA.
-Workspace data (file, PDF, vault) simpan di storage terenkripsi WAW sendiri, pisah total dari data WhatsApp.
+Workspace data (file, PDF, vault, attendance records) simpan di storage terenkripsi WAW sendiri, pisah total dari data WhatsApp. Fingerprint hanya dipakai untuk verifikasi absensi, bukan untuk mengunci Workspace atau Vault.
 Implement WAW Shield: sebelum WebView load URL eksternal dari chat, cek domain ke blocklist judol/phishing milik WAW.
 IP Info hanya untuk diagnostics, jangan klaim sebagai lokasi GPS orang lain.
 7. Definition of Done Opsi A
