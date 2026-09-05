@@ -165,3 +165,5 @@ Frostbyte Lab - Build carefully. Official-first.
 ## UI Blueprint
 
 Referensi visual mobile WAW tersimpan di [`docs/blueprints/waw-mobile-ui-blueprint.png`](docs/blueprints/waw-mobile-ui-blueprint.png). Implementasi shell mengikuti pola header WAW Business, tab Chat/Panggilan/Status/Fitur/Workspace, quick access Workspace, dan navigasi bawah, sementara isi WhatsApp tetap dimuat dari Web resmi.
+
+Logo utama WAW tersimpan di [`docs/brand/waw-main-logo.png`](docs/brand/waw-main-logo.png) dan digunakan sebagai ikon aplikasi serta logo header.

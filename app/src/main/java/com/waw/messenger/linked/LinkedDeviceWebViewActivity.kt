@@ -89,7 +89,7 @@ open class LinkedDeviceWebViewActivity : FragmentActivity() {
             setBackgroundColor(Color.WHITE)
             val brand = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
             brand.addView(ImageView(context).apply {
-                setImageResource(com.waw.messenger.R.drawable.ic_waw_logo)
+                setImageResource(com.waw.messenger.R.drawable.waw_main_logo)
                 contentDescription = "Logo WAW"
             }, LinearLayout.LayoutParams(44, 44))
             brand.addView(TextView(context).apply {
