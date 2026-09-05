@@ -41,7 +41,7 @@ PRIORITAS 1 — AKUN, PROFIL, CHAT, DAN NETWORK RECOVERY
 - Session aktif dicabut setelah password berhasil diubah.
 - Respons forgot-password bersifat generik untuk mencegah account enumeration.
 - Delivery email masih memerlukan konfigurasi server-side `RESET_EMAIL_WEBHOOK`.
-- Layar input token/password baru belum selesai.
+- Layar input token/password baru sudah ditambahkan di Android.
 - Rate limit khusus dan audit event reset masih perlu ditambahkan.
 
 [PARTIAL] Pergantian akun
@@ -50,7 +50,7 @@ PRIORITAS 1 — AKUN, PROFIL, CHAT, DAN NETWORK RECOVERY
 - Switch account mengganti token aktif tanpa menampilkan token ke UI.
 - Pemisahan cache, draft, database lokal, dan notification per akun masih belum selesai.
 - Logout satu akun tanpa menghapus akun lain masih perlu flow UI khusus.
-- Penghapusan session tersimpan belum memiliki tombol UI khusus.
+- Tombol hapus session tersimpan sudah ditambahkan.
 - Session expiry dan revocation lintas perangkat masih perlu sinkronisasi server.
 
 [PARTIAL] Validasi form dan pesan error

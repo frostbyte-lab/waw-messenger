@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -81,7 +82,8 @@ fun WawApp() {
                     if (repository.switchAccount(accountId)) {
                         unlocked = false
                     }
-                }
+                },
+                onRemoveAccount = repository::removeSavedAccount
             )
             else -> WawChatShell(onLogout = {
                 scope.launch {
@@ -98,7 +100,8 @@ fun WawApp() {
 private fun LockedScreen(
     onUnlock: () -> Unit,
     accounts: List<SavedAccount>,
-    onSwitchAccount: (String) -> Unit
+    onSwitchAccount: (String) -> Unit,
+    onRemoveAccount: (String) -> Unit
 ) {
     Column(
         Modifier.fillMaxSize().padding(24.dp),
@@ -113,6 +116,9 @@ private fun LockedScreen(
             accounts.forEach { account ->
                 Button(onClick = { onSwitchAccount(account.id) }, modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
                     Text("${account.displayName} (@${account.username})")
+                }
+                TextButton(onClick = { onRemoveAccount(account.id) }, modifier = Modifier.align(Alignment.End)) {
+                    Text("Hapus session tersimpan")
                 }
             }
         }
