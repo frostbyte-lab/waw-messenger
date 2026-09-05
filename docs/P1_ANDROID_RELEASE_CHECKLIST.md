@@ -4,6 +4,7 @@
 
 - Gradle Wrapper `9.3.1` tersedia di repository.
 - Unit test Kotlin tersedia untuk retry policy, local chat behavior, dan security boundary.
+- Instrumentation test `MainActivityLaunchTest` tersedia dan dijalankan pada emulator API 35 melalui CI.
 - `release` build type tersedia dengan aturan ProGuard minimal.
 - Workflow manual `WAW Android Release Artifact` tersedia untuk menghasilkan APK release unsigned.
 - Signing key tidak disimpan di repository.
@@ -19,7 +20,7 @@
 | Validasi perangkat nyata | PENDING | Memerlukan perangkat Android yang dapat diakses penguji. |
 | Smoke test biometric/app lock | PENDING | Harus diuji pada device dengan biometric enrollment. |
 | Play App Signing / Play Console | PENDING | Memerlukan akun dan kredensial pemilik proyek. |
-| Test matrix | PENDING | Minimal mencakup API 26 sampai target SDK, network loss, dan fresh install/upgrade. |
+| Test matrix | PARTIAL | Unit test, build debug/release, dan emulator API 35 sudah diotomatisasi; device fisik, API 26, network loss, serta fresh install/upgrade masih memerlukan pengujian lanjutan. |
 
 ## Batas keamanan
 
