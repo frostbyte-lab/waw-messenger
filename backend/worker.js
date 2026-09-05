@@ -13,6 +13,38 @@ async function passwordHash(password, salt) {
 }
 async function newPassword(password) { const salt = token(crypto.getRandomValues(new Uint8Array(16))); return { salt, hash: await passwordHash(password, salt) }; }
 async function body(request) { try { return await request.json(); } catch { return null; } }
+const liveSockets = new Map();
+function addLiveSocket(userId, socket) {
+  const sockets = liveSockets.get(userId) || new Set();
+  sockets.add(socket);
+  liveSockets.set(userId, sockets);
+}
+function removeLiveSocket(userId, socket) {
+  const sockets = liveSockets.get(userId);
+  if (!sockets) return;
+  sockets.delete(socket);
+  if (!sockets.size) liveSockets.delete(userId);
+}
+async function broadcastMessage(env, message) {
+  const members = await env.DB.prepare("SELECT user_id FROM conversation_members WHERE conversation_id=?").bind(message.conversation_id).all();
+  const payload = JSON.stringify({
+    type: "message",
+    id: message.id,
+    conversationId: message.conversation_id,
+    senderId: message.sender_id,
+    clientId: message.client_id || null,
+    text: message.text,
+    status: message.status,
+    createdAt: message.created_at,
+    updatedAt: message.updated_at
+  });
+  for (const member of members.results || []) {
+    for (const socket of liveSockets.get(member.user_id) || []) {
+      try { socket.send(payload); } catch { removeLiveSocket(member.user_id, socket); }
+    }
+  }
+}
+
 function authToken(request) { const auth = request.headers.get("Authorization") || ""; return auth.startsWith("Bearer ") ? auth.slice(7).trim() : ""; }
 async function createSession(env, userId) {
   const raw = token(crypto.getRandomValues(new Uint8Array(32))); const now = Date.now(); const expiresAt = now + 30 * 24 * 60 * 60 * 1000;
@@ -136,7 +168,7 @@ async function persistMessage(env, userId, conversationId, clientId, text) {
 }
 async function postMessage(request, env, conversationId) {
   const user = await currentUser(request, env); if (!user) return json({ error: "UNAUTHORIZED" }, 401); const data = await body(request);
-  const result = await persistMessage(env, user.id, conversationId, data?.clientId, data?.text); if (result.error) return json({ error: result.error }, result.error === "FORBIDDEN_CONVERSATION" ? 403 : 400); return json({ message: result.message }, 201);
+  const result = await persistMessage(env, user.id, conversationId, data?.clientId, data?.text); if (result.error) return json({ error: result.error }, result.error === "FORBIDDEN_CONVERSATION" ? 403 : 400); await broadcastMessage(env, result.message); return json({ message: result.message }, 201);
 }
 export default {
   async fetch(request, env) {
@@ -156,13 +188,13 @@ export default {
     if (url.pathname === "/ws") {
       if (request.headers.get("Upgrade") !== "websocket") return new Response("WebSocket required", { status: 426 });
       const user = await currentUser(request, env); if (!user) return json({ error: "UNAUTHORIZED" }, 401);
-      const pair = new WebSocketPair(); const [client, server] = Object.values(pair); server.accept(); server.send(JSON.stringify({ type: "connected", userId: user.id }));
+      const pair = new WebSocketPair(); const [client, server] = Object.values(pair); server.accept(); addLiveSocket(user.id, server); server.addEventListener("close", () => removeLiveSocket(user.id, server)); server.addEventListener("error", () => removeLiveSocket(user.id, server)); server.send(JSON.stringify({ type: "connected", userId: user.id }));
       server.addEventListener("message", async event => {
         try {
           const message = JSON.parse(event.data); if (message.type !== "message") return;
           const result = await persistMessage(env, user.id, String(message.conversationId || ""), message.clientId || message.id, message.text);
           if (result.error) { server.send(JSON.stringify({ type: "error", error: result.error, clientId: message.clientId || message.id || null })); return; }
-          const saved = result.message; server.send(JSON.stringify({ type: "message", id: saved.id, conversationId: saved.conversation_id, senderId: saved.sender_id, clientId: saved.client_id || null, text: saved.text, status: saved.status, createdAt: saved.created_at, updatedAt: saved.updated_at }));
+          await broadcastMessage(env, result.message);
         } catch { server.send(JSON.stringify({ type: "error", error: "INVALID_MESSAGE" })); }
       });
       return new Response(null, { status: 101, webSocket: client });
