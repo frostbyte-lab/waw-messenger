@@ -17,6 +17,8 @@ import android.webkit.WebViewClient
 import android.graphics.Color
 import android.view.Gravity
 import android.widget.FrameLayout
+import android.widget.LinearLayout
+import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.FragmentActivity
 import androidx.core.content.ContextCompat
@@ -72,22 +74,64 @@ open class LinkedDeviceWebViewActivity : FragmentActivity() {
         }
         setContentView(root)
         configureWebView()
-        addWorkspaceButton()
+        addBlueprintChrome()
         requestRuntimePermissionsIfNeeded()
     }
 
-    private fun addWorkspaceButton() {
-        val button = android.widget.Button(this).apply {
-            text = "Workspace"
-            setOnClickListener { startActivity(Intent(this@LinkedDeviceWebViewActivity, WorkspaceActivity::class.java)) }
-            contentDescription = "Buka WAW Workspace"
+    private fun addBlueprintChrome() {
+        val green = Color.rgb(0, 150, 90)
+        val header = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(20, 14, 12, 8)
+            setBackgroundColor(Color.WHITE)
+            addView(TextView(context).apply {
+                text = "◉  WAW  BUSINESS"
+                textSize = 21f
+                setTextColor(Color.rgb(20, 30, 35))
+                setTypeface(typeface, android.graphics.Typeface.BOLD)
+            })
+            addView(TextView(context).apply {
+                text = "WhatsApp Workspace"
+                textSize = 13f
+                setTextColor(Color.DKGRAY)
+            })
+            val tabs = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL }
+            listOf("Chat", "Panggilan", "Status", "Fitur", "Workspace").forEach { label ->
+                val tab = TextView(context).apply {
+                    text = label
+                    textSize = 12f
+                    setTextColor(if (label == "Chat") Color.WHITE else Color.DKGRAY)
+                    setBackgroundColor(if (label == "Chat") Color.rgb(20, 35, 45) else Color.rgb(245, 247, 248))
+                    gravity = android.view.Gravity.CENTER
+                    setPadding(18, 10, 18, 10)
+                    setOnClickListener {
+                        if (label == "Workspace") startActivity(Intent(this@LinkedDeviceWebViewActivity, WorkspaceActivity::class.java))
+                    }
+                }
+                tabs.addView(tab, LinearLayout.LayoutParams(0, 44, 1f).apply { setMargins(4, 10, 4, 0) })
+            }
+            addView(tabs, LinearLayout.LayoutParams(-1, 54))
         }
-        val params = FrameLayout.LayoutParams(
-            FrameLayout.LayoutParams.WRAP_CONTENT,
-            FrameLayout.LayoutParams.WRAP_CONTENT,
-            Gravity.TOP or Gravity.END
-        ).apply { setMargins(0, 24, 16, 0) }
-        root.addView(button, params)
+        root.addView(header, FrameLayout.LayoutParams(-1, 154, Gravity.TOP))
+
+        val bottom = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER
+            setBackgroundColor(Color.WHITE)
+            listOf("Chat", "Panggilan", "Status", "Fitur", "Workspace").forEach { label ->
+                addView(TextView(context).apply {
+                    text = label
+                    textSize = 12f
+                    gravity = Gravity.CENTER
+                    setTextColor(if (label == "Workspace") green else Color.DKGRAY)
+                    setPadding(4, 12, 4, 12)
+                    setOnClickListener {
+                        if (label == "Workspace") startActivity(Intent(this@LinkedDeviceWebViewActivity, WorkspaceActivity::class.java))
+                    }
+                }, LinearLayout.LayoutParams(0, 60, 1f))
+            }
+        }
+        root.addView(bottom, FrameLayout.LayoutParams(-1, 68, Gravity.BOTTOM))
     }
 
     private fun requestRuntimePermissionsIfNeeded() {
