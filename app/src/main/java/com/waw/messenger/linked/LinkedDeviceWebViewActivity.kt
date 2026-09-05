@@ -61,13 +61,16 @@ open class LinkedDeviceWebViewActivity : FragmentActivity() {
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (intent.getBooleanExtra(EXTRA_SKIP_INITIAL_LOAD, false)) {
+            setContentView(FrameLayout(this))
+            return
+        }
         webView = WebView(this)
         root = FrameLayout(this).apply {
             setBackgroundColor(Color.BLACK)
             addView(webView, FrameLayout.LayoutParams(-1, -1))
         }
         setContentView(root)
-        if (intent.getBooleanExtra(EXTRA_SKIP_INITIAL_LOAD, false)) return
         configureWebView()
         addWorkspaceButton()
         requestRuntimePermissionsIfNeeded()
