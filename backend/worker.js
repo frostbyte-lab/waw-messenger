@@ -138,6 +138,81 @@ async function me(request, env) {
   }});
 }
 
+async function users(request, env) {
+  const user = await currentUser(request, env);
+  if (!user) return json({ error: "UNAUTHORIZED" }, 401);
+  const result = await env.DB.prepare(
+    "SELECT id,username,email,display_name,avatar_url,status FROM users WHERE id<>? ORDER BY username LIMIT 100"
+  ).bind(user.id).all();
+  return json({ users: (result.results || []).map(item => ({
+    id: item.id, username: item.username, email: item.email,
+    displayName: item.display_name, avatarUrl: item.avatar_url || null,
+    status: item.status
+  })) });
+}
+
+async function conversations(request, env) {
+  const user = await currentUser(request, env);
+  if (!user) return json({ error: "UNAUTHORIZED" }, 401);
+  if (request.method === "GET") {
+    const result = await env.DB.prepare(
+      `SELECT c.id,c.type,c.created_at,c.updated_at,
+              u.id AS participant_id,u.username AS participant_username,
+              u.email AS participant_email,u.display_name AS participant_display_name,
+              u.avatar_url AS participant_avatar,u.status AS participant_status
+       FROM conversations c
+       JOIN conversation_members mine ON mine.conversation_id=c.id AND mine.user_id=?
+       JOIN conversation_members other ON other.conversation_id=c.id AND other.user_id<>mine.user_id
+       JOIN users u ON u.id=other.user_id
+       ORDER BY c.updated_at DESC LIMIT 100`
+    ).bind(user.id).all();
+    return json({ conversations: (result.results || []).map(item => ({
+      id: item.id, type: item.type, createdAt: item.created_at, updatedAt: item.updated_at,
+      participant: { id: item.participant_id, username: item.participant_username,
+        email: item.participant_email, displayName: item.participant_display_name,
+        avatarUrl: item.participant_avatar || null, status: item.participant_status }
+    })) });
+  }
+  const data = await body(request);
+  const participantId = String(data?.participantId || "").trim();
+  if (!participantId || participantId === user.id) return json({ error: "INVALID_PARTICIPANT" }, 400);
+  const participant = await env.DB.prepare("SELECT id FROM users WHERE id=? LIMIT 1").bind(participantId).first();
+  if (!participant) return json({ error: "USER_NOT_FOUND" }, 404);
+  const existing = await env.DB.prepare(
+    `SELECT c.id FROM conversations c
+     JOIN conversation_members a ON a.conversation_id=c.id AND a.user_id=?
+     JOIN conversation_members b ON b.conversation_id=c.id AND b.user_id=?
+     WHERE c.type='direct' LIMIT 1`
+  ).bind(user.id, participantId).first();
+  if (existing) return json({ conversation: { id: existing.id, existing: true } });
+  const conversationId = id("conv");
+  const now = Date.now();
+  await env.DB.batch([
+    env.DB.prepare("INSERT INTO conversations (id,type,created_at,updated_at) VALUES (?,?,?,?)").bind(conversationId, "direct", now, now),
+    env.DB.prepare("INSERT INTO conversation_members (conversation_id,user_id,joined_at) VALUES (?,?,?)").bind(conversationId, user.id, now),
+    env.DB.prepare("INSERT INTO conversation_members (conversation_id,user_id,joined_at) VALUES (?,?,?)").bind(conversationId, participantId, now)
+  ]);
+  return json({ conversation: { id: conversationId, type: "direct", createdAt: now, updatedAt: now }, existing: false }, 201);
+}
+
+async function conversationMessages(request, env, conversationId) {
+  const user = await currentUser(request, env);
+  if (!user) return json({ error: "UNAUTHORIZED" }, 401);
+  const member = await env.DB.prepare(
+    "SELECT 1 FROM conversation_members WHERE conversation_id=? AND user_id=? LIMIT 1"
+  ).bind(conversationId, user.id).first();
+  if (!member) return json({ error: "FORBIDDEN_CONVERSATION" }, 403);
+  const result = await env.DB.prepare(
+    `SELECT id,conversation_id,sender_id,client_id,text,status,created_at,updated_at,deleted_at
+     FROM messages WHERE conversation_id=? ORDER BY created_at ASC LIMIT 500`
+  ).bind(conversationId).all();
+  return json({ messages: (result.results || []).map(item => ({
+    id: item.id, conversationId: item.conversation_id, senderId: item.sender_id,
+    clientId: item.client_id || null, text: item.text, status: item.status,
+    createdAt: item.created_at, updatedAt: item.updated_at, deletedAt: item.deleted_at || null
+  })) });
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -155,6 +230,10 @@ export default {
     if (url.pathname === "/auth/login" && request.method === "POST") return login(request, env);
     if (url.pathname === "/auth/logout" && request.method === "POST") return logout(request, env);
     if (url.pathname === "/auth/me" && request.method === "GET") return me(request, env);
+    if (url.pathname === "/users" && request.method === "GET") return users(request, env);
+    if (url.pathname === "/conversations" && (request.method === "GET" || request.method === "POST")) return conversations(request, env);
+    const messagesMatch = url.pathname.match(/^\/conversations\/([^/]+)\/messages$/);
+    if (messagesMatch && request.method === "GET") return conversationMessages(request, env, messagesMatch[1]);
 
     if (url.pathname === "/ws") {
       if (request.headers.get("Upgrade") !== "websocket") return new Response("WebSocket required", { status: 426 });

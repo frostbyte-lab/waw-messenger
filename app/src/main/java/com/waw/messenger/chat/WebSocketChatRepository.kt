@@ -17,9 +17,14 @@ import org.json.JSONObject
 import kotlin.math.min
 
 class WebSocketChatRepository(
-    private val endpoint: String,
+    endpoint: String,
+    private val bearerToken: String? = null,
     private val client: OkHttpClient = OkHttpClient()
 ) : ChatRepository {
+    private val endpoint = endpoint
+        .replaceFirst("https://", "wss://")
+        .replaceFirst("http://", "ws://")
+        .let { if (it.endsWith("/ws")) it else it.trimEnd('/') + "/ws" }
     private val messagesState = MutableStateFlow<List<Message>>(emptyList())
     private val conversationsState = MutableStateFlow<List<Conversation>>(emptyList())
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -30,7 +35,10 @@ class WebSocketChatRepository(
     @Synchronized
     fun connect() {
         if (closed || socket != null) return
-        socket = client.newWebSocket(Request.Builder().url(endpoint).build(), listener)
+        val request = Request.Builder().url(endpoint).apply {
+            if (!bearerToken.isNullOrBlank()) header("Authorization", "Bearer $bearerToken")
+        }.build()
+        socket = client.newWebSocket(request, listener)
     }
 
     private val listener = object : WebSocketListener() {
