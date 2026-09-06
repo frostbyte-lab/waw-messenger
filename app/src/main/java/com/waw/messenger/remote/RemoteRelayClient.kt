@@ -30,10 +30,7 @@ class RemoteRelayClient(
             }
             override fun onMessage(webSocket: WebSocket, text: String) {
                 when {
-                    text.contains("\"type\":\"host-ready\"") -> {
-                        // MediaProjection permission was explicitly granted by the User.
-                        webSocket.send("{\"type\":\"approve\"}")
-                    }
+                    text.contains("\"type\":\"host-ready\"") -> Unit
                     text.contains("\"type\":\"approved\"") -> onApproved()
                     text.contains("\"type\":\"input-command\"") -> onInputCommand(text)
                 }

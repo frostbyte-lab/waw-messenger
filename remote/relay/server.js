@@ -20,6 +20,10 @@ function remove(session) {
   for (const peer of [session.host, session.viewer]) close(peer, 1000, "session closed");
 }
 
+function audit(session, event, extra = {}) {
+  console.log(JSON.stringify({ at: new Date().toISOString(), event, sessionId: session.id, ...extra }));
+}
+
 function armExpiry(session, ttlMs) {
   clearTimeout(session.timer);
   session.expiresAt = Date.now() + ttlMs;
@@ -52,6 +56,7 @@ wss.on("connection", (socket) => {
       socket.session = session;
       socket.role = "host";
       armExpiry(session, pairingTtlMs);
+      audit(session, "pairing-created");
       return send(socket, { type: "host-ready", sessionId: session.id, expiresAt: session.expiresAt });
     }
 
@@ -63,7 +68,7 @@ wss.on("connection", (socket) => {
       socket.role = "viewer";
       send(session.host, { type: "pair-request", sessionId: session.id });
       send(socket, { type: "viewer-ready", sessionId: session.id, expiresAt: session.expiresAt });
-      if (session.approved) send(socket, { type: "approved", sessionId: session.id });
+      audit(session, "operator-paired");
       return;
     }
 
@@ -76,13 +81,15 @@ wss.on("connection", (socket) => {
     let message;
     try { message = JSON.parse(raw.toString()); } catch { return close(socket, 1003, "invalid json"); }
 
-    if (message.type === "approve" && socket.role === "host") {
+    if (message.type === "approve" && socket.role === "viewer") {
       session.approved = true;
       armExpiry(session, sessionTtlMs);
       send(session.viewer, { type: "approved", sessionId: session.id, expiresAt: session.expiresAt });
+      send(session.host, { type: "approved", sessionId: session.id, expiresAt: session.expiresAt });
+      audit(session, "operator-approved");
       return;
     }
-    if (message.type === "disconnect") return remove(session);
+    if (message.type === "disconnect") { audit(session, "session-revoked", { by: socket.role }); return remove(session); }
     if (message.sessionId && message.sessionId !== session.id) return;
     forward(session, socket.role, message);
   });

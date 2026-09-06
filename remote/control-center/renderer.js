@@ -6,6 +6,7 @@ const errorBox = $("#error");
 const preview = $("#preview");
 const frameMeta = $("#frameMeta");
 let currentStatus = "DISCONNECTED";
+const approveButton = $("#approveSession");
 
 function setStatus(status) {
   currentStatus = status;
@@ -20,6 +21,7 @@ function setStatus(status) {
     $("#previewTitle").textContent = "Screen share aktif";
     $("#previewSub").textContent = "Klik preview untuk mengirim kontrol sentuh.";
   }
+  if (approveButton) approveButton.disabled = status !== "WAITING_FOR_USER_APPROVAL";
 }
 
 $("#connectButton").addEventListener("click", async () => {
@@ -32,6 +34,11 @@ $("#connectButton").addEventListener("click", async () => {
 function disconnect() { window.wawRemote.disconnect(); setStatus("DISCONNECTED"); }
 $("#disconnectButton").addEventListener("click", disconnect);
 $("#stopSession").addEventListener("click", disconnect);
+approveButton.addEventListener("click", async () => {
+  if (currentStatus !== "WAITING_FOR_USER_APPROVAL") return;
+  await window.wawRemote.approve();
+  setStatus("APPROVAL_SENT");
+});
 
 document.querySelectorAll("[data-key]").forEach((button) => {
   button.addEventListener("click", () => window.wawRemote.send({ type: "input-command", inputType: "KEY_DOWN", keyCode: Number(button.dataset.key) }));

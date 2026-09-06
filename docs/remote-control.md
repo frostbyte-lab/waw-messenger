@@ -4,11 +4,11 @@ WAW Remote Control mendukung dua target: **Android â†’ Windows** dan **Android â
 
 ## Status implementasi
 
-Android memiliki layar Remote Control, pembuat pairing code lokal, pemilihan target, dan permintaan izin sistem MediaProjection. Ini adalah fondasi host dan persetujuan; koneksi realtime, agent Windows, serta input injection belum diaktifkan.
+Android memiliki layar Remote Control, pembuat pairing code lokal, pemilihan target, dan permintaan izin sistem MediaProjection. Relay sekarang memaksa dua persetujuan: izin screen share dari User dan approval eksplisit dari Operator. Koneksi realtime, agent Windows, serta input injection masih memerlukan validasi perangkat dan hardening produksi.
 
 ## Batas keamanan
 
-Remote tidak boleh berjalan tersembunyi. Host harus melihat indikator screen share, menyetujui sesi melalui dialog sistem, dan dapat mencabut pairing kapan saja. Password, cookie WhatsApp, dan token Workspace tidak pernah dipakai sebagai kredensial remote.
+Remote tidak boleh berjalan tersembunyi. Host harus melihat indikator screen share, menyetujui sesi melalui dialog sistem, Operator harus menekan Approve, dan kedua pihak dapat mencabut sesi kapan saja. Relay mencatat event pairing, approval, dan revoke tanpa menyimpan password, cookie WhatsApp, atau token Workspace.
 
 ## Komponen lanjutan
 
