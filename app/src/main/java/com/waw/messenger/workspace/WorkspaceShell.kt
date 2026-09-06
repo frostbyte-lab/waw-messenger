@@ -181,7 +181,11 @@ fun WorkspaceShell(modifier: Modifier = Modifier) {
                     label = { Text("Cari file / folder") },
                     singleLine = true
                 )
-                val visible = files.filter { it.name.lowercase(Locale.ROOT).contains(query.lowercase(Locale.ROOT)) }
+                val visible = if (query.isBlank() || rootUri == null) {
+                    files
+                } else {
+                    manager.search(rootUri!!, query)
+                }
                 if (visible.isEmpty()) Text("Tidak ada file", modifier = Modifier.padding(16.dp))
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(visible, key = { it.uri.toString() }) { item ->

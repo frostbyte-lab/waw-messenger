@@ -24,10 +24,10 @@ object WorkspaceCatalog {
         WorkspaceFeature("watermark", "Custom Watermark", "Tambahkan watermark teks atau gambar ke output.", WorkspaceFeatureStatus.NOT_STARTED),
         WorkspaceFeature("attendance", "Fingerprint Attendance", "Pencatatan absensi menggunakan sidik jari; bukan kunci Workspace atau Vault.", WorkspaceFeatureStatus.IMPLEMENTED),
         WorkspaceFeature("network", "Network Diagnostics", "Informasi IP dan diagnostik jaringan.", WorkspaceFeatureStatus.IMPLEMENTED),
-        WorkspaceFeature("shield", "WAW Shield", "Perlindungan anti-phishing dan blocklist berisiko.", WorkspaceFeatureStatus.NOT_STARTED),
+        WorkspaceFeature("shield", "WAW Shield", "Perlindungan anti-phishing dan blocklist berisiko.", WorkspaceFeatureStatus.IMPLEMENTED),
         WorkspaceFeature("notes", "Notes & Tasks", "Catatan, checklist, dan tugas lokal milik WAW.", WorkspaceFeatureStatus.IMPLEMENTED),
         WorkspaceFeature("backup", "Backup & Sync", "Backup, restore, dan sinkronisasi data WAW-owned.", WorkspaceFeatureStatus.NOT_STARTED),
         WorkspaceFeature("remote", "Remote PC / Android", "Pairing dan remote control perangkat dengan otorisasi eksplisit.", WorkspaceFeatureStatus.NOT_STARTED),
-        WorkspaceFeature("search", "Universal Search", "Pencarian lintas data Workspace milik WAW.", WorkspaceFeatureStatus.NOT_STARTED)
+        WorkspaceFeature("search", "Universal Search", "Pencarian rekursif lintas folder Workspace milik WAW.", WorkspaceFeatureStatus.IMPLEMENTED)
     )
 }

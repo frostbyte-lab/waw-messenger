@@ -23,6 +23,7 @@ import android.widget.ImageView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.FragmentActivity
 import androidx.core.content.ContextCompat
+import com.waw.messenger.security.WawShield
 
 /**
  * Official-first WhatsApp linked viewer.
@@ -226,7 +227,7 @@ open class LinkedDeviceWebViewActivity : FragmentActivity() {
         webView.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
                 val uri = request?.url ?: return true
-                return !isAllowedWhatsAppNavigation(uri)
+                return WawShield.isBlocked(uri) || !isAllowedWhatsAppNavigation(uri)
             }
         }
         webView.webChromeClient = object : WebChromeClient() {

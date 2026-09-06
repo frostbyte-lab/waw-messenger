@@ -20,6 +20,21 @@ class WorkspaceFileManager(private val context: Context) {
             .sortedWith(compareByDescending<WorkspaceFileItem> { it.isDirectory }.thenBy { it.name.lowercase() })
     }
 
+    fun search(rootUri: Uri, query: String, maxResults: Int = 200): List<WorkspaceFileItem> {
+        val needle = query.trim().lowercase()
+        if (needle.isEmpty()) return emptyList()
+        val results = mutableListOf<WorkspaceFileItem>()
+        fun walk(uri: Uri) {
+            if (results.size >= maxResults) return
+            list(uri).forEach { item ->
+                if (item.name.lowercase().contains(needle)) results += item
+                if (item.isDirectory) walk(item.uri)
+            }
+        }
+        walk(rootUri)
+        return results
+    }
+
     private fun item(file: DocumentFile) = WorkspaceFileItem(
         uri = file.uri,
         name = file.name ?: "Unnamed",
