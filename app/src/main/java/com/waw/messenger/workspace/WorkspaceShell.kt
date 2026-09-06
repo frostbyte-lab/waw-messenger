@@ -109,6 +109,12 @@ fun WorkspaceShell(modifier: Modifier = Modifier) {
         }
     }
 
+    val backupPicker = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
+        if (uri != null) {
+            notice = if (WorkspaceBackup.write(context, uri, noteItems, attendanceManager.recent())) "Backup WAW berhasil dibuat" else "Backup gagal dibuat"
+        }
+    }
+
     if (editorUri != null) {
         DocumentEditor(
             name = editorName,
@@ -171,6 +177,10 @@ fun WorkspaceShell(modifier: Modifier = Modifier) {
                 OutlinedButton(onClick = { notesDialog = true }, modifier = Modifier.fillMaxWidth().padding(top = 10.dp)) {
                     Icon(Icons.Default.Description, contentDescription = null)
                     Text("  Notes & Tasks")
+                }
+                OutlinedButton(onClick = { backupPicker.launch("waw-workspace-backup.json") }, modifier = Modifier.fillMaxWidth().padding(top = 10.dp)) {
+                    Icon(Icons.Default.Share, contentDescription = null)
+                    Text("  Export Backup Lokal")
                 }
                 Text("Akses hanya ke folder yang kamu pilih melalui Android Storage Access Framework.", modifier = Modifier.padding(top = 12.dp), style = MaterialTheme.typography.bodySmall)
             } else {
