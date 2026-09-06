@@ -36,6 +36,8 @@ open class LinkedDeviceWebViewActivity : FragmentActivity() {
     private lateinit var webView: WebView
     private lateinit var root: FrameLayout
     private lateinit var dashboard: LinearLayout
+    private lateinit var headerChrome: LinearLayout
+    private lateinit var bottomChrome: LinearLayout
     private var pendingFileCallback: ValueCallback<Array<Uri>>? = null
     private var pendingWebPermission: PermissionRequest? = null
 
@@ -92,6 +94,7 @@ open class LinkedDeviceWebViewActivity : FragmentActivity() {
         configureWebView()
         addBlueprintChrome()
         addBlueprintDashboard()
+        setLinkedChromeVisible(false)
         requestRuntimePermissionsIfNeeded()
     }
 
@@ -136,6 +139,7 @@ open class LinkedDeviceWebViewActivity : FragmentActivity() {
             }
             addView(tabs, LinearLayout.LayoutParams(-1, 54))
         }
+        headerChrome = header
         root.addView(header, FrameLayout.LayoutParams(-1, 154, Gravity.TOP))
 
         val bottom = LinearLayout(this).apply {
@@ -155,6 +159,7 @@ open class LinkedDeviceWebViewActivity : FragmentActivity() {
                 }, LinearLayout.LayoutParams(0, 60, 1f))
             }
         }
+        bottomChrome = bottom
         root.addView(bottom, FrameLayout.LayoutParams(-1, 68, Gravity.BOTTOM))
     }
 
@@ -213,7 +218,15 @@ open class LinkedDeviceWebViewActivity : FragmentActivity() {
             topMargin = 154
             bottomMargin = 68
         }
+        dashboard.visibility = android.view.View.GONE
         root.addView(dashboard, params)
+    }
+
+    private fun setLinkedChromeVisible(visible: Boolean) {
+        val state = if (visible) android.view.View.VISIBLE else android.view.View.GONE
+        if (::headerChrome.isInitialized) headerChrome.visibility = state
+        if (::bottomChrome.isInitialized) bottomChrome.visibility = state
+        if (::dashboard.isInitialized) dashboard.visibility = android.view.View.GONE
     }
 
     private fun requestRuntimePermissionsIfNeeded() {
@@ -229,6 +242,11 @@ open class LinkedDeviceWebViewActivity : FragmentActivity() {
             javaScriptEnabled = true
             domStorageEnabled = true
             databaseEnabled = true
+            useWideViewPort = false
+            loadWithOverviewMode = true
+            setSupportZoom(false)
+            builtInZoomControls = false
+            displayZoomControls = false
             mediaPlaybackRequiresUserGesture = false
             allowFileAccess = true
             allowContentAccess = true
@@ -238,6 +256,14 @@ open class LinkedDeviceWebViewActivity : FragmentActivity() {
         CookieManager.getInstance().setAcceptThirdPartyCookies(webView, true)
 
         webView.webViewClient = object : WebViewClient() {
+            override fun onPageFinished(view: WebView?, url: String?) {
+                super.onPageFinished(view, url)
+                view?.evaluateJavascript("document.body && document.body.innerText", { raw ->
+                    val loginScreen = raw?.contains("Pindai untuk login") == true || raw?.contains("Scan to log in") == true
+                    setLinkedChromeVisible(!loginScreen)
+                })
+            }
+
             override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
                 val uri = request?.url ?: return true
                 return WawShield.isBlocked(uri) || !isAllowedWhatsAppNavigation(uri)

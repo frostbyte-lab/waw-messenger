@@ -46,6 +46,13 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.Fingerprint
+import androidx.compose.material.icons.filled.Event
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Restore
+import androidx.compose.material.icons.filled.Wifi
+import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.ImageSearch
+import androidx.compose.ui.graphics.vector.ImageVector
 import java.util.Locale
 import com.waw.messenger.remote.RemoteHostActivity
 
@@ -207,40 +214,32 @@ fun WorkspaceShell(modifier: Modifier = Modifier) {
             if (currentUri == null) {
                 Text("WAW Workspace", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(top = 12.dp))
                 Text("File Manager + Documents & PDF", modifier = Modifier.padding(top = 4.dp, bottom = 16.dp))
-                Button(onClick = { folderPicker.launch(null) }, modifier = Modifier.fillMaxWidth()) { Text("Pilih Folder") }
-                OutlinedButton(onClick = { attendanceDialog = true }, modifier = Modifier.fillMaxWidth().padding(top = 10.dp)) {
-                    Icon(Icons.Default.Fingerprint, contentDescription = null)
-                    Text("  Fingerprint Attendance")
-                }
-                OutlinedButton(onClick = { notesDialog = true }, modifier = Modifier.fillMaxWidth().padding(top = 10.dp)) {
-                    Icon(Icons.Default.Description, contentDescription = null)
-                    Text("  Notes & Tasks")
-                }
-                OutlinedButton(onClick = { calendarDialog = true }, modifier = Modifier.fillMaxWidth().padding(top = 10.dp)) {
+                Button(onClick = { folderPicker.launch(null) }, modifier = Modifier.fillMaxWidth()) {
                     Icon(Icons.Default.Folder, contentDescription = null)
-                    Text("  Kalender Lokal")
+                    Text("  Pilih Folder Workspace")
                 }
-                OutlinedButton(onClick = {
-                    locationPermission.launch(arrayOf(android.Manifest.permission.ACCESS_COARSE_LOCATION, android.Manifest.permission.ACCESS_FINE_LOCATION))
-                }, modifier = Modifier.fillMaxWidth().padding(top = 10.dp)) {
-                    Icon(Icons.Default.Folder, contentDescription = null)
-                    Text("  Chat • IP • Lokasi Perangkat")
-                }
-                OutlinedButton(onClick = { backupPicker.launch("waw-workspace-backup.json") }, modifier = Modifier.fillMaxWidth().padding(top = 10.dp)) {
-                    Icon(Icons.Default.Share, contentDescription = null)
-                    Text("  Export Backup Lokal")
-                }
-                OutlinedButton(onClick = { restorePicker.launch(arrayOf("application/json", "text/*")) }, modifier = Modifier.fillMaxWidth().padding(top = 10.dp)) {
-                    Icon(Icons.Default.Folder, contentDescription = null)
-                    Text("  Restore Backup Lokal")
-                }
-                OutlinedButton(onClick = { context.startActivity(Intent(context, RemoteHostActivity::class.java)) }, modifier = Modifier.fillMaxWidth().padding(top = 10.dp)) {
-                    Icon(Icons.Default.Share, contentDescription = null)
-                    Text("  Remote Windows → Android")
-                }
-                OutlinedButton(onClick = { notice = "Pilih folder Workspace terlebih dahulu untuk memakai Scanner" }, modifier = Modifier.fillMaxWidth().padding(top = 10.dp)) {
-                    Icon(Icons.Default.PictureAsPdf, contentDescription = null)
-                    Text("  Camera Scanner")
+                val actions = listOf(
+                    Triple(Icons.Default.Fingerprint, "Absensi", { attendanceDialog = true }),
+                    Triple(Icons.Default.Description, "Catatan & Tugas", { notesDialog = true }),
+                    Triple(Icons.Default.Event, "Kalender", { calendarDialog = true }),
+                    Triple(Icons.Default.LocationOn, "IP & Lokasi", { locationPermission.launch(arrayOf(android.Manifest.permission.ACCESS_COARSE_LOCATION, android.Manifest.permission.ACCESS_FINE_LOCATION)) }),
+                    Triple(Icons.Default.Share, "Export Backup", { backupPicker.launch("waw-workspace-backup.json") }),
+                    Triple(Icons.Default.Restore, "Restore Backup", { restorePicker.launch(arrayOf("application/json", "text/*")) }),
+                    Triple(Icons.Default.Wifi, "Remote Windows", { context.startActivity(Intent(context, RemoteHostActivity::class.java)) }),
+                    Triple(Icons.Default.CameraAlt, "Scanner Kamera", { notice = "Pilih folder Workspace terlebih dahulu untuk memakai Scanner" })
+                )
+                actions.chunked(2).forEach { rowActions ->
+                    Row(Modifier.fillMaxWidth().padding(top = 10.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        rowActions.forEach { (icon, label, action) ->
+                            Card(Modifier.weight(1f).clickable { action() }) {
+                                Column(Modifier.fillMaxWidth().padding(vertical = 16.dp, horizontal = 10.dp), horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally) {
+                                    Icon(icon, contentDescription = label, tint = MaterialTheme.colorScheme.primary)
+                                    Text(label, style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(top = 8.dp))
+                                }
+                            }
+                        }
+                        if (rowActions.size == 1) Spacer(Modifier.weight(1f))
+                    }
                 }
                 Text("Akses hanya ke folder yang kamu pilih melalui Android Storage Access Framework.", modifier = Modifier.padding(top = 12.dp), style = MaterialTheme.typography.bodySmall)
             } else {
