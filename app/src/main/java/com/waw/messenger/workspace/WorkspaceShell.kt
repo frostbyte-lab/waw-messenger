@@ -72,6 +72,10 @@ fun WorkspaceShell(modifier: Modifier = Modifier) {
     val notesStore = remember(context) { WorkspaceNotesStore(context) }
     var noteItems by remember { mutableStateOf(notesStore.list()) }
     var scannedBitmap by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
+    var calendarDialog by remember { mutableStateOf(false) }
+    var eventDraft by remember { mutableStateOf("") }
+    val calendarStore = remember(context) { WorkspaceCalendarStore(context) }
+    var events by remember { mutableStateOf(calendarStore.list()) }
 
     fun refresh(uri: Uri) {
         currentUri = uri
@@ -207,6 +211,10 @@ fun WorkspaceShell(modifier: Modifier = Modifier) {
                 OutlinedButton(onClick = { notesDialog = true }, modifier = Modifier.fillMaxWidth().padding(top = 10.dp)) {
                     Icon(Icons.Default.Description, contentDescription = null)
                     Text("  Notes & Tasks")
+                }
+                OutlinedButton(onClick = { calendarDialog = true }, modifier = Modifier.fillMaxWidth().padding(top = 10.dp)) {
+                    Icon(Icons.Default.Folder, contentDescription = null)
+                    Text("  Kalender Lokal")
                 }
                 OutlinedButton(onClick = { backupPicker.launch("waw-workspace-backup.json") }, modifier = Modifier.fillMaxWidth().padding(top = 10.dp)) {
                     Icon(Icons.Default.Share, contentDescription = null)
@@ -381,6 +389,21 @@ fun WorkspaceShell(modifier: Modifier = Modifier) {
                 }
             },
             confirmButton = { TextButton(onClick = { notesDialog = false }) { Text("Tutup") } }
+        )
+    }
+
+    if (calendarDialog) {
+        AlertDialog(
+            onDismissRequest = { calendarDialog = false },
+            title = { Text("Kalender Lokal") },
+            text = {
+                Column {
+                    OutlinedTextField(value = eventDraft, onValueChange = { eventDraft = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Agenda baru") })
+                    Button(onClick = { calendarStore.add(eventDraft); eventDraft = ""; events = calendarStore.list() }, modifier = Modifier.padding(top = 8.dp)) { Text("Simpan Agenda") }
+                    events.take(8).forEach { Text("• $it", style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 4.dp)) }
+                }
+            },
+            confirmButton = { TextButton(onClick = { calendarDialog = false }) { Text("Tutup") } }
         )
     }
 }

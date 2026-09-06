@@ -26,6 +26,7 @@ object WorkspaceCatalog {
         WorkspaceFeature("network", "Network Diagnostics", "Informasi IP dan diagnostik jaringan.", WorkspaceFeatureStatus.IMPLEMENTED),
         WorkspaceFeature("shield", "WAW Shield", "Perlindungan anti-phishing dan blocklist berisiko.", WorkspaceFeatureStatus.IMPLEMENTED),
         WorkspaceFeature("notes", "Notes & Tasks", "Catatan, checklist, dan tugas lokal milik WAW.", WorkspaceFeatureStatus.IMPLEMENTED),
+        WorkspaceFeature("calendar", "Kalender Lokal", "Agenda dan event lokal milik WAW.", WorkspaceFeatureStatus.IMPLEMENTED),
         WorkspaceFeature("backup", "Backup & Sync", "Export dan restore data Notes serta Attendance WAW-owned.", WorkspaceFeatureStatus.IMPLEMENTED),
         WorkspaceFeature("remote", "Remote PC / Android", "Pairing dan remote control perangkat dengan otorisasi eksplisit.", WorkspaceFeatureStatus.NOT_STARTED),
         WorkspaceFeature("search", "Universal Search", "Pencarian rekursif lintas folder Workspace milik WAW.", WorkspaceFeatureStatus.IMPLEMENTED)
