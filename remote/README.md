@@ -4,6 +4,10 @@
 
 `relay/` is a minimal pairing relay. Run it behind a trusted TLS reverse proxy and expose only `wss://`; the relay forwards messages only after a six-digit host/viewer pairing handshake and expires sessions automatically.
 
+## Distribusi APK
+
+Link undangan hanya boleh mengarah ke APK **WAW User/Companion** pada perangkat target. APK **Admin/Operator** bukan artefak undangan dan tidak boleh dibagikan ke lingkungan lain. Modul Admin dilindungi permission Android level `signature`, sehingga hanya dapat dibuka ketika WAW utama yang ditandatangani dengan sertifikat yang sama sudah terpasang. Build release juga hanya mengunggah artefak dari modul `app`; APK `admin-android` tidak dipublikasikan.
+
 ```bash
 cd remote/relay
 npm install
