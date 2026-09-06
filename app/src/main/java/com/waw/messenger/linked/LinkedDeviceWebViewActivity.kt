@@ -254,7 +254,8 @@ open class LinkedDeviceWebViewActivity : FragmentActivity() {
                     return
                 }
                 val allowed = request.resources.filter {
-                    it == PermissionRequest.RESOURCE_AUDIO_CAPTURE || it == PermissionRequest.RESOURCE_VIDEO_CAPTURE
+                    (it == PermissionRequest.RESOURCE_AUDIO_CAPTURE && ContextCompat.checkSelfPermission(this@LinkedDeviceWebViewActivity, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) ||
+                        (it == PermissionRequest.RESOURCE_VIDEO_CAPTURE && ContextCompat.checkSelfPermission(this@LinkedDeviceWebViewActivity, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED)
                 }.toTypedArray()
                 if (allowed.isEmpty()) request.deny() else runOnUiThread {
                     pendingWebPermission = request
