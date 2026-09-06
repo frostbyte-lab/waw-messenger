@@ -52,6 +52,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -71,6 +72,7 @@ private val Muted = Color(0xFF9AB5AC)
 
 @Composable
 private fun ControlMobileScreen() {
+    val context = LocalContext.current
     val client = remember { AdminRelayClient() }
     val status by client.status.collectAsState()
     val frame by client.frame.collectAsState()
@@ -79,7 +81,7 @@ private fun ControlMobileScreen() {
     var textToSend by remember { mutableStateOf("") }
     var fileStatus by remember { mutableStateOf("") }
     val filePicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri != null) fileStatus = if (client.sendFile(contentResolver, uri)) "File ditawarkan; menunggu konfirmasi User" else "File gagal dikirim atau melebihi 6 MB"
+        if (uri != null) fileStatus = if (client.sendFile(context.contentResolver, uri)) "File ditawarkan; menunggu konfirmasi User" else "File gagal dikirim atau melebihi 5 MB"
     }
 
     DisposableEffect(Unit) { onDispose { client.disconnect() } }
