@@ -23,6 +23,9 @@ import android.widget.ImageView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.FragmentActivity
 import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
 import com.waw.messenger.security.WawShield
 
 /**
@@ -66,6 +69,10 @@ open class LinkedDeviceWebViewActivity : FragmentActivity() {
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        WindowCompat.setDecorFitsSystemWindows(window, true)
+        window.statusBarColor = Color.WHITE
+        window.navigationBarColor = Color.WHITE
+        window.decorView.systemUiVisibility = android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
         if (intent.getBooleanExtra(EXTRA_SKIP_INITIAL_LOAD, false)) {
             setContentView(FrameLayout(this))
             return
@@ -76,6 +83,12 @@ open class LinkedDeviceWebViewActivity : FragmentActivity() {
             addView(webView, FrameLayout.LayoutParams(-1, -1))
         }
         setContentView(root)
+        ViewCompat.setOnApplyWindowInsetsListener(root) { view, insets ->
+            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            view.setPadding(0, bars.top, 0, bars.bottom)
+            insets
+        }
+        ViewCompat.requestApplyInsets(root)
         configureWebView()
         addBlueprintChrome()
         addBlueprintDashboard()
@@ -107,9 +120,9 @@ open class LinkedDeviceWebViewActivity : FragmentActivity() {
                 setTextColor(Color.DKGRAY)
             })
             val tabs = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL }
-            listOf("●  Chat", "◖  Panggilan", "◌  Status", "✣  Fitur", "▦  Workspace").forEach { label ->
+            listOf("\uf075" to "Chat", "\uf2a0" to "Panggilan", "\uf1ea" to "Status", "\uf1b3" to "Fitur", "\uf07b" to "Workspace").forEach { (icon, label) ->
                 val tab = TextView(context).apply {
-                    text = label
+                    FaText.set(this, context, icon, label)
                     textSize = 12f
                     setTextColor(if (label.endsWith("Chat")) Color.WHITE else Color.DKGRAY)
                     setBackgroundColor(if (label.endsWith("Chat")) Color.rgb(20, 35, 45) else Color.rgb(245, 247, 248))
@@ -129,9 +142,9 @@ open class LinkedDeviceWebViewActivity : FragmentActivity() {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
             setBackgroundColor(Color.WHITE)
-            listOf("●  Chat", "◖  Panggilan", "◌  Status", "✣  Fitur", "▦  Workspace").forEach { label ->
+            listOf("\uf075" to "Chat", "\uf2a0" to "Panggilan", "\uf1ea" to "Status", "\uf1b3" to "Fitur", "\uf07b" to "Workspace").forEach { (icon, label) ->
                 addView(TextView(context).apply {
-                    text = label
+                    FaText.set(this, context, icon, label)
                     textSize = 12f
                     gravity = Gravity.CENTER
                     setTextColor(if (label.endsWith("Workspace")) green else Color.DKGRAY)
