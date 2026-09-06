@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Context
 import android.media.projection.MediaProjectionManager
 import android.os.Bundle
+import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.setContent
@@ -30,7 +31,10 @@ class RemoteHostActivity : FragmentActivity() {
             var status by remember { mutableStateOf(manager.status()) }
             var target by remember { mutableStateOf("Pilih target") }
             val projection = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-                status = if (result.resultCode == Activity.RESULT_OK) "SCREEN_SHARE_APPROVED" else "SCREEN_SHARE_DENIED"
+                if (result.resultCode == Activity.RESULT_OK) {
+                    startForegroundService(Intent(this@RemoteHostActivity, ScreenShareService::class.java))
+                    status = "SCREEN_SHARE_APPROVED"
+                } else status = "SCREEN_SHARE_DENIED"
             }
             MaterialTheme {
                 Column(Modifier.fillMaxSize().padding(24.dp)) {
@@ -46,7 +50,7 @@ class RemoteHostActivity : FragmentActivity() {
                         val service = getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
                         projection.launch(service.createScreenCaptureIntent())
                     }, modifier = Modifier.padding(top = 20.dp)) { Text("Izinkan Screen Share") }
-                    Button(onClick = { manager.revoke(); code = ""; status = manager.status() }, modifier = Modifier.padding(top = 8.dp)) { Text("Revoke / Putuskan Pairing") }
+                    Button(onClick = { manager.revoke(); stopService(Intent(this@RemoteHostActivity, ScreenShareService::class.java)); code = ""; status = manager.status() }, modifier = Modifier.padding(top = 8.dp)) { Text("Revoke / Putuskan Pairing") }
                 }
             }
         }
