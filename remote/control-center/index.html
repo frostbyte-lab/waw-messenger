@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'none';" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WAW Control Center</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="brand"><div class="brand-mark">W</div><div><strong>WAW</strong><span>Control Center</span></div></div>
+      <div class="eyebrow">WORKSPACE</div>
+      <button class="nav-item active"><span>◈</span> Remote devices</button>
+      <button class="nav-item"><span>◌</span> Activity log</button>
+      <button class="nav-item"><span>⚙</span> Preferences</button>
+      <div class="sidebar-foot"><div class="secure-dot"></div><div><strong>Secure session</strong><span>End-to-end relay</span></div></div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar"><div><div class="eyebrow">ADMIN CONSOLE</div><h1>Remote workspace</h1></div><div class="top-actions"><span id="connectionBadge" class="badge muted">DISCONNECTED</span><button id="disconnectButton" class="ghost danger">Disconnect</button></div></header>
+
+      <section id="connectPanel" class="connect-grid">
+        <div class="hero-card">
+          <div class="hero-glow"></div>
+          <div class="eyebrow">NEW SESSION</div>
+          <h2>Connect to a<br /><em>trusted device.</em></h2>
+          <p>Masukkan OTP dari WAW Remote User. User tetap memegang kendali dan harus menyetujui screen share.</p>
+          <div class="form-row"><label>Relay URL<input id="relayUrl" placeholder="wss://relay.example.com" /></label><label>OTP pairing<input id="otp" inputmode="numeric" maxlength="6" placeholder="000000" /></label></div>
+          <button id="connectButton" class="primary">Connect securely <span>→</span></button>
+          <div id="error" class="error"></div>
+        </div>
+        <div class="trust-card"><div class="icon-circle">⌁</div><h3>User consent first</h3><p>Remote tidak berjalan diam-diam. Perangkat User harus menekan izin screen share sebelum frame dikirim.</p><div class="trust-line"><span></span><b>OTP expires quickly</b></div><div class="trust-line"><span></span><b>Session can be revoked</b></div><div class="trust-line"><span></span><b>Secure relay only</b></div></div>
+      </section>
+
+      <section id="sessionPanel" class="session-grid hidden">
+        <div class="session-head"><div><div class="eyebrow">ACTIVE DEVICE</div><h2 id="sessionTitle">WAW Remote User</h2><p id="sessionSub">Waiting for user approval</p></div><div class="live-pill"><i></i> <span id="liveText">WAITING</span></div></div>
+        <div class="preview-card"><div class="preview-toolbar"><span>Screen preview</span><span id="frameMeta">No frame</span></div><div id="preview" class="preview"><div class="preview-placeholder"><div class="lock">⌑</div><strong id="previewTitle">Menunggu persetujuan User</strong><span id="previewSub">User akan melihat permintaan akses di perangkatnya.</span></div></div></div>
+        <div class="control-card"><div class="eyebrow">QUICK CONTROLS</div><div class="control-buttons"><button data-key="4" class="control">← Back</button><button data-key="3" class="control">⌂ Home</button><button id="stopSession" class="control red">■ Stop session</button></div><p class="hint">Klik area preview untuk mengirim koordinat sentuh. Gunakan kontrol hanya setelah User menyetujui.</p></div>
+      </section>
+    </main>
+  </div>
+  <script src="renderer.js"></script>
+</body>
+</html>

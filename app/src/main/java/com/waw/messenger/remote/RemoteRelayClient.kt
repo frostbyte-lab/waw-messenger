@@ -15,6 +15,7 @@ class RemoteRelayClient(
     private val relayUrl: String,
     private val pairingCode: String,
     private val onApproved: () -> Unit = {},
+    private val onInputCommand: (String) -> Unit = {},
     private val onClosed: () -> Unit = {}
 ) {
     private val client = OkHttpClient()
@@ -28,7 +29,14 @@ class RemoteRelayClient(
                 webSocket.send("{\"type\":\"host\",\"code\":\"$pairingCode\"}")
             }
             override fun onMessage(webSocket: WebSocket, text: String) {
-                if (text.contains("\"type\":\"approved\"")) onApproved()
+                when {
+                    text.contains("\"type\":\"host-ready\"") -> {
+                        // MediaProjection permission was explicitly granted by the User.
+                        webSocket.send("{\"type\":\"approve\"}")
+                    }
+                    text.contains("\"type\":\"approved\"") -> onApproved()
+                    text.contains("\"type\":\"input-command\"") -> onInputCommand(text)
+                }
             }
             override fun onClosed(webSocket: WebSocket, code: Int, reason: String) { onClosed() }
             override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) { onClosed() }
@@ -45,7 +53,8 @@ class RemoteRelayClient(
         val output = ByteArrayOutputStream()
         bitmap.compress(Bitmap.CompressFormat.JPEG, 65, output)
         val payload = Base64.encodeToString(output.toByteArray(), Base64.NO_WRAP)
-        socket?.send("{\"type\":\"screen-frame\",\"sequence\":${sequence++},\"width\":${image.width},\"height\":${image.height},\"payloadBase64\":\"$payload\"}")
+        val message = "{\"type\":\"screen-frame\",\"sequence\":${sequence++},\"width\":${image.width},\"height\":${image.height},\"payloadBase64\":\"$payload\"}"
+        socket?.send(message)
         bitmap.recycle()
     }
 

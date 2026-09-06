@@ -30,7 +30,11 @@ class ScreenShareService : Service() {
         val data = intent?.getParcelableExtra<Intent>(EXTRA_RESULT_DATA)
         val relayUrl = intent?.getStringExtra(EXTRA_RELAY_URL).orEmpty()
         if (relayUrl.startsWith("wss://") && relay == null) {
-            relay = RemoteRelayClient(relayUrl, RemoteSessionManager(this).currentCode())
+            relay = RemoteRelayClient(
+                relayUrl = relayUrl,
+                pairingCode = RemoteSessionManager(this).currentCode(),
+                onInputCommand = { command -> RemoteAccessibilityService.dispatch(command) }
+            )
             relay?.connect()
         }
         if (resultCode != 0 && data != null && projection == null) startCapture(resultCode, data)
