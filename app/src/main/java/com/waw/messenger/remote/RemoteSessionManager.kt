@@ -6,7 +6,7 @@ import java.security.SecureRandom
 class RemoteSessionManager(context: Context) {
     private val store = com.waw.messenger.security.SecureStore(context)
     fun generatePairingCode(): String {
-        val code = (100000..999999).random(SecureRandom())
+        val code = SecureRandom().nextInt(900000) + 100000
         store.put(KEY_CODE, code.toString())
         store.put(KEY_STATUS, "WAITING_FOR_WINDOWS_APPROVAL")
         return code.toString()
