@@ -34,6 +34,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Image as ImageIcon
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.Button
@@ -127,7 +128,7 @@ fun WatermarkScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
         Column(Modifier.fillMaxSize().padding(padding).padding(16.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text("Watermark resmi WAW", color = Color(0xFF0F766E))
             Text("Watermark dapat dipakai langsung di Workspace WAW. Branding WAW dan Made by Frostbyte Tech Ltd selalu ikut serta.")
-            OutlinedButton(onClick = { imagePicker.launch(arrayOf("image/*")) }, modifier = Modifier.fillMaxWidth()) { Icon(Icons.Default.Image, "Pilih gambar"); Text("  Pilih gambar") }
+            OutlinedButton(onClick = { imagePicker.launch(arrayOf("image/*")) }, modifier = Modifier.fillMaxWidth()) { Icon(Icons.Default.ImageIcon, "Pilih gambar"); Text("  Pilih gambar") }
             preview?.let { Image(it.asImageBitmap(), "Pratinjau", Modifier.fillMaxWidth().height(220.dp)) }
             OutlinedButton(onClick = { brandPicker.launch(arrayOf("image/*")) }, modifier = Modifier.fillMaxWidth()) { Icon(Icons.Default.Add, null); Text("  Tambah logo perusahaan / brand") }
             brandPreview?.let { Image(it.asImageBitmap(), "Logo brand", Modifier.size(72.dp)) }
