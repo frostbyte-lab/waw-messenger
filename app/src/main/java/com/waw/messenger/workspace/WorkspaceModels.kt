@@ -20,16 +20,14 @@ object WorkspaceCatalog {
     val features = listOf(
         WorkspaceFeature("file_manager", "File Manager", "Browse, folder operations, rename, copy, move, delete, share, and search pada lokasi yang diizinkan pengguna.", WorkspaceFeatureStatus.IMPLEMENTED),
         WorkspaceFeature("documents", "Documents & PDF", "Editor TXT/Markdown dan ekspor dokumen ke PDF.", WorkspaceFeatureStatus.IMPLEMENTED),
-        WorkspaceFeature("scanner", "Camera Scanner", "Scan satu halaman dengan kamera dan ekspor ke PDF.", WorkspaceFeatureStatus.IMPLEMENTED),
-        WorkspaceFeature("watermark", "Custom Watermark", "Watermark WAW otomatis pada output PDF.", WorkspaceFeatureStatus.IMPLEMENTED),
-        WorkspaceFeature("attendance", "Fingerprint Attendance", "Pencatatan absensi menggunakan sidik jari; bukan kunci Workspace atau Vault.", WorkspaceFeatureStatus.IMPLEMENTED),
+        WorkspaceFeature("scanner", "Camera Scanner", "Scan dokumen dan ekspor ke PDF.", WorkspaceFeatureStatus.NOT_STARTED),
+        WorkspaceFeature("watermark", "WAW Watermark", "Watermark resmi WAW dengan kolom kustom, timestamp, lokasi, kompas, dan logo brand pengguna. Branding WAW serta Made by Frostbyte Tech Ltd selalu dipertahankan.", WorkspaceFeatureStatus.IMPLEMENTED),
+        WorkspaceFeature("security", "Biometric & Vault", "Kunci Workspace dan penyimpanan aman.", WorkspaceFeatureStatus.IMPLEMENTED),
         WorkspaceFeature("network", "Network Diagnostics", "Informasi IP dan diagnostik jaringan.", WorkspaceFeatureStatus.IMPLEMENTED),
-        WorkspaceFeature("location", "Device Location Diagnostics", "IP lokal dan lokasi perangkat sendiri dengan izin Android.", WorkspaceFeatureStatus.IMPLEMENTED),
-        WorkspaceFeature("shield", "WAW Shield", "Perlindungan anti-phishing dan blocklist berisiko.", WorkspaceFeatureStatus.IMPLEMENTED),
-        WorkspaceFeature("notes", "Notes & Tasks", "Catatan, checklist, dan tugas lokal milik WAW.", WorkspaceFeatureStatus.IMPLEMENTED),
-        WorkspaceFeature("calendar", "Kalender Lokal", "Agenda dan event lokal milik WAW.", WorkspaceFeatureStatus.IMPLEMENTED),
-        WorkspaceFeature("backup", "Backup & Sync", "Export dan restore data Notes serta Attendance WAW-owned.", WorkspaceFeatureStatus.IMPLEMENTED),
-        WorkspaceFeature("remote", "Remote PC / Android", "Pairing Android↔Windows/Android dan screen-share dengan otorisasi eksplisit.", WorkspaceFeatureStatus.IN_PROGRESS),
-        WorkspaceFeature("search", "Universal Search", "Pencarian rekursif lintas folder Workspace milik WAW.", WorkspaceFeatureStatus.IMPLEMENTED)
+        WorkspaceFeature("shield", "WAW Shield", "Perlindungan anti-phishing dan blocklist berisiko.", WorkspaceFeatureStatus.NOT_STARTED),
+        WorkspaceFeature("notes", "Notes & Tasks", "Catatan, checklist, dan tugas.", WorkspaceFeatureStatus.NOT_STARTED),
+        WorkspaceFeature("backup", "Backup & Sync", "Backup, restore, dan sinkronisasi data WAW-owned.", WorkspaceFeatureStatus.NOT_STARTED),
+        WorkspaceFeature("remote", "Remote PC / Android", "Pairing dan remote control perangkat dengan otorisasi eksplisit.", WorkspaceFeatureStatus.NOT_STARTED),
+        WorkspaceFeature("search", "Universal Search", "Pencarian lintas data Workspace milik WAW.", WorkspaceFeatureStatus.NOT_STARTED)
     )
 }

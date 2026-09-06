@@ -8,7 +8,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -46,16 +45,8 @@ import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.PictureAsPdf
-import androidx.compose.material.icons.filled.Fingerprint
-import androidx.compose.material.icons.filled.Event
-import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.Restore
-import androidx.compose.material.icons.filled.Wifi
-import androidx.compose.material.icons.filled.CameraAlt
-import androidx.compose.material.icons.filled.ImageSearch
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.material.icons.filled.Image
 import java.util.Locale
-import com.waw.messenger.remote.RemoteHostActivity
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -74,20 +65,7 @@ fun WorkspaceShell(modifier: Modifier = Modifier) {
     var dialog by remember { mutableStateOf<FileDialog?>(null) }
     var menuUri by remember { mutableStateOf<Uri?>(null) }
     var pendingTransfer by remember { mutableStateOf<Transfer?>(null) }
-    var attendanceDialog by remember { mutableStateOf(false) }
-    val attendanceManager = remember(context) { AttendanceManager(context) }
-    var notesDialog by remember { mutableStateOf(false) }
-    var noteDraft by remember { mutableStateOf("") }
-    val notesStore = remember(context) { WorkspaceNotesStore(context) }
-    var noteItems by remember { mutableStateOf(notesStore.list()) }
-    var scannedBitmap by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
-    var calendarDialog by remember { mutableStateOf(false) }
-    var eventDraft by remember { mutableStateOf("") }
-    val calendarStore = remember(context) { WorkspaceCalendarStore(context) }
-    var events by remember { mutableStateOf(calendarStore.list()) }
-    var diagnosticsDialog by remember { mutableStateOf(false) }
-    val diagnostics = remember(context) { DeviceLocationDiagnostics(context) }
-    val locationPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { diagnosticsDialog = true }
+    var watermarkOpen by remember { mutableStateOf(false) }
 
     fun refresh(uri: Uri) {
         currentUri = uri
@@ -126,41 +104,10 @@ fun WorkspaceShell(modifier: Modifier = Modifier) {
         }
     }
 
-    val scanPdfPicker = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/pdf")) { uri ->
-        val bitmap = scannedBitmap
-        if (uri != null && bitmap != null) {
-            notice = if (WorkspaceDocumentTools.exportBitmapToPdf(context, uri, bitmap)) "Scan PDF berhasil dibuat" else "Scan PDF gagal dibuat"
-        }
-        scannedBitmap = null
+    if (watermarkOpen) {
+        WatermarkScreen(onBack = { watermarkOpen = false }, modifier = modifier)
+        return
     }
-
-    val backupPicker = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
-        if (uri != null) {
-            notice = if (WorkspaceBackup.write(context, uri, noteItems, attendanceManager.recent())) "Backup WAW berhasil dibuat" else "Backup gagal dibuat"
-        }
-    }
-
-    val restorePicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri != null) {
-            val payload = WorkspaceBackup.read(context, uri)
-            if (payload == null) notice = "Backup tidak valid" else {
-                notesStore.replace(payload.notes)
-                attendanceManager.replace(payload.attendance)
-                noteItems = notesStore.list()
-                notice = "Backup WAW berhasil dipulihkan"
-            }
-        }
-    }
-
-    val scanLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicturePreview()) { bitmap ->
-        val parent = currentUri
-        if (bitmap != null && parent != null) {
-            scannedBitmap = bitmap
-            scanPdfPicker.launch("scan-${System.currentTimeMillis()}.pdf")
-            refresh(parent)
-        }
-    }
-
     if (editorUri != null) {
         DocumentEditor(
             name = editorName,
@@ -195,6 +142,7 @@ fun WorkspaceShell(modifier: Modifier = Modifier) {
                     }) { Icon(Icons.Default.ArrowBack, "Kembali") }
                 },
                 actions = {
+                    if (currentUri == null) IconButton(onClick = { watermarkOpen = true }) { Icon(Icons.Default.Image, "Watermark") }
                     if (currentUri != null) IconButton(onClick = {
                         val intent = Intent(Intent.ACTION_SEND).apply {
                             type = "text/plain"
@@ -215,39 +163,9 @@ fun WorkspaceShell(modifier: Modifier = Modifier) {
             if (currentUri == null) {
                 Text("WAW Workspace", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(top = 12.dp))
                 Text("File Manager + Documents & PDF", modifier = Modifier.padding(top = 4.dp, bottom = 16.dp))
-                Button(onClick = { folderPicker.launch(null) }, modifier = Modifier.fillMaxWidth()) {
-                    Icon(Icons.Default.Folder, contentDescription = null)
-                    Text("  Pilih Folder Workspace")
-                }
-                val actions = listOf(
-                    Triple(Icons.Default.Fingerprint, "Absensi", { attendanceDialog = true }),
-                    Triple(Icons.Default.Description, "Catatan & Tugas", { notesDialog = true }),
-                    Triple(Icons.Default.Event, "Kalender", { calendarDialog = true }),
-                    Triple(Icons.Default.LocationOn, "IP & Lokasi", { locationPermission.launch(arrayOf(android.Manifest.permission.ACCESS_COARSE_LOCATION, android.Manifest.permission.ACCESS_FINE_LOCATION)) }),
-                    Triple(Icons.Default.Share, "Export Backup", { backupPicker.launch("waw-workspace-backup.json") }),
-                    Triple(Icons.Default.Restore, "Restore Backup", { restorePicker.launch(arrayOf("application/json", "text/*")) }),
-                    Triple(Icons.Default.Wifi, "Remote Windows", { context.startActivity(Intent(context, RemoteHostActivity::class.java)) }),
-                    Triple(Icons.Default.CameraAlt, "Scanner Kamera", { notice = "Pilih folder Workspace terlebih dahulu untuk memakai Scanner" })
-                )
-                actions.chunked(2).forEach { rowActions ->
-                    Row(Modifier.fillMaxWidth().padding(top = 10.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        rowActions.forEach { (icon, label, action) ->
-                            Card(Modifier.weight(1f).clickable { action() }) {
-                                Column(Modifier.fillMaxWidth().padding(vertical = 16.dp, horizontal = 10.dp), horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally) {
-                                    Icon(icon, contentDescription = label, tint = MaterialTheme.colorScheme.primary)
-                                    Text(label, style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(top = 8.dp))
-                                }
-                            }
-                        }
-                        if (rowActions.size == 1) Spacer(Modifier.weight(1f))
-                    }
-                }
+                Button(onClick = { folderPicker.launch(null) }, modifier = Modifier.fillMaxWidth()) { Text("Pilih Folder") }
                 Text("Akses hanya ke folder yang kamu pilih melalui Android Storage Access Framework.", modifier = Modifier.padding(top = 12.dp), style = MaterialTheme.typography.bodySmall)
             } else {
-                OutlinedButton(onClick = { scanLauncher.launch(null) }, modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
-                    Icon(Icons.Default.PictureAsPdf, contentDescription = null)
-                    Text("  Scan Dokumen dengan Kamera")
-                }
                 OutlinedTextField(
                     value = query,
                     onValueChange = { query = it },
@@ -255,11 +173,7 @@ fun WorkspaceShell(modifier: Modifier = Modifier) {
                     label = { Text("Cari file / folder") },
                     singleLine = true
                 )
-                val visible = if (query.isBlank() || rootUri == null) {
-                    files
-                } else {
-                    manager.search(rootUri!!, query)
-                }
+                val visible = files.filter { it.name.lowercase(Locale.ROOT).contains(query.lowercase(Locale.ROOT)) }
                 if (visible.isEmpty()) Text("Tidak ada file", modifier = Modifier.padding(16.dp))
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(visible, key = { it.uri.toString() }) { item ->
@@ -360,103 +274,6 @@ fun WorkspaceShell(modifier: Modifier = Modifier) {
     notice?.let { message ->
         AlertDialog(onDismissRequest = { notice = null }, title = { Text("WAW") }, text = { Text(message) }, confirmButton = { TextButton(onClick = { notice = null }) { Text("OK") } })
     }
-
-    if (attendanceDialog) {
-        AttendanceDialog(
-            records = attendanceManager.recent(),
-            onDismiss = { attendanceDialog = false },
-            onRecord = { type ->
-                val activity = context as? androidx.fragment.app.FragmentActivity
-                if (activity == null) {
-                    notice = "Absensi hanya tersedia pada Activity Android."
-                } else {
-                    com.waw.messenger.security.BiometricGate(context).authenticate(activity, onResult = { success ->
-                        notice = if (success) "Absensi $type tercatat pada ${attendanceManager.record(type)}" else "Verifikasi fingerprint dibatalkan atau gagal"
-                    })
-                }
-                attendanceDialog = false
-            }
-        )
-    }
-
-    if (notesDialog) {
-        AlertDialog(
-            onDismissRequest = { notesDialog = false },
-            title = { Text("Notes & Tasks") },
-            text = {
-                Column {
-                    OutlinedTextField(
-                        value = noteDraft,
-                        onValueChange = { noteDraft = it },
-                        modifier = Modifier.fillMaxWidth(),
-                        label = { Text("Catatan atau tugas baru") }
-                    )
-                    Button(onClick = {
-                        notesStore.add(noteDraft)
-                        noteDraft = ""
-                        noteItems = notesStore.list()
-                    }, modifier = Modifier.padding(top = 8.dp)) { Text("Simpan") }
-                    if (noteItems.isNotEmpty()) {
-                        Text("Catatan lokal", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 12.dp))
-                        noteItems.take(8).forEach { Text("• $it", style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 4.dp)) }
-                    }
-                }
-            },
-            confirmButton = { TextButton(onClick = { notesDialog = false }) { Text("Tutup") } }
-        )
-    }
-
-    if (calendarDialog) {
-        AlertDialog(
-            onDismissRequest = { calendarDialog = false },
-            title = { Text("Kalender Lokal") },
-            text = {
-                Column {
-                    OutlinedTextField(value = eventDraft, onValueChange = { eventDraft = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Agenda baru") })
-                    Button(onClick = { calendarStore.add(eventDraft); eventDraft = ""; events = calendarStore.list() }, modifier = Modifier.padding(top = 8.dp)) { Text("Simpan Agenda") }
-                    events.take(8).forEach { Text("• $it", style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 4.dp)) }
-                }
-            },
-            confirmButton = { TextButton(onClick = { calendarDialog = false }) { Text("Tutup") } }
-        )
-    }
-
-    if (diagnosticsDialog) {
-        AlertDialog(
-            onDismissRequest = { diagnosticsDialog = false },
-            title = { Text("Chat • IP • Lokasi") },
-            text = {
-                Column {
-                    Text("Chat: data chat tetap berada di WhatsApp Web resmi dan tidak dibaca WAW.")
-                    Text("IP lokal: ${diagnostics.localIp()}")
-                    Text("Jaringan: ${diagnostics.networkType()}")
-                    Text("Lokasi perangkat: ${diagnostics.lastKnownLocation()}")
-                    Text("Lokasi hanya milik perangkat ini dan tidak melacak kontak atau pengguna lain.", style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 8.dp))
-                }
-            },
-            confirmButton = { TextButton(onClick = { diagnosticsDialog = false }) { Text("Tutup") } }
-        )
-    }
-}
-
-@Composable
-private fun AttendanceDialog(records: List<String>, onDismiss: () -> Unit, onRecord: (String) -> Unit) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Fingerprint Attendance") },
-        text = {
-            Column {
-                Text("Fingerprint hanya digunakan untuk mencatat absensi. Data sidik jari tidak disimpan oleh WAW.")
-                TextButton(onClick = { onRecord("MASUK") }) { Text("Catat Masuk") }
-                TextButton(onClick = { onRecord("PULANG") }) { Text("Catat Pulang") }
-                if (records.isNotEmpty()) {
-                    Text("Riwayat lokal", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 8.dp))
-                    records.take(5).forEach { Text(it, style = MaterialTheme.typography.bodySmall) }
-                }
-            }
-        },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Tutup") } }
-    )
 }
 
 @Composable
