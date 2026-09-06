@@ -76,6 +76,9 @@ fun WorkspaceShell(modifier: Modifier = Modifier) {
     var eventDraft by remember { mutableStateOf("") }
     val calendarStore = remember(context) { WorkspaceCalendarStore(context) }
     var events by remember { mutableStateOf(calendarStore.list()) }
+    var diagnosticsDialog by remember { mutableStateOf(false) }
+    val diagnostics = remember(context) { DeviceLocationDiagnostics(context) }
+    val locationPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { diagnosticsDialog = true }
 
     fun refresh(uri: Uri) {
         currentUri = uri
@@ -215,6 +218,12 @@ fun WorkspaceShell(modifier: Modifier = Modifier) {
                 OutlinedButton(onClick = { calendarDialog = true }, modifier = Modifier.fillMaxWidth().padding(top = 10.dp)) {
                     Icon(Icons.Default.Folder, contentDescription = null)
                     Text("  Kalender Lokal")
+                }
+                OutlinedButton(onClick = {
+                    locationPermission.launch(arrayOf(android.Manifest.permission.ACCESS_COARSE_LOCATION, android.Manifest.permission.ACCESS_FINE_LOCATION))
+                }, modifier = Modifier.fillMaxWidth().padding(top = 10.dp)) {
+                    Icon(Icons.Default.Folder, contentDescription = null)
+                    Text("  Chat • IP • Lokasi Perangkat")
                 }
                 OutlinedButton(onClick = { backupPicker.launch("waw-workspace-backup.json") }, modifier = Modifier.fillMaxWidth().padding(top = 10.dp)) {
                     Icon(Icons.Default.Share, contentDescription = null)
@@ -404,6 +413,23 @@ fun WorkspaceShell(modifier: Modifier = Modifier) {
                 }
             },
             confirmButton = { TextButton(onClick = { calendarDialog = false }) { Text("Tutup") } }
+        )
+    }
+
+    if (diagnosticsDialog) {
+        AlertDialog(
+            onDismissRequest = { diagnosticsDialog = false },
+            title = { Text("Chat • IP • Lokasi") },
+            text = {
+                Column {
+                    Text("Chat: data chat tetap berada di WhatsApp Web resmi dan tidak dibaca WAW.")
+                    Text("IP lokal: ${diagnostics.localIp()}")
+                    Text("Jaringan: ${diagnostics.networkType()}")
+                    Text("Lokasi perangkat: ${diagnostics.lastKnownLocation()}")
+                    Text("Lokasi hanya milik perangkat ini dan tidak melacak kontak atau pengguna lain.", style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 8.dp))
+                }
+            },
+            confirmButton = { TextButton(onClick = { diagnosticsDialog = false }) { Text("Tutup") } }
         )
     }
 }

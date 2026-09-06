@@ -24,6 +24,7 @@ object WorkspaceCatalog {
         WorkspaceFeature("watermark", "Custom Watermark", "Watermark WAW otomatis pada output PDF.", WorkspaceFeatureStatus.IMPLEMENTED),
         WorkspaceFeature("attendance", "Fingerprint Attendance", "Pencatatan absensi menggunakan sidik jari; bukan kunci Workspace atau Vault.", WorkspaceFeatureStatus.IMPLEMENTED),
         WorkspaceFeature("network", "Network Diagnostics", "Informasi IP dan diagnostik jaringan.", WorkspaceFeatureStatus.IMPLEMENTED),
+        WorkspaceFeature("location", "Device Location Diagnostics", "IP lokal dan lokasi perangkat sendiri dengan izin Android.", WorkspaceFeatureStatus.IMPLEMENTED),
         WorkspaceFeature("shield", "WAW Shield", "Perlindungan anti-phishing dan blocklist berisiko.", WorkspaceFeatureStatus.IMPLEMENTED),
         WorkspaceFeature("notes", "Notes & Tasks", "Catatan, checklist, dan tugas lokal milik WAW.", WorkspaceFeatureStatus.IMPLEMENTED),
         WorkspaceFeature("calendar", "Kalender Lokal", "Agenda dan event lokal milik WAW.", WorkspaceFeatureStatus.IMPLEMENTED),
