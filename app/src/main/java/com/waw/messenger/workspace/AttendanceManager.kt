@@ -20,6 +20,10 @@ class AttendanceManager(context: Context) {
 
     fun recent(): List<String> = store.get(KEY).orEmpty().lines().filter { it.isNotBlank() }.takeLast(20).reversed()
 
+    fun replace(values: List<String>) {
+        store.put(KEY, values.filter { it.isNotBlank() }.joinToString("\n").takeLast(MAX_BYTES) + "\n")
+    }
+
     private companion object {
         const val KEY = "attendance_records"
         const val MAX_BYTES = 32_000

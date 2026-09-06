@@ -115,6 +115,28 @@ fun WorkspaceShell(modifier: Modifier = Modifier) {
         }
     }
 
+    val restorePicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) {
+            val payload = WorkspaceBackup.read(context, uri)
+            if (payload == null) notice = "Backup tidak valid" else {
+                notesStore.replace(payload.notes)
+                attendanceManager.replace(payload.attendance)
+                noteItems = notesStore.list()
+                notice = "Backup WAW berhasil dipulihkan"
+            }
+        }
+    }
+
+    val scanLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicturePreview()) { bitmap ->
+        val parent = currentUri
+        if (bitmap != null && parent != null) {
+            val uri = manager.createFile(parent, "image/png", "scan-${System.currentTimeMillis()}.png")
+            val saved = uri != null && context.contentResolver.openOutputStream(uri)?.use { bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) } == true
+            notice = if (saved) "Scan tersimpan sebagai gambar" else "Scan gagal disimpan"
+            refresh(parent)
+        }
+    }
+
     if (editorUri != null) {
         DocumentEditor(
             name = editorName,
@@ -182,8 +204,20 @@ fun WorkspaceShell(modifier: Modifier = Modifier) {
                     Icon(Icons.Default.Share, contentDescription = null)
                     Text("  Export Backup Lokal")
                 }
+                OutlinedButton(onClick = { restorePicker.launch(arrayOf("application/json", "text/*")) }, modifier = Modifier.fillMaxWidth().padding(top = 10.dp)) {
+                    Icon(Icons.Default.Folder, contentDescription = null)
+                    Text("  Restore Backup Lokal")
+                }
+                OutlinedButton(onClick = { notice = "Pilih folder Workspace terlebih dahulu untuk memakai Scanner" }, modifier = Modifier.fillMaxWidth().padding(top = 10.dp)) {
+                    Icon(Icons.Default.PictureAsPdf, contentDescription = null)
+                    Text("  Camera Scanner")
+                }
                 Text("Akses hanya ke folder yang kamu pilih melalui Android Storage Access Framework.", modifier = Modifier.padding(top = 12.dp), style = MaterialTheme.typography.bodySmall)
             } else {
+                OutlinedButton(onClick = { scanLauncher.launch(null) }, modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
+                    Icon(Icons.Default.PictureAsPdf, contentDescription = null)
+                    Text("  Scan Dokumen dengan Kamera")
+                }
                 OutlinedTextField(
                     value = query,
                     onValueChange = { query = it },

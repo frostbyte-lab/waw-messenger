@@ -15,6 +15,10 @@ class WorkspaceNotesStore(context: Context) {
         store.put(KEY, next)
     }
 
+    fun replace(values: List<String>) {
+        store.put(KEY, values.filter { it.isNotBlank() }.joinToString("\n").takeLast(MAX_BYTES) + "\n")
+    }
+
     private companion object {
         const val KEY = "workspace_notes_tasks"
         const val MAX_BYTES = 64_000

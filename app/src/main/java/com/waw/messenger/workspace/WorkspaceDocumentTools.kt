@@ -34,6 +34,11 @@ object WorkspaceDocumentTools {
             val page = pdf.startPage(PdfDocument.PageInfo.Builder(pageWidth, pageHeight, pageNumber).create())
             val canvas = page.canvas
             canvas.drawText(title.take(70), margin, margin, titlePaint)
+            val watermarkPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { textSize = 10f; color = 0x55339966 }
+            canvas.save()
+            canvas.rotate(-32f, pageWidth / 2f, pageHeight / 2f)
+            canvas.drawText("WAW • FROSTBYTE", pageWidth / 2f - 70f, pageHeight / 2f, watermarkPaint)
+            canvas.restore()
             var y = margin + 30f
             while (index < lines.size && y < pageHeight - margin) {
                 canvas.drawText(lines[index], margin, y, paint)
