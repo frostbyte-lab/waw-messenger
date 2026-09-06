@@ -32,7 +32,11 @@ class RemoteHostActivity : FragmentActivity() {
             var target by remember { mutableStateOf("Pilih target") }
             val projection = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
                 if (result.resultCode == Activity.RESULT_OK) {
-                    startForegroundService(Intent(this@RemoteHostActivity, ScreenShareService::class.java))
+                    val serviceIntent = Intent(this@RemoteHostActivity, ScreenShareService::class.java).apply {
+                        putExtra(ScreenShareService.EXTRA_RESULT_CODE, result.resultCode)
+                        putExtra(ScreenShareService.EXTRA_RESULT_DATA, result.data)
+                    }
+                    startForegroundService(serviceIntent)
                     status = "SCREEN_SHARE_APPROVED"
                 } else status = "SCREEN_SHARE_DENIED"
             }

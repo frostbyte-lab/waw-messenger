@@ -5,19 +5,57 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
 import android.content.Intent
+import android.graphics.PixelFormat
+import android.hardware.display.DisplayManager
+import android.hardware.display.VirtualDisplay
+import android.media.ImageReader
+import android.media.projection.MediaProjection
 import android.media.projection.MediaProjectionManager
 import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import com.waw.messenger.R
 
-/** Keeps the user-visible screen-share session alive after Android consent. */
+/** User-visible Android screen capture host. A paired transport can consume frames later. */
 class ScreenShareService : Service() {
+    private var projection: MediaProjection? = null
+    private var display: VirtualDisplay? = null
+    private var reader: ImageReader? = null
+
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         createChannel()
         startForeground(NOTIFICATION_ID, notification())
-        // Transport/encoder is intentionally not started until a paired peer is authenticated.
+        val resultCode = intent?.getIntExtra(EXTRA_RESULT_CODE, 0) ?: 0
+        val data = intent?.getParcelableExtra<Intent>(EXTRA_RESULT_DATA)
+        if (resultCode != 0 && data != null && projection == null) startCapture(resultCode, data)
         return START_NOT_STICKY
+    }
+
+    private fun startCapture(resultCode: Int, data: Intent) {
+        val manager = getSystemService(MediaProjectionManager::class.java)
+        projection = manager.getMediaProjection(resultCode, data)
+        val metrics = resources.displayMetrics
+        reader = ImageReader.newInstance(metrics.widthPixels, metrics.heightPixels, PixelFormat.RGBA_8888, 2)
+        reader?.setOnImageAvailableListener({ imageReader ->
+            imageReader.acquireLatestImage()?.close()
+        }, null)
+        display = projection?.createVirtualDisplay(
+            "WAW-Remote-Screen",
+            metrics.widthPixels,
+            metrics.heightPixels,
+            metrics.densityDpi,
+            DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
+            reader?.surface,
+            null,
+            null
+        )
+    }
+
+    override fun onDestroy() {
+        display?.release()
+        reader?.close()
+        projection?.stop()
+        super.onDestroy()
     }
 
     private fun notification(): Notification = NotificationCompat.Builder(this, CHANNEL_ID)
@@ -37,5 +75,10 @@ class ScreenShareService : Service() {
 
     override fun onBind(intent: Intent?): IBinder? = null
 
-    companion object { private const val CHANNEL_ID = "waw_remote"; private const val NOTIFICATION_ID = 7401 }
+    companion object {
+        const val EXTRA_RESULT_CODE = "waw.remote.resultCode"
+        const val EXTRA_RESULT_DATA = "waw.remote.resultData"
+        private const val CHANNEL_ID = "waw_remote"
+        private const val NOTIFICATION_ID = 7401
+    }
 }
