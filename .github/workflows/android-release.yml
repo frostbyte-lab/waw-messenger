@@ -10,7 +10,7 @@ on:
         type: string
 
 permissions:
-  contents: read
+  contents: write
 
 env:
   RELEASE_APK: app/build/outputs/apk/release/app-release-unsigned.apk
@@ -117,6 +117,26 @@ jobs:
           find app/build/outputs/apk/release -type f -name '*.apk' -print0 \
             | xargs -0 sha256sum > app/build/outputs/apk/release/SHA256SUMS.txt
           cat app/build/outputs/apk/release/SHA256SUMS.txt
+
+      - name: Publish APKs to GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="user-remote-${{ inputs.version_name }}"
+          if ! gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create "$tag" --repo "$GITHUB_REPOSITORY" --title "User Remote Workspace ${{ inputs.version_name }}" --notes "APK User Remote Workspace standalone. APK Admin tidak didistribusikan."
+          fi
+          if [[ "${{ steps.signing.outputs.configured }}" == "true" ]]; then
+            gh release upload "$tag" \
+              app/build/outputs/apk/release/signed/waw-release.apk \
+              user-remote/build/outputs/apk/release/signed/user-remote-release.apk \
+              app/build/outputs/apk/release/SHA256SUMS.txt --clobber
+          else
+            gh release upload "$tag" \
+              app/build/outputs/apk/release/test-signed/waw-release-test-signed.apk \
+              user-remote/build/outputs/apk/release/test-signed/user-remote-release-test-signed.apk \
+              app/build/outputs/apk/release/SHA256SUMS.txt --clobber
+          fi
 
       - name: Upload signed release APK
         if: steps.signing.outputs.configured == 'true'
