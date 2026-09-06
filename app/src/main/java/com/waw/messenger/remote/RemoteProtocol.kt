@@ -38,7 +38,6 @@ data class InputCommand(
 ) : RemoteMessage
 
 enum class RemoteTarget { WINDOWS, ANDROID }
-en
 enum class RemoteCapability { SCREEN_SHARE, TOUCH_INPUT, KEYBOARD_INPUT }
 
 enum class InputType { TOUCH_DOWN, TOUCH_MOVE, TOUCH_UP, KEY_DOWN, KEY_UP, DISCONNECT }
