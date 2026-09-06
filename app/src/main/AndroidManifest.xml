@@ -8,6 +8,8 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
     <application
         android:theme="@style/Theme.WAW"
         android:label="WAW"
@@ -24,5 +26,6 @@
             </intent-filter>
         </activity>
         <activity android:name=".linked.WorkspaceActivity" android:exported="false" android:theme="@style/Theme.WAW.WorkspaceOverlay" />
+        <activity android:name=".remote.RemoteHostActivity" android:exported="false" />
     </application>
 </manifest>

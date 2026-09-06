@@ -47,6 +47,7 @@ import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.Fingerprint
 import java.util.Locale
+import com.waw.messenger.remote.RemoteHostActivity
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -232,6 +233,10 @@ fun WorkspaceShell(modifier: Modifier = Modifier) {
                 OutlinedButton(onClick = { restorePicker.launch(arrayOf("application/json", "text/*")) }, modifier = Modifier.fillMaxWidth().padding(top = 10.dp)) {
                     Icon(Icons.Default.Folder, contentDescription = null)
                     Text("  Restore Backup Lokal")
+                }
+                OutlinedButton(onClick = { context.startActivity(Intent(context, RemoteHostActivity::class.java)) }, modifier = Modifier.fillMaxWidth().padding(top = 10.dp)) {
+                    Icon(Icons.Default.Share, contentDescription = null)
+                    Text("  Remote Windows → Android")
                 }
                 OutlinedButton(onClick = { notice = "Pilih folder Workspace terlebih dahulu untuk memakai Scanner" }, modifier = Modifier.fillMaxWidth().padding(top = 10.dp)) {
                     Icon(Icons.Default.PictureAsPdf, contentDescription = null)
