@@ -47,8 +47,13 @@ class MainActivity : ComponentActivity() {
             }.onFailure { state = "FILE_SAVE_FAILED" }
         }
         DisposableEffect(Unit) {
-            val receiver = object : BroadcastReceiver() { override fun onReceive(context: Context, intent: Intent) { pendingOffer = runCatching { JSONObject(intent.getStringExtra(ScreenShareService.EXTRA_FILE_OFFER).orEmpty()) }.getOrNull() } }
-            registerReceiver(receiver, IntentFilter(ScreenShareService.ACTION_FILE_OFFER), Context.RECEIVER_NOT_EXPORTED)
+            val receiver = object : BroadcastReceiver() {
+                override fun onReceive(context: Context, intent: Intent) {
+                    if (intent.action == ScreenShareService.ACTION_STATE) state = intent.getStringExtra(ScreenShareService.EXTRA_STATE).orEmpty().ifBlank { state }
+                    if (intent.action == ScreenShareService.ACTION_FILE_OFFER) pendingOffer = runCatching { JSONObject(intent.getStringExtra(ScreenShareService.EXTRA_FILE_OFFER).orEmpty()) }.getOrNull()
+                }
+            }
+            registerReceiver(receiver, IntentFilter().apply { addAction(ScreenShareService.ACTION_STATE); addAction(ScreenShareService.ACTION_FILE_OFFER) }, Context.RECEIVER_NOT_EXPORTED)
             onDispose { unregisterReceiver(receiver) }
         }
         val projection = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -75,7 +80,15 @@ class MainActivity : ComponentActivity() {
                 Button(onClick = { code = manager.generatePairingCode(); state = "WAITING_FOR_OPERATOR" }, enabled = code.isBlank(), modifier = Modifier.fillMaxWidth()) { Text("BUAT OTP SEKALI PAKAI") }
                 Button(onClick = { val m = getSystemService(MediaProjectionManager::class.java); projection.launch(m.createScreenCaptureIntent()) }, enabled = allChecked && code.length == 6 && relayUrl.startsWith("wss://") && state != "ACTIVE", modifier = Modifier.fillMaxWidth()) { Text("SETUJUI & MULAI SESI") }
                 TextButton(onClick = { startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) }) { Text("Aktifkan Accessibility untuk input (opsional)") }
-                Button(onClick = { manager.revoke(); stopService(Intent(this@MainActivity, ScreenShareService::class.java)); RemoteInputService.activate(false); code = ""; state = "REVOKED" }, enabled = state != "READY" && state != "REVOKED", colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF7A3043)), modifier = Modifier.fillMaxWidth()) { Text("REVOKE ACCESS") }
+                if (state == "ACTIVE") {
+                    Card(colors = CardDefaults.cardColors(containerColor = Color(0xFF17241F)), shape = RoundedCornerShape(18.dp), modifier = Modifier.fillMaxWidth()) {
+                        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text("REMOTE SESSION ACTIVE", color = Color(0xFF20D486), fontSize = 12.sp)
+                            Text("Screen, input, file, dan approved actions sedang tersedia untuk Operator yang disetujui.", color = Color(0xFFA7BBB3), fontSize = 12.sp)
+                            Button(onClick = { manager.revoke(); stopService(Intent(this@MainActivity, ScreenShareService::class.java)); RemoteInputService.activate(false); code = ""; state = "REVOKED" }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF7A3043)), modifier = Modifier.fillMaxWidth()) { Text("REVOKE SESSION") }
+                        }
+                    }
+                }
             }
         }
     }
