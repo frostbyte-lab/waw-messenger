@@ -71,6 +71,7 @@ fun WorkspaceShell(modifier: Modifier = Modifier) {
     var noteDraft by remember { mutableStateOf("") }
     val notesStore = remember(context) { WorkspaceNotesStore(context) }
     var noteItems by remember { mutableStateOf(notesStore.list()) }
+    var scannedBitmap by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
 
     fun refresh(uri: Uri) {
         currentUri = uri
@@ -109,6 +110,14 @@ fun WorkspaceShell(modifier: Modifier = Modifier) {
         }
     }
 
+    val scanPdfPicker = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/pdf")) { uri ->
+        val bitmap = scannedBitmap
+        if (uri != null && bitmap != null) {
+            notice = if (WorkspaceDocumentTools.exportBitmapToPdf(context, uri, bitmap)) "Scan PDF berhasil dibuat" else "Scan PDF gagal dibuat"
+        }
+        scannedBitmap = null
+    }
+
     val backupPicker = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
         if (uri != null) {
             notice = if (WorkspaceBackup.write(context, uri, noteItems, attendanceManager.recent())) "Backup WAW berhasil dibuat" else "Backup gagal dibuat"
@@ -130,9 +139,8 @@ fun WorkspaceShell(modifier: Modifier = Modifier) {
     val scanLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicturePreview()) { bitmap ->
         val parent = currentUri
         if (bitmap != null && parent != null) {
-            val uri = manager.createFile(parent, "image/png", "scan-${System.currentTimeMillis()}.png")
-            val saved = uri != null && context.contentResolver.openOutputStream(uri)?.use { bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) } == true
-            notice = if (saved) "Scan tersimpan sebagai gambar" else "Scan gagal disimpan"
+            scannedBitmap = bitmap
+            scanPdfPicker.launch("scan-${System.currentTimeMillis()}.pdf")
             refresh(parent)
         }
     }

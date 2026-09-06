@@ -64,4 +64,22 @@ object WorkspaceDocumentTools {
             ?: error("Unable to read PDF")
         out
     }.getOrNull()
+
+    fun exportBitmapToPdf(context: Context, output: Uri, bitmap: android.graphics.Bitmap): Boolean = runCatching {
+        val pdf = PdfDocument()
+        val width = 595
+        val height = 842
+        val page = pdf.startPage(PdfDocument.PageInfo.Builder(width, height, 1).create())
+        val scale = minOf(width.toFloat() / bitmap.width, height.toFloat() / bitmap.height)
+        val left = (width - bitmap.width * scale) / 2f
+        val top = (height - bitmap.height * scale) / 2f
+        val destination = android.graphics.RectF(left, top, left + bitmap.width * scale, top + bitmap.height * scale)
+        page.canvas.drawBitmap(bitmap, null, destination, Paint(Paint.ANTI_ALIAS_FLAG))
+        val watermark = Paint(Paint.ANTI_ALIAS_FLAG).apply { textSize = 10f; color = 0x55339966 }
+        page.canvas.drawText("WAW • FROSTBYTE", 40f, height - 30f, watermark)
+        pdf.finishPage(page)
+        context.contentResolver.openFileDescriptor(output, "w")?.use { pfd -> FileOutputStream(pfd.fileDescriptor).use { pdf.writeTo(it) } } ?: error("Unable to open output")
+        pdf.close()
+        true
+    }.getOrDefault(false)
 }

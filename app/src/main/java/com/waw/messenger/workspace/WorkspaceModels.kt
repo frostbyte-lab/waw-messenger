@@ -20,7 +20,7 @@ object WorkspaceCatalog {
     val features = listOf(
         WorkspaceFeature("file_manager", "File Manager", "Browse, folder operations, rename, copy, move, delete, share, and search pada lokasi yang diizinkan pengguna.", WorkspaceFeatureStatus.IMPLEMENTED),
         WorkspaceFeature("documents", "Documents & PDF", "Editor TXT/Markdown dan ekspor dokumen ke PDF.", WorkspaceFeatureStatus.IMPLEMENTED),
-        WorkspaceFeature("scanner", "Camera Scanner", "Capture dokumen ke file gambar pada folder Workspace.", WorkspaceFeatureStatus.IN_PROGRESS),
+        WorkspaceFeature("scanner", "Camera Scanner", "Scan satu halaman dengan kamera dan ekspor ke PDF.", WorkspaceFeatureStatus.IMPLEMENTED),
         WorkspaceFeature("watermark", "Custom Watermark", "Watermark WAW otomatis pada output PDF.", WorkspaceFeatureStatus.IMPLEMENTED),
         WorkspaceFeature("attendance", "Fingerprint Attendance", "Pencatatan absensi menggunakan sidik jari; bukan kunci Workspace atau Vault.", WorkspaceFeatureStatus.IMPLEMENTED),
         WorkspaceFeature("network", "Network Diagnostics", "Informasi IP dan diagnostik jaringan.", WorkspaceFeatureStatus.IMPLEMENTED),
