@@ -13,6 +13,7 @@ const open = (message) => new Promise((resolve, reject) => {
 try {
   await wait(150);
   const host = await open({ type: "host", code: "123456" });
+  host.socket.send(JSON.stringify({ type: "user-consent", sessionId: host.value.sessionId, capabilities: ["SCREEN_SHARE"] }));
   const viewer = await open({ type: "viewer", code: "123456" });
   if (events.includes("approved")) throw new Error("sesi auto-approved");
   viewer.socket.send(JSON.stringify({ type: "approve" }));

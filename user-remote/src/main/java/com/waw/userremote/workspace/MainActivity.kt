@@ -1,117 +1,57 @@
 package com.waw.userremote.workspace
 
+import android.app.Activity
+import android.content.*
+import android.media.projection.MediaProjectionManager
 import android.os.Bundle
+import android.provider.Settings
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Check
-import androidx.compose.material.icons.rounded.Lock
-import androidx.compose.material.icons.rounded.ScreenShare
-import androidx.compose.material.icons.rounded.Security
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.Checkbox
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateMapOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 class MainActivity : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContent { RemoteConsentScreen() }
-    }
-}
-
-private data class ConsentItem(val key: String, val title: String, val detail: String)
-
-@Composable
-private fun RemoteConsentScreen() {
-    val items = listOf(
-        ConsentItem("screen", "Melihat layar perangkat", "Operator dapat melihat layar saat sesi aktif."),
-        ConsentItem("input", "Mengirim tap dan input", "Operator dapat mengirim tap, swipe, dan tombol yang Anda izinkan."),
-        ConsentItem("files", "Transfer file", "Operator dapat mengirim atau mengambil file yang Anda pilih."),
-        ConsentItem("actions", "Menjalankan tindakan yang disetujui", "Hanya tindakan dalam daftar aman dan tercatat yang dapat dijalankan.")
-    )
-    val checked = remember { mutableStateMapOf<String, Boolean>() }
-    var approved by remember { mutableStateOf(false) }
-    val allChecked = items.all { checked[it.key] == true }
-    Surface(color = Ink, modifier = Modifier.fillMaxSize()) {
-        Column(Modifier.fillMaxSize().padding(22.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(Modifier.size(48.dp).background(Orange, RoundedCornerShape(15.dp)), contentAlignment = Alignment.Center) {
-                    Icon(Icons.Rounded.ScreenShare, null, tint = Ink, modifier = Modifier.size(27.dp))
-                }
-                Spacer(Modifier.size(12.dp))
-                Column(Modifier.weight(1f)) {
-                    Text("USER REMOTE WORKSPACE", color = Orange, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.4.sp)
-                    Text("Workspace Anda tetap terkendali", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                }
-                Icon(Icons.Rounded.Security, "Keamanan", tint = Muted)
+    override fun onCreate(savedInstanceState: Bundle?) { super.onCreate(savedInstanceState); setContent { RemoteConsentScreen() } }
+    @Composable private fun RemoteConsentScreen() {
+        val items = listOf("SCREEN_SHARE" to "Melihat layar perangkat", "TOUCH_INPUT" to "Mengirim tap dan swipe", "KEYBOARD_INPUT" to "Tombol navigasi yang diizinkan", "FILE_TRANSFER" to "Transfer file melalui picker eksplisit")
+        val checked = remember { mutableStateMapOf<String, Boolean>() }
+        var relayUrl by remember { mutableStateOf(intent?.data?.getQueryParameter("relay").orEmpty()) }
+        var code by remember { mutableStateOf("") }
+        var state by remember { mutableStateOf("READY") }
+        val manager = remember { RemoteSessionManager(this@MainActivity) }
+        val allChecked = items.all { checked[it.first] == true }
+        val projection = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode != Activity.RESULT_OK || result.data == null) { state = "SCREEN_PERMISSION_DENIED"; return@rememberLauncherForActivityResult }
+            val caps = items.filter { checked[it.first] == true }.map { it.first }
+            startForegroundService(Intent(this@MainActivity, ScreenShareService::class.java).apply {
+                putExtra(ScreenShareService.EXTRA_CODE, code); putExtra(ScreenShareService.EXTRA_RELAY_URL, relayUrl.trim()); putStringArrayListExtra(ScreenShareService.EXTRA_CAPABILITIES, ArrayList(caps)); putExtra(ScreenShareService.EXTRA_RESULT_CODE, result.resultCode); putExtra(ScreenShareService.EXTRA_RESULT_DATA, result.data)
+            })
+            RemoteInputService.activate(caps.contains("TOUCH_INPUT") || caps.contains("KEYBOARD_INPUT")); state = "WAITING_FOR_OPERATOR"
+        }
+        Surface(color = Color(0xFF07110F), modifier = Modifier.fillMaxSize()) {
+            Column(Modifier.fillMaxSize().padding(22.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text("USER REMOTE WORKSPACE", color = Color(0xFFFFA44A), fontSize = 12.sp)
+                Text("Persetujuan akses remote", color = Color.White, fontSize = 28.sp)
+                Text("Tidak ada akses sebelum User menyetujui, MediaProjection diberikan, dan Operator menyetujui sesi.", color = Color(0xFFA7BBB3))
+                OutlinedTextField(relayUrl, { relayUrl = it }, label = { Text("Relay URL wss://") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(code, { code = it.filter(Char::isDigit).take(6) }, label = { Text("OTP pairing") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                Card(colors = CardDefaults.cardColors(containerColor = Color(0xFF10231F)), shape = RoundedCornerShape(18.dp)) { Column(Modifier.padding(10.dp)) { items.forEach { (key, label) -> Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) { Checkbox(checked[key] == true, { checked[key] = it }); Text(label, color = Color.White) } } } }
+                Text("Status: ${state.replace('_', ' ')}", color = Color(0xFFFFA44A))
+                Spacer(Modifier.weight(1f))
+                Button(onClick = { code = manager.generatePairingCode(); state = "WAITING_FOR_OPERATOR" }, enabled = code.isBlank(), modifier = Modifier.fillMaxWidth()) { Text("BUAT OTP SEKALI PAKAI") }
+                Button(onClick = { val m = getSystemService(MediaProjectionManager::class.java); projection.launch(m.createScreenCaptureIntent()) }, enabled = allChecked && code.length == 6 && relayUrl.startsWith("wss://") && state != "ACTIVE", modifier = Modifier.fillMaxWidth()) { Text("SETUJUI & MULAI SESI") }
+                TextButton(onClick = { startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) }) { Text("Aktifkan Accessibility untuk input (opsional)") }
+                Button(onClick = { manager.revoke(); stopService(Intent(this@MainActivity, ScreenShareService::class.java)); RemoteInputService.activate(false); code = ""; state = "REVOKED" }, enabled = state != "READY" && state != "REVOKED", colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF7A3043)), modifier = Modifier.fillMaxWidth()) { Text("REVOKE ACCESS") }
             }
-            Spacer(Modifier.height(8.dp))
-            Text("Persetujuan akses remote", color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.Bold)
-            Text("Periksa bagian yang akan diremote. Tidak ada akses berjalan sebelum Anda menyetujui dan menekan tombol ✓.", color = Muted, lineHeight = 20.sp)
-            Card(colors = CardDefaults.cardColors(containerColor = Panel), shape = RoundedCornerShape(20.dp)) {
-                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    items.forEach { item ->
-                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                            Checkbox(checked = checked[item.key] == true, onCheckedChange = { checked[item.key] = it })
-                            Column(Modifier.weight(1f)) {
-                                Text(item.title, color = Color.White, fontWeight = FontWeight.SemiBold)
-                                Text(item.detail, color = Muted, fontSize = 12.sp, lineHeight = 16.sp)
-                            }
-                        }
-                    }
-                }
-            }
-            Card(colors = CardDefaults.cardColors(containerColor = Color(0xFF17241F)), shape = RoundedCornerShape(16.dp)) {
-                Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Rounded.Lock, null, tint = Orange)
-                    Spacer(Modifier.size(10.dp))
-                    Text("Sesi terlihat melalui notifikasi permanen. Tombol REVOKE selalu tersedia untuk menghentikan akses.", color = Muted, fontSize = 12.sp, lineHeight = 17.sp)
-                }
-            }
-            Spacer(Modifier.weight(1f))
-            Button(
-                onClick = { approved = true }, enabled = allChecked && !approved,
-                modifier = Modifier.fillMaxWidth().height(54.dp), shape = RoundedCornerShape(15.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Orange, contentColor = Ink)
-            ) {
-                Icon(Icons.Rounded.Check, null); Spacer(Modifier.size(8.dp)); Text(if (approved) "PERSETUJUAN TERSIMPAN" else "✓ SAYA SETUJU & LANJUTKAN", fontWeight = FontWeight.Bold)
-            }
-            Text(if (approved) "Menunggu pairing dan persetujuan operator." else "Centang semua bagian yang akan diremote untuk melanjutkan.", color = if (approved) Orange else Muted, fontSize = 12.sp, modifier = Modifier.align(Alignment.CenterHorizontally))
         }
     }
 }
-
-private val Ink = Color(0xFF07110F)
-private val Panel = Color(0xFF10231F)
-private val Orange = Color(0xFFFFA44A)
-private val Muted = Color(0xFFA7BBB3)

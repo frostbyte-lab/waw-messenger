@@ -14,10 +14,10 @@ const send = (socket, value) => {
 };
 const close = (socket, code, reason) => { try { socket?.close(code, reason); } catch {} };
 
-function remove(session) {
+function remove(session, reason = "session closed") {
   clearTimeout(session.timer);
   sessions.delete(session.code);
-  for (const peer of [session.host, session.viewer]) close(peer, 1000, "session closed");
+  for (const peer of [session.host, session.viewer]) close(peer, 1000, reason);
 }
 
 function audit(session, event, extra = {}) {
@@ -31,7 +31,7 @@ function armExpiry(session, ttlMs) {
 }
 
 function forward(session, role, message) {
-  if (!session.approved) return;
+  if (!session.userApproved || !session.operatorApproved) return;
   const target = role === "host" ? session.viewer : session.host;
   if (target) send(target, message);
 }
@@ -47,7 +47,9 @@ wss.on("connection", (socket) => {
         code: hello.code,
         host: socket,
         viewer: null,
-        approved: false,
+        userApproved: false,
+        operatorApproved: false,
+        capabilities: [],
         id: crypto.randomUUID(),
         timer: null,
         expiresAt: 0,
@@ -68,6 +70,7 @@ wss.on("connection", (socket) => {
       socket.role = "viewer";
       send(session.host, { type: "pair-request", sessionId: session.id });
       send(socket, { type: "viewer-ready", sessionId: session.id, expiresAt: session.expiresAt });
+      if (session.userApproved) send(socket, { type: "user-consent", sessionId: session.id, capabilities: session.capabilities });
       audit(session, "operator-paired");
       return;
     }
@@ -81,16 +84,30 @@ wss.on("connection", (socket) => {
     let message;
     try { message = JSON.parse(raw.toString()); } catch { return close(socket, 1003, "invalid json"); }
 
+    if (message.type === "user-consent" && socket.role === "host") {
+      session.userApproved = true;
+      session.capabilities = Array.isArray(message.capabilities) ? message.capabilities.slice(0, 8) : [];
+      audit(session, "user-consent", { capabilities: session.capabilities });
+      send(session.viewer, { type: "user-consent", sessionId: session.id, capabilities: session.capabilities });
+      return;
+    }
     if (message.type === "approve" && socket.role === "viewer") {
-      session.approved = true;
+      if (!session.userApproved) return send(socket, { type: "approval-rejected", reason: "user consent required" });
+      session.operatorApproved = true;
       armExpiry(session, sessionTtlMs);
       send(session.viewer, { type: "approved", sessionId: session.id, expiresAt: session.expiresAt });
       send(session.host, { type: "approved", sessionId: session.id, expiresAt: session.expiresAt });
       audit(session, "operator-approved");
       return;
     }
-    if (message.type === "disconnect") { audit(session, "session-revoked", { by: socket.role }); return remove(session); }
+    if (message.type === "disconnect" || message.type === "revoke") {
+      audit(session, "session-revoked", { by: socket.role });
+      send(session.host, { type: "revoked", sessionId: session.id });
+      send(session.viewer, { type: "revoked", sessionId: session.id });
+      return remove(session, "revoked");
+    }
     if (message.sessionId && message.sessionId !== session.id) return;
+    if (message.type === "input-command" && socket.role === "viewer" && !session.capabilities.includes(message.capability)) return;
     forward(session, socket.role, message);
   });
 

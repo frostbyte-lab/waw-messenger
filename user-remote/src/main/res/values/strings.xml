@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">User Remote Workspace</string>
+    <string name="accessibility_description">Kontrol input hanya selama sesi remote WAW yang disetujui User dan Operator. Tidak menyediakan shell atau akses tersembunyi.</string>
+</resources>

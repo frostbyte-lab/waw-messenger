@@ -14,6 +14,7 @@ import org.json.JSONObject
 class AdminRelayClient {
     private val http = OkHttpClient()
     private var socket: WebSocket? = null
+    private var sessionId: String? = null
     private val _status = MutableStateFlow("DISCONNECTED")
     val status: StateFlow<String> = _status
     private val _frame = MutableStateFlow<android.graphics.Bitmap?>(null)
@@ -36,7 +37,8 @@ class AdminRelayClient {
             override fun onMessage(webSocket: WebSocket, text: String) {
                 val message = runCatching { JSONObject(text) }.getOrNull() ?: return
                 when (message.optString("type")) {
-                    "viewer-ready" -> _status.value = "WAITING_FOR_USER_APPROVAL"
+                    "viewer-ready" -> { sessionId = message.optString("sessionId"); _status.value = "WAITING_FOR_USER_APPROVAL" }
+                    "user-consent" -> { sessionId = message.optString("sessionId", sessionId.orEmpty()); _status.value = "READY_FOR_OPERATOR_APPROVAL" }
                     "approved" -> _status.value = "CONNECTED"
                     "screen-frame" -> {
                         if (_status.value != "CONNECTED") return
@@ -59,12 +61,14 @@ class AdminRelayClient {
     }
 
     fun sendTouch(x: Float, y: Float) {
-        send(JSONObject().put("type", "input-command").put("inputType", "TOUCH_DOWN").put("x", x).put("y", y))
+        send(JSONObject().put("type", "input-command").put("sessionId", sessionId).put("capability", "TOUCH_INPUT").put("inputType", "TOUCH_DOWN").put("x", x).put("y", y))
     }
 
     fun sendKey(keyCode: Int) {
-        send(JSONObject().put("type", "input-command").put("inputType", "KEY_DOWN").put("keyCode", keyCode))
+        send(JSONObject().put("type", "input-command").put("sessionId", sessionId).put("capability", "KEYBOARD_INPUT").put("inputType", "KEY_DOWN").put("keyCode", keyCode))
     }
+
+    fun approve() { send(JSONObject().put("type", "approve").put("sessionId", sessionId)) }
 
     fun disconnect() {
         socket?.send(JSONObject().put("type", "disconnect").toString())

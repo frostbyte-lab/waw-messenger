@@ -130,6 +130,13 @@ private fun ControlMobileScreen() {
                             colors = ButtonDefaults.buttonColors(containerColor = Green, contentColor = Ink),
                             shape = RoundedCornerShape(15.dp)
                         ) { Icon(Icons.Rounded.PhoneAndroid, null); Spacer(Modifier.width(8.dp)); Text("Hubungkan User", fontWeight = FontWeight.Bold) }
+                        Button(
+                            onClick = { client.approve() },
+                            enabled = status == "READY_FOR_OPERATOR_APPROVAL",
+                            modifier = Modifier.fillMaxWidth().height(48.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1A6B55), contentColor = Color.White),
+                            shape = RoundedCornerShape(15.dp)
+                        ) { Icon(Icons.Rounded.Lock, null); Spacer(Modifier.width(8.dp)); Text("Setujui sesi User") }
                     }
                 }
 
