@@ -15,6 +15,7 @@ import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.location.LocationManager
 import android.net.Uri
+import com.waw.messenger.R
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -95,7 +96,8 @@ fun WatermarkScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     val outputPicker = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("image/png")) { uri ->
         val bitmap = preview
         if (uri != null && bitmap != null) {
-            val result = WatermarkRenderer.render(bitmap, fields, includeTimestamp, includeLocation, includeCompass, locationText, compassText, brandPreview)
+            val wawLogo = BitmapFactory.decodeResource(context.resources, R.drawable.waw_main_logo)
+            val result = WatermarkRenderer.render(bitmap, fields, includeTimestamp, includeLocation, includeCompass, locationText, compassText, brandPreview, wawLogo)
             val saved = context.contentResolver.openOutputStream(uri)?.use { result.compress(Bitmap.CompressFormat.PNG, 100, it) } == true
             notice = if (saved) "Watermark berhasil disimpan" else "Gagal menyimpan watermark"
         }
@@ -181,7 +183,7 @@ private fun readLocation(context: Context): String = runCatching {
 private fun compassDirection(degrees: Float): String = listOf("U", "TL", "T", "TG", "S", "BD", "B", "BL")[(degrees / 45f).roundToInt() % 8]
 
 private object WatermarkRenderer {
-    fun render(source: Bitmap, fields: List<WatermarkField>, timestamp: Boolean, location: Boolean, compass: Boolean, locationText: String, compassText: String, brand: Bitmap?): Bitmap {
+    fun render(source: Bitmap, fields: List<WatermarkField>, timestamp: Boolean, location: Boolean, compass: Boolean, locationText: String, compassText: String, brand: Bitmap?, wawLogo: Bitmap?): Bitmap {
         val result = source.copy(Bitmap.Config.ARGB_8888, true)
         val canvas = Canvas(result)
         val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = AndroidColor.WHITE; textSize = (result.width * 0.035f).coerceAtLeast(28f); typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD); setShadowLayer(5f, 1f, 1f, AndroidColor.BLACK) }
@@ -196,8 +198,11 @@ private object WatermarkRenderer {
             val scaled = Bitmap.createScaledBitmap(logo, size, size, true)
             canvas.drawBitmap(scaled, result.width - size - x, result.height - size * 2.5f, paint)
         }
-        paint.textSize = (result.width * 0.035f).coerceAtLeast(26f)
-        canvas.drawText("WAW", x, result.height - paint.textSize * 2.0f, paint)
+        wawLogo?.let { logo ->
+            val logoSize = (result.width * 0.11f).toInt().coerceAtLeast(64)
+            val scaledLogo = Bitmap.createScaledBitmap(logo, logoSize, logoSize, true)
+            canvas.drawBitmap(scaledLogo, x, result.height - logoSize * 1.45f, paint)
+        }
         paint.textSize = (result.width * 0.022f).coerceAtLeast(18f)
         canvas.drawText("Made by Frostbyte Tech Ltd", x, result.height - paint.textSize * 0.55f, paint)
         return result
