@@ -15,7 +15,9 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
 import android.view.Gravity
+import android.view.animation.AlphaAnimation
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -118,19 +120,23 @@ open class LinkedDeviceWebViewActivity : FragmentActivity() {
             })
             addView(brand, LinearLayout.LayoutParams(-1, 48))
             addView(TextView(context).apply {
-                text = "WhatsApp Workspace"
+                text = "Official Linked Viewer  •  Lokal & Aman"
                 textSize = 13f
-                setTextColor(Color.DKGRAY)
+                setTextColor(Color.rgb(0, 125, 75))
             })
             val tabs = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL }
             listOf("\uf075" to "Chat", "\uf2a0" to "Panggilan", "\uf1ea" to "Status", "\uf1b3" to "Fitur", "\uf07b" to "Workspace").forEach { (icon, label) ->
                 val tab = TextView(context).apply {
                     FaText.set(this, context, icon, label)
                     textSize = 12f
+                    maxLines = 1
                     setTextColor(if (label.endsWith("Chat")) Color.WHITE else Color.DKGRAY)
-                    setBackgroundColor(if (label.endsWith("Chat")) Color.rgb(20, 35, 45) else Color.rgb(245, 247, 248))
+                    background = GradientDrawable().apply {
+                        setColor(if (label.endsWith("Chat")) Color.rgb(20, 35, 45) else Color.rgb(245, 247, 248))
+                        cornerRadius = 10f
+                    }
                     gravity = android.view.Gravity.CENTER
-                    setPadding(18, 10, 18, 10)
+                    setPadding(4, 10, 4, 10)
                     setOnClickListener {
                         if (label.endsWith("Workspace")) startActivity(Intent(this@LinkedDeviceWebViewActivity, WorkspaceActivity::class.java))
                     }
@@ -138,6 +144,12 @@ open class LinkedDeviceWebViewActivity : FragmentActivity() {
                 tabs.addView(tab, LinearLayout.LayoutParams(0, 44, 1f).apply { setMargins(4, 10, 4, 0) })
             }
             addView(tabs, LinearLayout.LayoutParams(-1, 54))
+            addView(TextView(context).apply {
+                text = "● TERHUBUNG  •  WhatsApp Web resmi"
+                textSize = 10f
+                setTextColor(Color.rgb(0, 145, 85))
+                setPadding(2, 3, 0, 0)
+            })
         }
         headerChrome = header
         root.addView(header, FrameLayout.LayoutParams(-1, 154, Gravity.TOP))
@@ -227,6 +239,10 @@ open class LinkedDeviceWebViewActivity : FragmentActivity() {
         if (::headerChrome.isInitialized) headerChrome.visibility = state
         if (::bottomChrome.isInitialized) bottomChrome.visibility = state
         if (::dashboard.isInitialized) dashboard.visibility = android.view.View.GONE
+        if (visible && ::headerChrome.isInitialized) {
+            AlphaAnimation(0f, 1f).apply { duration = 260; fillAfter = true }.also { headerChrome.startAnimation(it) }
+            if (::bottomChrome.isInitialized) AlphaAnimation(0f, 1f).apply { duration = 320; fillAfter = true }.also { bottomChrome.startAnimation(it) }
+        }
     }
 
     private fun requestRuntimePermissionsIfNeeded() {
