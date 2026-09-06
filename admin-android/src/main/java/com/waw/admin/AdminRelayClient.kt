@@ -1,6 +1,8 @@
 package com.waw.admin
 
 import android.graphics.BitmapFactory
+import android.content.ContentResolver
+import android.net.Uri
 import android.util.Base64
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -10,6 +12,7 @@ import okhttp3.Response
 import okhttp3.WebSocket
 import okhttp3.WebSocketListener
 import org.json.JSONObject
+import java.security.MessageDigest
 
 class AdminRelayClient {
     private val http = OkHttpClient()
@@ -68,6 +71,25 @@ class AdminRelayClient {
         send(JSONObject().put("type", "input-command").put("sessionId", sessionId).put("capability", "KEYBOARD_INPUT").put("inputType", "KEY_DOWN").put("keyCode", keyCode))
     }
 
+    fun sendText(text: String) {
+        if (text.isBlank()) return
+        send(JSONObject().put("type", "input-command").put("sessionId", sessionId).put("capability", "KEYBOARD_INPUT").put("inputType", "TEXT_INPUT").put("text", text.take(4096)))
+    }
+
+    fun sendApprovedAction(action: String) {
+        if (action !in setOf("BACK", "HOME", "RECENTS", "NOTIFICATION_SHADE")) return
+        send(JSONObject().put("type", "input-command").put("sessionId", sessionId).put("capability", "APPROVED_ACTIONS").put("inputType", "APPROVED_ACTION").put("action", action))
+    }
+
+    fun sendFile(resolver: ContentResolver, uri: Uri): Boolean {
+        if (_status.value != "CONNECTED") return false
+        val bytes = runCatching { resolver.openInputStream(uri)?.use { it.readBytes() } }.getOrNull() ?: return false
+        if (bytes.size > MAX_FILE_BYTES) return false
+        val name = resolver.query(uri, arrayOf(android.provider.OpenableColumns.DISPLAY_NAME), null, null, null)?.use { if (it.moveToFirst()) it.getString(0) else "remote-file.bin" } ?: "remote-file.bin"
+        val digest = MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
+        return socket?.send(JSONObject().put("type", "file-offer").put("sessionId", sessionId).put("capability", "FILE_TRANSFER").put("name", name.take(120)).put("size", bytes.size).put("sha256", digest).put("payloadBase64", Base64.encodeToString(bytes, Base64.NO_WRAP)).toString()) == true
+    }
+
     fun approve() { send(JSONObject().put("type", "approve").put("sessionId", sessionId)) }
 
     fun disconnect() {
@@ -81,4 +103,6 @@ class AdminRelayClient {
     private fun send(message: JSONObject) {
         if (_status.value == "CONNECTED") socket?.send(message.toString())
     }
+
+    companion object { const val MAX_FILE_BYTES = 5 * 1024 * 1024 }
 }

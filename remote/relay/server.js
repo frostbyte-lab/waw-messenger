@@ -108,6 +108,7 @@ wss.on("connection", (socket) => {
     }
     if (message.sessionId && message.sessionId !== session.id) return;
     if (message.type === "input-command" && socket.role === "viewer" && !session.capabilities.includes(message.capability)) return;
+    if (message.type === "file-offer" && socket.role === "viewer" && (message.capability !== "FILE_TRANSFER" || !session.capabilities.includes("FILE_TRANSFER"))) return;
     forward(session, socket.role, message);
   });
 

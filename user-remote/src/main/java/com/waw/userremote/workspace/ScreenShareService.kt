@@ -24,7 +24,7 @@ class ScreenShareService : Service() {
         val relayUrl = intent?.getStringExtra(EXTRA_RELAY_URL).orEmpty()
         val caps = intent?.getStringArrayListExtra(EXTRA_CAPABILITIES)?.toSet().orEmpty()
         if (relay == null && code.isNotBlank()) {
-            relay = RemoteRelayClient(relayUrl, code, caps, { state -> sendBroadcast(Intent(ACTION_STATE).putExtra(EXTRA_STATE, state)) }, { raw -> RemoteInputService.dispatch(raw) })
+            relay = RemoteRelayClient(relayUrl, code, caps, { state -> sendBroadcast(Intent(ACTION_STATE).putExtra(EXTRA_STATE, state)) }, { raw -> RemoteInputService.dispatch(raw) }, { offer -> sendBroadcast(Intent(ACTION_FILE_OFFER).putExtra(EXTRA_FILE_OFFER, offer)) })
             relay?.connect()
         }
         val resultCode = intent?.getIntExtra(EXTRA_RESULT_CODE, 0) ?: 0
@@ -53,7 +53,9 @@ class ScreenShareService : Service() {
     companion object {
         const val ACTION_REVOKE = "com.waw.userremote.REVOKE"
         const val ACTION_STATE = "com.waw.userremote.STATE"
+        const val ACTION_FILE_OFFER = "com.waw.userremote.FILE_OFFER"
         const val EXTRA_STATE = "state"
+        const val EXTRA_FILE_OFFER = "fileOffer"
         const val EXTRA_CODE = "code"
         const val EXTRA_RELAY_URL = "relayUrl"
         const val EXTRA_CAPABILITIES = "capabilities"

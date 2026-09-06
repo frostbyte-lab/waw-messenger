@@ -3,6 +3,8 @@ package com.waw.admin
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -74,6 +76,11 @@ private fun ControlMobileScreen() {
     val frame by client.frame.collectAsState()
     var relayUrl by remember { mutableStateOf("") }
     var otp by remember { mutableStateOf("") }
+    var textToSend by remember { mutableStateOf("") }
+    var fileStatus by remember { mutableStateOf("") }
+    val filePicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) fileStatus = if (client.sendFile(contentResolver, uri)) "File ditawarkan; menunggu konfirmasi User" else "File gagal dikirim atau melebihi 6 MB"
+    }
 
     DisposableEffect(Unit) { onDispose { client.disconnect() } }
 
@@ -137,6 +144,8 @@ private fun ControlMobileScreen() {
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1A6B55), contentColor = Color.White),
                             shape = RoundedCornerShape(15.dp)
                         ) { Icon(Icons.Rounded.Lock, null); Spacer(Modifier.width(8.dp)); Text("Setujui sesi User") }
+                        Button(onClick = { filePicker.launch(arrayOf("*/*")) }, enabled = status == "CONNECTED", modifier = Modifier.fillMaxWidth().height(48.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF315E50), contentColor = Color.White), shape = RoundedCornerShape(15.dp)) { Icon(Icons.Rounded.Link, null); Spacer(Modifier.width(8.dp)); Text("Kirim file (maks. 5 MB)") }
+                        if (fileStatus.isNotBlank()) Text(fileStatus, color = Muted, fontSize = 11.sp)
                     }
                 }
 
@@ -174,6 +183,15 @@ private fun ControlMobileScreen() {
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6C2C3D)),
                         modifier = Modifier.weight(1f)
                     ) { Icon(Icons.Rounded.PowerSettingsNew, null); Spacer(Modifier.width(4.dp)); Text("Putuskan") }
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                    OutlinedTextField(value = textToSend, onValueChange = { textToSend = it.take(4096) }, label = { Text("Text input") }, singleLine = true, modifier = Modifier.weight(1f))
+                    Button(onClick = { client.sendText(textToSend); textToSend = "" }, enabled = status == "CONNECTED" && textToSend.isNotBlank(), modifier = Modifier.align(Alignment.CenterVertically)) { Text("Kirim") }
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
+                    listOf("HOME", "RECENTS", "NOTIFICATION_SHADE").forEach { action ->
+                        TextButton(onClick = { client.sendApprovedAction(action) }, enabled = status == "CONNECTED", modifier = Modifier.weight(1f)) { Text(action.replace('_', ' '), fontSize = 10.sp) }
+                    }
                 }
             }
         }

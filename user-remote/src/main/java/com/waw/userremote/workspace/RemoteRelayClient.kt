@@ -18,6 +18,7 @@ class RemoteRelayClient(
     private val capabilities: Set<String>,
     private val onState: (String) -> Unit,
     private val onInput: (String) -> Unit,
+    private val onFileOffer: (String) -> Unit = {},
 ) {
     private val client = OkHttpClient.Builder().pingInterval(20, TimeUnit.SECONDS).build()
     private var socket: WebSocket? = null
@@ -42,6 +43,7 @@ class RemoteRelayClient(
                     }
                     "approved" -> { if (msg.optString("sessionId") == sessionId) { approved = true; onState("ACTIVE") } }
                     "input-command" -> if (approved && msg.optString("sessionId") == sessionId) onInput(text)
+                    "file-offer" -> if (approved && capabilities.contains("FILE_TRANSFER") && msg.optString("sessionId") == sessionId) onFileOffer(text)
                     "revoked", "session-closed" -> { approved = false; onState("REVOKED"); close(false) }
                 }
             }

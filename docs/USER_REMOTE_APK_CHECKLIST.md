@@ -15,13 +15,13 @@ APK User Remote Workspace adalah aplikasi Companion mandiri yang dapat dibagikan
 | Logo awal | Selesai awal | Logo gelap-oranye tersedia dan dapat diganti per workspace. |
 | Layar persetujuan granular | Selesai awal | Screen, input, file, dan tindakan terkontrol ditampilkan sebagai pilihan. |
 | Build debug APK | Lulus | APK debug berhasil dikompilasi. |
-| Pairing OTP ke relay | Belum selesai | UI dan transport standalone belum terhubung. |
-| Persetujuan Operator | Belum selesai | Relay sudah mendukung approval, tetapi APK standalone belum memakai client tersebut. |
-| Screen streaming | Belum selesai | MediaProjection perlu dihubungkan ke transport standalone. |
-| Input tap dan keyboard | Belum selesai | Accessibility service perlu diintegrasikan dan dibatasi oleh capability. |
-| Transfer file | Belum selesai | Protokol, UI picker, batas ukuran, dan audit belum tersedia di APK standalone. |
-| Approved actions | Belum selesai | Harus menggunakan allowlist, bukan shell arbitrer. |
-| Revoke real-time | Belum selesai | Tombol UI perlu benar-benar memutus service, socket, token, dan projection. |
+| Pairing OTP ke relay | Implementasi awal | APK standalone memakai WSS relay, session ID, TTL, dan consent User. |
+| Persetujuan Operator | Implementasi awal | Admin menerima consent dan memiliki approval eksplisit. |
+| Screen streaming | Implementasi awal | MediaProjection terhubung ke foreground service dan transport WSS. |
+| Input tap dan keyboard | Implementasi awal | Gesture, navigation, dan text input node terfokus dibatasi capability. |
+| Transfer file | Implementasi awal | Admin → User memakai picker, konfirmasi, checksum SHA-256, dan batas 5 MB. |
+| Approved actions | Implementasi awal | Allowlist Back, Home, Recents, dan Notification Shade; tanpa shell. |
+| Revoke real-time | Implementasi awal | Revoke memutus service, socket, token, projection, dan input. |
 | Cloudflare Tunnel | Belum aktif | `cloudflared` belum tersedia dan tunnel publik belum dikonfigurasi. |
 | Distribusi GitHub Release | Disiapkan | Workflow GitHub sudah diarahkan untuk menerbitkan APK User. |
 | Signing produksi | Belum diverifikasi | Keystore produksi dan SHA-256 harus tersedia sebelum distribusi luas. |

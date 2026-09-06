@@ -27,3 +27,11 @@ npm start
 ```
 
 The Android host must approve the session. Input commands are sent only from explicit CLI commands. Production packaging still requires a signed Windows UI, secure credential storage, certificate pinning, and a user-facing audit log.
+
+## Relay WSS production
+
+`relay/Dockerfile`, `relay/docker-compose.yml`, dan `relay/Caddyfile.example` menyediakan deployment relay di balik TLS. Salin `Caddyfile.example` menjadi `Caddyfile`, ganti domain dengan hostname yang DNS-nya mengarah ke server, lalu jalankan `docker compose up -d --build`. APK hanya menerima URL `wss://`; jangan expose port relay mentah ke internet.
+
+## Remote capabilities
+
+Transfer file Admin → User menggunakan picker Android, konfirmasi User, Storage Access Framework, checksum SHA-256, dan batas 5 MB per file. Text input menggunakan node input yang sedang fokus melalui Accessibility Service. Approved actions hanya mengizinkan `BACK`, `HOME`, `RECENTS`, dan `NOTIFICATION_SHADE`; shell arbitrer tidak didukung.

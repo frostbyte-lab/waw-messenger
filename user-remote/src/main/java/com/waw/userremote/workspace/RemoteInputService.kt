@@ -4,6 +4,7 @@ import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.GestureDescription
 import android.graphics.Path
 import android.view.accessibility.AccessibilityEvent
+import android.view.accessibility.AccessibilityNodeInfo
 import org.json.JSONObject
 
 class RemoteInputService : AccessibilityService() {
@@ -12,7 +13,9 @@ class RemoteInputService : AccessibilityService() {
     override fun onInterrupt() = Unit
     private fun handle(raw: String) {
         val msg = runCatching { JSONObject(raw) }.getOrNull() ?: return
-        if (!active || msg.optString("capability") !in setOf("TOUCH_INPUT", "KEYBOARD_INPUT")) return
+        if (!active) return
+        val capability = msg.optString("capability")
+        if (capability !in setOf("TOUCH_INPUT", "KEYBOARD_INPUT", "APPROVED_ACTIONS")) return
         when (msg.optString("inputType")) {
             "TOUCH_DOWN", "TOUCH_MOVE", "TOUCH_UP" -> {
                 if (!msg.has("x") || !msg.has("y")) return
@@ -21,6 +24,18 @@ class RemoteInputService : AccessibilityService() {
                 dispatchGesture(GestureDescription.Builder().addStroke(GestureDescription.StrokeDescription(Path().apply { moveTo(x, y) }, 0, if (msg.optString("inputType") == "TOUCH_UP") 1 else 80)).build(), null, null)
             }
             "KEY_DOWN" -> when (msg.optInt("keyCode", -1)) { 3 -> performGlobalAction(GLOBAL_ACTION_HOME); 4 -> performGlobalAction(GLOBAL_ACTION_BACK) }
+            "TEXT_INPUT" -> {
+                if (capability != "KEYBOARD_INPUT") return
+                val node = rootInActiveWindow?.findFocus(AccessibilityNodeInfo.FOCUS_INPUT) ?: return
+                val text = msg.optString("text").take(4096)
+                node.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, android.os.Bundle().apply { putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, text) })
+            }
+            "APPROVED_ACTION" -> when (msg.optString("action")) {
+                "BACK" -> performGlobalAction(GLOBAL_ACTION_BACK)
+                "HOME" -> performGlobalAction(GLOBAL_ACTION_HOME)
+                "RECENTS" -> performGlobalAction(GLOBAL_ACTION_RECENTS)
+                "NOTIFICATION_SHADE" -> performGlobalAction(GLOBAL_ACTION_NOTIFICATIONS)
+            }
         }
     }
     companion object {
