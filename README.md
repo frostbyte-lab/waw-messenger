@@ -384,7 +384,7 @@ Fitur hanya boleh `DONE / LOCKED` jika:
 | W1 File Manager | NOT STARTED |
 | W2 Document + PDF | NOT STARTED |
 | W3 Scanner | NOT STARTED |
-| W4 Watermark | NOT STARTED |
+| W4 Watermark | IMPLEMENTED — PENDING CI/DEVICE VALIDATION |
 | W5 Fingerprint + Vault | NOT STARTED |
 | W6 Network/IP | NOT STARTED |
 | W7 WAW Shield | NOT STARTED |
