@@ -5,7 +5,7 @@ plugins {
 
 android {
     namespace = "com.waw.admin"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.waw.admin"

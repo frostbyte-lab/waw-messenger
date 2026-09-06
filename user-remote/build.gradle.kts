@@ -5,7 +5,7 @@ plugins {
 
 android {
     namespace = "com.waw.messenger"
-    compileSdk = 36
+    compileSdk = 37
     defaultConfig {
         applicationId = "com.waw.userremote.workspace"
         minSdk = 26
