@@ -157,6 +157,7 @@ Remote control tidak boleh berjalan diam-diam atau tanpa otorisasi pemilik peran
 - Lokasi GPS aktual dengan izin runtime pengguna.
 - Arah kompas dari sensor perangkat jika tersedia.
 - Logo/image perusahaan atau brand pengguna.
+- Posisi watermark: kiri atas, tengah atas, kanan atas, kiri tengah, tengah, kanan tengah, kiri bawah, tengah bawah, dan kanan bawah.
 - Branding resmi WAW dan label `Made by Frostbyte Tech Ltd` selalu ikut serta dan tidak dapat diubah.
 - Ekspor watermark ke PNG melalui Storage Access Framework.
 - Modul hanya didistribusikan melalui WAW; tidak ada paket watermark mandiri dari sumber luar.

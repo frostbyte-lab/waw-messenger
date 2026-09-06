@@ -40,6 +40,8 @@ import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -69,6 +71,18 @@ import kotlin.math.roundToInt
 
 data class WatermarkField(val label: String, val value: String)
 
+enum class WatermarkPosition(val title: String, val horizontal: Float, val vertical: Float) {
+    TOP_START("Kiri atas", 0f, 0f),
+    TOP_CENTER("Tengah atas", 0.5f, 0f),
+    TOP_END("Kanan atas", 1f, 0f),
+    CENTER_START("Kiri tengah", 0f, 0.5f),
+    CENTER("Tengah", 0.5f, 0.5f),
+    CENTER_END("Kanan tengah", 1f, 0.5f),
+    BOTTOM_START("Kiri bawah", 0f, 1f),
+    BOTTOM_CENTER("Tengah bawah", 0.5f, 1f),
+    BOTTOM_END("Kanan bawah", 1f, 1f)
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WatermarkScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
@@ -80,6 +94,8 @@ fun WatermarkScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     var includeTimestamp by remember { mutableStateOf(true) }
     var includeLocation by remember { mutableStateOf(false) }
     var includeCompass by remember { mutableStateOf(false) }
+    var position by remember { mutableStateOf(WatermarkPosition.BOTTOM_END) }
+    var positionMenuOpen by remember { mutableStateOf(false) }
     var locationText by remember { mutableStateOf("Lokasi belum diizinkan") }
     var compassText by remember { mutableStateOf("Kompas tidak tersedia") }
     var notice by remember { mutableStateOf<String?>(null) }
@@ -97,7 +113,7 @@ fun WatermarkScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
         val bitmap = preview
         if (uri != null && bitmap != null) {
             val wawLogo = BitmapFactory.decodeResource(context.resources, R.drawable.waw_main_logo)
-            val result = WatermarkRenderer.render(bitmap, fields, includeTimestamp, includeLocation, includeCompass, locationText, compassText, brandPreview, wawLogo)
+            val result = WatermarkRenderer.render(bitmap, fields, includeTimestamp, includeLocation, includeCompass, locationText, compassText, brandPreview, wawLogo, position)
             val saved = context.contentResolver.openOutputStream(uri)?.use { result.compress(Bitmap.CompressFormat.PNG, 100, it) } == true
             notice = if (saved) "Watermark berhasil disimpan" else "Gagal menyimpan watermark"
         }
@@ -154,6 +170,18 @@ fun WatermarkScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
             if (includeLocation) Row(verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Default.LocationOn, null); Text(locationText) }
             MetadataToggle("Arah kompas", includeCompass) { includeCompass = it }
             if (includeCompass) Text("Arah: $compassText")
+            Text("Posisi watermark", color = Color(0xFF0F766E))
+            OutlinedButton(onClick = { positionMenuOpen = true }, modifier = Modifier.fillMaxWidth()) {
+                Text(position.title)
+            }
+            DropdownMenu(expanded = positionMenuOpen, onDismissRequest = { positionMenuOpen = false }) {
+                WatermarkPosition.entries.forEach { option ->
+                    DropdownMenuItem(
+                        text = { Text(option.title) },
+                        onClick = { position = option; positionMenuOpen = false }
+                    )
+                }
+            }
             Spacer(Modifier.height(4.dp))
             Button(onClick = { if (preview == null) notice = "Pilih gambar dahulu" else outputPicker.launch("waw-watermark-${System.currentTimeMillis()}.png") }, modifier = Modifier.fillMaxWidth()) { Icon(Icons.Default.Save, null); Text("  Simpan watermark") }
             notice?.let { Text(it, color = Color(0xFF0F766E)) }
@@ -183,28 +211,50 @@ private fun readLocation(context: Context): String = runCatching {
 private fun compassDirection(degrees: Float): String = listOf("U", "TL", "T", "TG", "S", "BD", "B", "BL")[(degrees / 45f).roundToInt() % 8]
 
 private object WatermarkRenderer {
-    fun render(source: Bitmap, fields: List<WatermarkField>, timestamp: Boolean, location: Boolean, compass: Boolean, locationText: String, compassText: String, brand: Bitmap?, wawLogo: Bitmap?): Bitmap {
+    fun render(source: Bitmap, fields: List<WatermarkField>, timestamp: Boolean, location: Boolean, compass: Boolean, locationText: String, compassText: String, brand: Bitmap?, wawLogo: Bitmap?, position: WatermarkPosition): Bitmap {
         val result = source.copy(Bitmap.Config.ARGB_8888, true)
         val canvas = Canvas(result)
         val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = AndroidColor.WHITE; textSize = (result.width * 0.035f).coerceAtLeast(28f); typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD); setShadowLayer(5f, 1f, 1f, AndroidColor.BLACK) }
-        val x = result.width * 0.04f
-        var y = result.height * 0.08f
-        fields.filter { it.label.isNotBlank() && it.value.isNotBlank() }.forEach { canvas.drawText("${it.label}: ${it.value}", x, y, paint); y += paint.textSize * 1.35f }
-        if (timestamp) { canvas.drawText("Waktu: ${SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())}", x, y, paint); y += paint.textSize * 1.35f }
-        if (location) { canvas.drawText("Lokasi: $locationText", x, y, paint); y += paint.textSize * 1.35f }
-        if (compass) { canvas.drawText("Arah: $compassText", x, y, paint) }
-        brand?.let { logo ->
-            val size = (result.width * 0.16f).toInt().coerceAtLeast(80)
-            val scaled = Bitmap.createScaledBitmap(logo, size, size, true)
-            canvas.drawBitmap(scaled, result.width - size - x, result.height - size * 2.5f, paint)
+        val padding = result.width * 0.04f
+        val lineHeight = paint.textSize * 1.35f
+        val lines = buildList {
+            fields.filter { it.label.isNotBlank() && it.value.isNotBlank() }.forEach { add("${it.label}: ${it.value}") }
+            if (timestamp) add("Waktu: ${SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())}")
+            if (location) add("Lokasi: $locationText")
+            if (compass) add("Arah: $compassText")
         }
+        val logoSize = (result.width * 0.16f).toInt().coerceAtLeast(80)
+        val contentHeight = (lines.size * lineHeight + if (brand != null) logoSize + padding else 0f).coerceAtLeast(lineHeight)
+        val footerReserve = result.height * 0.16f
+        val top = when (position.vertical) {
+            0f -> padding
+            0.5f -> (result.height - contentHeight) / 2f
+            else -> result.height - footerReserve - contentHeight
+        }.coerceIn(padding, (result.height - contentHeight - padding).coerceAtLeast(padding))
+        val anchorX = result.width * position.horizontal
+        paint.textAlign = when (position.horizontal) {
+            0f -> Paint.Align.LEFT
+            0.5f -> Paint.Align.CENTER
+            else -> Paint.Align.RIGHT
+        }
+        lines.forEachIndexed { index, line -> canvas.drawText(line, anchorX, top + paint.textSize + index * lineHeight, paint) }
+        brand?.let { logo ->
+            val scaled = Bitmap.createScaledBitmap(logo, logoSize, logoSize, true)
+            val logoX = when (position.horizontal) {
+                0f -> anchorX
+                0.5f -> anchorX - logoSize / 2f
+                else -> anchorX - logoSize
+            }
+            canvas.drawBitmap(scaled, logoX, top + lines.size * lineHeight, paint)
+        }
+        paint.textAlign = Paint.Align.LEFT
         wawLogo?.let { logo ->
-            val logoSize = (result.width * 0.11f).toInt().coerceAtLeast(64)
-            val scaledLogo = Bitmap.createScaledBitmap(logo, logoSize, logoSize, true)
-            canvas.drawBitmap(scaledLogo, x, result.height - logoSize * 1.45f, paint)
+            val fixedLogoSize = (result.width * 0.11f).toInt().coerceAtLeast(64)
+            val scaledLogo = Bitmap.createScaledBitmap(logo, fixedLogoSize, fixedLogoSize, true)
+            canvas.drawBitmap(scaledLogo, padding, result.height - fixedLogoSize * 1.45f, paint)
         }
         paint.textSize = (result.width * 0.022f).coerceAtLeast(18f)
-        canvas.drawText("Made by Frostbyte Tech Ltd", x, result.height - paint.textSize * 0.55f, paint)
+        canvas.drawText("Made by Frostbyte Tech Ltd", padding, result.height - paint.textSize * 0.55f, paint)
         return result
     }
 }
