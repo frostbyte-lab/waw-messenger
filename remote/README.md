@@ -6,7 +6,7 @@
 
 ## Distribusi APK
 
-Link undangan hanya boleh mengarah ke APK **WAW User/Companion** pada perangkat target. APK **Admin/Operator** bukan artefak undangan dan tidak boleh dibagikan ke lingkungan lain. Modul Admin dilindungi permission Android level `signature`, sehingga hanya dapat dibuka ketika WAW utama yang ditandatangani dengan sertifikat yang sama sudah terpasang. Build release juga hanya mengunggah artefak dari modul `app`; APK `admin-android` tidak dipublikasikan.
+Link undangan hanya boleh mengarah ke APK **WAW utama** pada perangkat target. Tidak ada APK Companion terpisah: modul Remote User (`RemoteHostActivity`) sudah berada di dalam APK WAW utama. Setelah WAW terpasang, link `waw://remote/invite?relay=wss%3A%2F%2Frelay.example` membuka modul tersebut dan mengisi alamat relay; User tetap harus membuat OTP serta menyetujui izin screen capture secara manual. APK **Admin/Operator** bukan artefak undangan dan tidak boleh dibagikan ke lingkungan lain. Modul Admin dilindungi permission Android level `signature`, sehingga hanya dapat dibuka ketika WAW utama yang ditandatangani dengan sertifikat yang sama sudah terpasang. Build release juga hanya mengunggah artefak dari modul `app`; APK `admin-android` tidak dipublikasikan.
 
 ```bash
 cd remote/relay

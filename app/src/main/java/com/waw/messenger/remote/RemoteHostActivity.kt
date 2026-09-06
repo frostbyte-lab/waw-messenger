@@ -58,16 +58,16 @@ import androidx.fragment.app.FragmentActivity
 class RemoteHostActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent { RemoteUserScreen() }
+        setContent { RemoteUserScreen(inviteRelayUrl = intent?.data?.getQueryParameter("relay").orEmpty()) }
     }
 
     @Composable
-    private fun RemoteUserScreen() {
+    private fun RemoteUserScreen(inviteRelayUrl: String = "") {
         val context = this@RemoteHostActivity
         val manager = remember { RemoteSessionManager(context) }
         var code by remember { mutableStateOf(manager.currentCode()) }
         var status by remember { mutableStateOf(manager.status()) }
-        var relayUrl by remember { mutableStateOf("") }
+        var relayUrl by remember { mutableStateOf(inviteRelayUrl) }
         val clipboard = LocalClipboardManager.current
         val projection = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == Activity.RESULT_OK && result.data != null) {
