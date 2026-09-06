@@ -67,6 +67,10 @@ fun WorkspaceShell(modifier: Modifier = Modifier) {
     var pendingTransfer by remember { mutableStateOf<Transfer?>(null) }
     var attendanceDialog by remember { mutableStateOf(false) }
     val attendanceManager = remember(context) { AttendanceManager(context) }
+    var notesDialog by remember { mutableStateOf(false) }
+    var noteDraft by remember { mutableStateOf("") }
+    val notesStore = remember(context) { WorkspaceNotesStore(context) }
+    var noteItems by remember { mutableStateOf(notesStore.list()) }
 
     fun refresh(uri: Uri) {
         currentUri = uri
@@ -163,6 +167,10 @@ fun WorkspaceShell(modifier: Modifier = Modifier) {
                 OutlinedButton(onClick = { attendanceDialog = true }, modifier = Modifier.fillMaxWidth().padding(top = 10.dp)) {
                     Icon(Icons.Default.Fingerprint, contentDescription = null)
                     Text("  Fingerprint Attendance")
+                }
+                OutlinedButton(onClick = { notesDialog = true }, modifier = Modifier.fillMaxWidth().padding(top = 10.dp)) {
+                    Icon(Icons.Default.Description, contentDescription = null)
+                    Text("  Notes & Tasks")
                 }
                 Text("Akses hanya ke folder yang kamu pilih melalui Android Storage Access Framework.", modifier = Modifier.padding(top = 12.dp), style = MaterialTheme.typography.bodySmall)
             } else {
@@ -290,6 +298,33 @@ fun WorkspaceShell(modifier: Modifier = Modifier) {
                 }
                 attendanceDialog = false
             }
+        )
+    }
+
+    if (notesDialog) {
+        AlertDialog(
+            onDismissRequest = { notesDialog = false },
+            title = { Text("Notes & Tasks") },
+            text = {
+                Column {
+                    OutlinedTextField(
+                        value = noteDraft,
+                        onValueChange = { noteDraft = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text("Catatan atau tugas baru") }
+                    )
+                    Button(onClick = {
+                        notesStore.add(noteDraft)
+                        noteDraft = ""
+                        noteItems = notesStore.list()
+                    }, modifier = Modifier.padding(top = 8.dp)) { Text("Simpan") }
+                    if (noteItems.isNotEmpty()) {
+                        Text("Catatan lokal", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 12.dp))
+                        noteItems.take(8).forEach { Text("• $it", style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 4.dp)) }
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { notesDialog = false }) { Text("Tutup") } }
         )
     }
 }
