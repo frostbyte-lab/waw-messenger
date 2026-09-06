@@ -106,16 +106,16 @@ open class LinkedDeviceWebViewActivity : FragmentActivity() {
                 setTextColor(Color.DKGRAY)
             })
             val tabs = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL }
-            listOf("Chat", "Panggilan", "Status", "Fitur", "Workspace").forEach { label ->
+            listOf("●  Chat", "◖  Panggilan", "◌  Status", "✣  Fitur", "▦  Workspace").forEach { label ->
                 val tab = TextView(context).apply {
                     text = label
                     textSize = 12f
-                    setTextColor(if (label == "Chat") Color.WHITE else Color.DKGRAY)
-                    setBackgroundColor(if (label == "Chat") Color.rgb(20, 35, 45) else Color.rgb(245, 247, 248))
+                    setTextColor(if (label.endsWith("Chat")) Color.WHITE else Color.DKGRAY)
+                    setBackgroundColor(if (label.endsWith("Chat")) Color.rgb(20, 35, 45) else Color.rgb(245, 247, 248))
                     gravity = android.view.Gravity.CENTER
                     setPadding(18, 10, 18, 10)
                     setOnClickListener {
-                        if (label == "Workspace") startActivity(Intent(this@LinkedDeviceWebViewActivity, WorkspaceActivity::class.java))
+                        if (label.endsWith("Workspace")) startActivity(Intent(this@LinkedDeviceWebViewActivity, WorkspaceActivity::class.java))
                     }
                 }
                 tabs.addView(tab, LinearLayout.LayoutParams(0, 44, 1f).apply { setMargins(4, 10, 4, 0) })
@@ -128,15 +128,15 @@ open class LinkedDeviceWebViewActivity : FragmentActivity() {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
             setBackgroundColor(Color.WHITE)
-            listOf("Chat", "Panggilan", "Status", "Fitur", "Workspace").forEach { label ->
+            listOf("●  Chat", "◖  Panggilan", "◌  Status", "✣  Fitur", "▦  Workspace").forEach { label ->
                 addView(TextView(context).apply {
                     text = label
                     textSize = 12f
                     gravity = Gravity.CENTER
-                    setTextColor(if (label == "Workspace") green else Color.DKGRAY)
+                    setTextColor(if (label.endsWith("Workspace")) green else Color.DKGRAY)
                     setPadding(4, 12, 4, 12)
                     setOnClickListener {
-                        if (label == "Workspace") startActivity(Intent(this@LinkedDeviceWebViewActivity, WorkspaceActivity::class.java))
+                        if (label.endsWith("Workspace")) startActivity(Intent(this@LinkedDeviceWebViewActivity, WorkspaceActivity::class.java))
                     }
                 }, LinearLayout.LayoutParams(0, 60, 1f))
             }
@@ -163,10 +163,10 @@ open class LinkedDeviceWebViewActivity : FragmentActivity() {
             })
             val grid = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL }
             listOf(
-                listOf("Dokumen", "Editor teks & PDF", false),
-                listOf("Tugas", "Catatan absensi & pekerjaan", false),
-                listOf("Kalender", "Agenda lokal", false),
-                listOf("File", "File Manager Workspace", true)
+                listOf("▤  Dokumen", "Editor teks & PDF", false),
+                listOf("✓  Tugas", "Catatan absensi & pekerjaan", false),
+                listOf("▦  Kalender", "Agenda lokal", false),
+                listOf("▱  File", "File Manager Workspace", true)
             ).chunked(2).forEach { rowItems ->
                 val row = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL }
                 rowItems.forEach { item ->
