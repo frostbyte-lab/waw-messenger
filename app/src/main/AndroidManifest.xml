@@ -21,6 +21,6 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".linked.WorkspaceActivity" android:exported="false" />
+        <activity android:name=".linked.WorkspaceActivity" android:exported="false" android:theme="@style/Theme.WAW.WorkspaceOverlay" />
     </application>
 </manifest>
