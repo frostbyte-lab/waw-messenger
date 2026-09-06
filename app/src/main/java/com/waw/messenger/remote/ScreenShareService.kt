@@ -21,12 +21,18 @@ class ScreenShareService : Service() {
     private var projection: MediaProjection? = null
     private var display: VirtualDisplay? = null
     private var reader: ImageReader? = null
+    private var relay: RemoteRelayClient? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         createChannel()
         startForeground(NOTIFICATION_ID, notification())
         val resultCode = intent?.getIntExtra(EXTRA_RESULT_CODE, 0) ?: 0
         val data = intent?.getParcelableExtra<Intent>(EXTRA_RESULT_DATA)
+        val relayUrl = intent?.getStringExtra(EXTRA_RELAY_URL).orEmpty()
+        if (relayUrl.startsWith("wss://") && relay == null) {
+            relay = RemoteRelayClient(relayUrl, RemoteSessionManager(this).currentCode())
+            relay?.connect()
+        }
         if (resultCode != 0 && data != null && projection == null) startCapture(resultCode, data)
         return START_NOT_STICKY
     }
@@ -37,7 +43,10 @@ class ScreenShareService : Service() {
         val metrics = resources.displayMetrics
         reader = ImageReader.newInstance(metrics.widthPixels, metrics.heightPixels, PixelFormat.RGBA_8888, 2)
         reader?.setOnImageAvailableListener({ imageReader ->
-            imageReader.acquireLatestImage()?.close()
+            imageReader.acquireLatestImage()?.also { image ->
+                relay?.sendImage(image)
+                image.close()
+            }
         }, null)
         display = projection?.createVirtualDisplay(
             "WAW-Remote-Screen",
@@ -55,6 +64,7 @@ class ScreenShareService : Service() {
         display?.release()
         reader?.close()
         projection?.stop()
+        relay?.close()
         super.onDestroy()
     }
 
@@ -78,6 +88,7 @@ class ScreenShareService : Service() {
     companion object {
         const val EXTRA_RESULT_CODE = "waw.remote.resultCode"
         const val EXTRA_RESULT_DATA = "waw.remote.resultData"
+        const val EXTRA_RELAY_URL = "waw.remote.relayUrl"
         private const val CHANNEL_ID = "waw_remote"
         private const val NOTIFICATION_ID = 7401
     }

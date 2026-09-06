@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -30,11 +31,13 @@ class RemoteHostActivity : FragmentActivity() {
             var code by remember { mutableStateOf(manager.currentCode()) }
             var status by remember { mutableStateOf(manager.status()) }
             var target by remember { mutableStateOf("Pilih target") }
+            var relayUrl by remember { mutableStateOf("") }
             val projection = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
                 if (result.resultCode == Activity.RESULT_OK) {
                     val serviceIntent = Intent(this@RemoteHostActivity, ScreenShareService::class.java).apply {
                         putExtra(ScreenShareService.EXTRA_RESULT_CODE, result.resultCode)
                         putExtra(ScreenShareService.EXTRA_RESULT_DATA, result.data)
+                        putExtra(ScreenShareService.EXTRA_RELAY_URL, relayUrl)
                     }
                     startForegroundService(serviceIntent)
                     status = "SCREEN_SHARE_APPROVED"
@@ -47,6 +50,7 @@ class RemoteHostActivity : FragmentActivity() {
                     Button(onClick = { target = "Android → Windows" }, modifier = Modifier.padding(top = 16.dp)) { Text("Pilih Windows") }
                     Button(onClick = { target = "Android → Android" }, modifier = Modifier.padding(top = 8.dp)) { Text("Pilih Android lain") }
                     Text("Target: $target", modifier = Modifier.padding(top = 8.dp))
+                    OutlinedTextField(value = relayUrl, onValueChange = { relayUrl = it }, label = { Text("Relay URL wss://") }, modifier = Modifier.padding(top = 12.dp))
                     Button(onClick = { code = manager.generatePairingCode(); status = manager.status() }, modifier = Modifier.padding(top = 20.dp)) { Text("Buat Kode Pairing") }
                     if (code.isNotBlank()) Text("Kode sekali pakai: $code", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(top = 16.dp))
                     Text("Status: $status", modifier = Modifier.padding(top = 12.dp))
