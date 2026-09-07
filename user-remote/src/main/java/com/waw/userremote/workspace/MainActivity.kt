@@ -34,12 +34,13 @@ import androidx.compose.ui.unit.sp
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) { super.onCreate(savedInstanceState); setContent { RemoteConsentScreen() }; if (Build.VERSION.SDK_INT >= 33) requestPermissions(arrayOf("android.permission.POST_NOTIFICATIONS"), 1001) }
     @Composable private fun RemoteConsentScreen() {
-        val items = listOf("SCREEN_SHARE" to "Melihat layar perangkat", "TOUCH_INPUT" to "Mengirim tap dan swipe", "KEYBOARD_INPUT" to "Tombol navigasi dan text input", "FILE_TRANSFER" to "Transfer file melalui picker eksplisit", "APPROVED_ACTIONS" to "Actions aman: Back, Home, Recents, notifikasi")
+        val items = listOf("SCREEN_SHARE" to "Melihat layar perangkat", "TOUCH_INPUT" to "Mengirim tap dan swipe", "KEYBOARD_INPUT" to "Tombol navigasi dan text input", "FILE_TRANSFER" to "Transfer file melalui picker eksplisit", "APPROVED_ACTIONS" to "Actions aman: Back, Home, Recents, notifikasi", "APP_ACCESS" to "Membuka aplikasi setelah persetujuan per permintaan")
         val checked = remember { mutableStateMapOf<String, Boolean>() }
         var relayUrl by remember { mutableStateOf(intent?.data?.getQueryParameter("relay").orEmpty()) }
         var code by remember { mutableStateOf("") }
         var state by remember { mutableStateOf("READY") }
         var pendingOffer by remember { mutableStateOf<JSONObject?>(null) }
+        var pendingApp by remember { mutableStateOf<JSONObject?>(null) }
         val manager = remember { RemoteSessionManager(this@MainActivity) }
         val allChecked = items.all { checked[it.first] == true }
         val connectionPulse by rememberInfiniteTransition(label = "connection").animateFloat(initialValue = 0.2f, targetValue = 1f, animationSpec = infiniteRepeatable(animation = tween(1200), repeatMode = RepeatMode.Reverse), label = "connectionPulse")
@@ -59,9 +60,10 @@ class MainActivity : ComponentActivity() {
                 override fun onReceive(context: Context, intent: Intent) {
                     if (intent.action == ScreenShareService.ACTION_STATE) state = intent.getStringExtra(ScreenShareService.EXTRA_STATE).orEmpty().ifBlank { state }
                     if (intent.action == ScreenShareService.ACTION_FILE_OFFER) pendingOffer = runCatching { JSONObject(intent.getStringExtra(ScreenShareService.EXTRA_FILE_OFFER).orEmpty()) }.getOrNull()
+                    if (intent.action == ScreenShareService.ACTION_APP_REQUEST) pendingApp = runCatching { JSONObject(intent.getStringExtra(ScreenShareService.EXTRA_APP_REQUEST).orEmpty()) }.getOrNull()
                 }
             }
-            registerReceiver(receiver, IntentFilter().apply { addAction(ScreenShareService.ACTION_STATE); addAction(ScreenShareService.ACTION_FILE_OFFER) }, Context.RECEIVER_NOT_EXPORTED)
+            registerReceiver(receiver, IntentFilter().apply { addAction(ScreenShareService.ACTION_STATE); addAction(ScreenShareService.ACTION_FILE_OFFER); addAction(ScreenShareService.ACTION_APP_REQUEST) }, Context.RECEIVER_NOT_EXPORTED)
             onDispose { unregisterReceiver(receiver) }
         }
         val projection = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -96,6 +98,17 @@ class MainActivity : ComponentActivity() {
                 Text("Status: ${state.replace('_', ' ')}", color = Color(0xFFFFA44A))
                 pendingOffer?.let { offer ->
                     AlertDialog(onDismissRequest = { pendingOffer = null }, title = { Text("File transfer") }, text = { Text("Operator mengirim ${offer.optString("name", "file")} (${offer.optLong("size")} bytes). Simpan hanya jika Anda mengenal sumbernya.") }, confirmButton = { TextButton(onClick = { saveFile.launch(offer.optString("name", "remote-file.bin")) }) { Text("Simpan") } }, dismissButton = { TextButton(onClick = { pendingOffer = null }) { Text("Tolak") } })
+                }
+                pendingApp?.let { request ->
+                    val label = request.optString("label", request.optString("packageName", "aplikasi"))
+                    val packageName = request.optString("packageName")
+                    val requestId = request.optString("requestId")
+                    fun decide(allow: Boolean) {
+                        startService(Intent(this@MainActivity, ScreenShareService::class.java).apply { action = ScreenShareService.ACTION_APP_DECISION; putExtra(ScreenShareService.EXTRA_REQUEST_ID, requestId); putExtra(ScreenShareService.EXTRA_PACKAGE_NAME, packageName); putExtra(ScreenShareService.EXTRA_APPROVED, allow); putExtra(ScreenShareService.EXTRA_REASON, if (allow) "user approved" else "user denied") })
+                        if (allow) getLaunchIntentForPackage(packageName)?.let { launch -> launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK); startActivity(launch); state = "APP_ACTIVE" } else state = "APP_REQUEST_DENIED"
+                        pendingApp = null
+                    }
+                    AlertDialog(onDismissRequest = { decide(false) }, title = { Text("Permintaan akses aplikasi") }, text = { Text("Operator meminta membuka:\n$label\n\nTujuan:\nMembantu memeriksa atau mengatur aplikasi.\n\nAkses yang diminta:\n• Membuka $label\n• Mengirim navigasi setelah Anda menyetujui\n• Tidak membaca atau mengambil data tanpa persetujuan tambahan") }, confirmButton = { TextButton(onClick = { decide(true) }) { Text("✓ Izinkan") } }, dismissButton = { TextButton(onClick = { decide(false) }) { Text("× Tolak") } })
                 }
                 Spacer(Modifier.weight(1f))
                 Button(onClick = { code = manager.generatePairingCode(); state = "WAITING_FOR_OPERATOR" }, enabled = code.isBlank(), modifier = Modifier.fillMaxWidth()) { Text("BUAT OTP SEKALI PAKAI") }

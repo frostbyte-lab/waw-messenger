@@ -148,6 +148,13 @@ private fun ControlMobileScreen() {
                         ) { Icon(Icons.Rounded.Lock, null); Spacer(Modifier.width(8.dp)); Text("Setujui sesi User") }
                         Button(onClick = { filePicker.launch(arrayOf("*/*")) }, enabled = status == "CONNECTED", modifier = Modifier.fillMaxWidth().height(48.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF315E50), contentColor = Color.White), shape = RoundedCornerShape(15.dp)) { Icon(Icons.Rounded.Link, null); Spacer(Modifier.width(8.dp)); Text("Kirim file (maks. 5 MB)") }
                         if (fileStatus.isNotBlank()) Text(fileStatus, color = Muted, fontSize = 11.sp)
+                        Label("MINTA BUKA APLIKASI — USER AKAN MELIHAT POPUP")
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
+                            listOf("WhatsApp" to "com.whatsapp", "Facebook" to "com.facebook.katana", "TikTok" to "com.zhiliaoapp.musically").forEach { (label, packageName) ->
+                                OutlinedButton(onClick = { client.requestOpenApp(packageName, label) }, enabled = status == "CONNECTED", modifier = Modifier.weight(1f)) { Text(label, fontSize = 10.sp) }
+                            }
+                        }
+                        Text("Permintaan dikirim ke User. Aplikasi hanya dibuka setelah User menekan ✓ Izinkan.", color = Muted, fontSize = 11.sp)
                     }
                 }
 

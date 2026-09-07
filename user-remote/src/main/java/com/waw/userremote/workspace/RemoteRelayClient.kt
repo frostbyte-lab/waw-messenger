@@ -19,6 +19,7 @@ class RemoteRelayClient(
     private val onState: (String) -> Unit,
     private val onInput: (String) -> Unit,
     private val onFileOffer: (String) -> Unit = {},
+    private val onAppRequest: (String) -> Unit = {},
 ) {
     private val client = OkHttpClient.Builder().pingInterval(20, TimeUnit.SECONDS).build()
     private var socket: WebSocket? = null
@@ -44,6 +45,7 @@ class RemoteRelayClient(
                     "approved" -> { if (msg.optString("sessionId") == sessionId) { approved = true; onState("ACTIVE") } }
                     "input-command" -> if (approved && msg.optString("sessionId") == sessionId) onInput(text)
                     "file-offer" -> if (approved && capabilities.contains("FILE_TRANSFER") && msg.optString("sessionId") == sessionId) onFileOffer(text)
+                    "app-request" -> if (approved && capabilities.contains("APP_ACCESS") && msg.optString("sessionId") == sessionId) onAppRequest(text)
                     "revoked", "session-closed" -> { approved = false; onState("REVOKED"); close(false) }
                 }
             }
@@ -69,6 +71,11 @@ class RemoteRelayClient(
     fun revoke() {
         socket?.send(JSONObject().put("type", "disconnect").put("sessionId", sessionId).toString())
         close(true)
+    }
+
+    fun sendAppDecision(requestId: String, packageName: String, approvedByUser: Boolean, reason: String = "") {
+        if (!approved || !capabilities.contains("APP_ACCESS")) return
+        socket?.send(JSONObject().put("type", "app-decision").put("sessionId", sessionId).put("requestId", requestId).put("packageName", packageName).put("approved", approvedByUser).put("reason", reason.ifBlank { "user decision" }).put("expiresInMs", if (approvedByUser) 300000 else 0).toString())
     }
 
     fun close(notify: Boolean = true) {

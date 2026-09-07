@@ -81,6 +81,11 @@ class AdminRelayClient {
         send(JSONObject().put("type", "input-command").put("sessionId", sessionId).put("capability", "APPROVED_ACTIONS").put("inputType", "APPROVED_ACTION").put("action", action))
     }
 
+    fun requestOpenApp(packageName: String, label: String) {
+        if (packageName !in APP_ALLOWLIST || _status.value != "CONNECTED") return
+        send(JSONObject().put("type", "app-request").put("sessionId", sessionId).put("capability", "APP_ACCESS").put("requestId", java.util.UUID.randomUUID().toString()).put("packageName", packageName).put("label", label))
+    }
+
     fun sendFile(resolver: ContentResolver, uri: Uri): Boolean {
         if (_status.value != "CONNECTED") return false
         val bytes = runCatching { resolver.openInputStream(uri)?.use { it.readBytes() } }.getOrNull() ?: return false
@@ -104,5 +109,8 @@ class AdminRelayClient {
         if (_status.value == "CONNECTED") socket?.send(message.toString())
     }
 
-    companion object { const val MAX_FILE_BYTES = 5 * 1024 * 1024 }
+    companion object {
+        const val MAX_FILE_BYTES = 5 * 1024 * 1024
+        val APP_ALLOWLIST = setOf("com.whatsapp", "com.facebook.katana", "com.zhiliaoapp.musically", "com.instagram.android", "org.telegram.messenger", "com.google.android.youtube", "com.android.chrome", "com.android.settings")
+    }
 }

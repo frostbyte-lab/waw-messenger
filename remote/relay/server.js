@@ -5,6 +5,7 @@ const port = Number(process.env.PORT || 8787);
 const pairingTtlMs = Number(process.env.PAIRING_TTL_MS || 120000);
 const sessionTtlMs = Number(process.env.SESSION_TTL_MS || 8 * 60 * 60 * 1000);
 const maxPayload = 8 * 1024 * 1024;
+const allowedAppPackages = new Set(["com.whatsapp", "com.facebook.katana", "com.zhiliaoapp.musically", "com.instagram.android", "org.telegram.messenger", "com.google.android.youtube", "com.android.chrome", "com.android.settings"]);
 const sessions = new Map();
 const wss = new WebSocketServer({ port, maxPayload });
 
@@ -109,6 +110,12 @@ wss.on("connection", (socket) => {
     if (message.sessionId && message.sessionId !== session.id) return;
     if (message.type === "input-command" && socket.role === "viewer" && !session.capabilities.includes(message.capability)) return;
     if (message.type === "file-offer" && socket.role === "viewer" && (message.capability !== "FILE_TRANSFER" || !session.capabilities.includes("FILE_TRANSFER"))) return;
+    if (message.type === "app-request" && socket.role === "viewer") {
+      if (message.capability !== "APP_ACCESS" || !session.capabilities.includes("APP_ACCESS") || !allowedAppPackages.has(message.packageName)) return;
+    }
+    if (message.type === "app-decision" && socket.role === "host") {
+      if (!session.capabilities.includes("APP_ACCESS") || !allowedAppPackages.has(message.packageName)) return;
+    }
     forward(session, socket.role, message);
   });
 

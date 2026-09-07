@@ -20,11 +20,15 @@ class ScreenShareService : Service() {
         createChannel()
         startForeground(NOTIFICATION_ID, notification())
         if (intent?.action == ACTION_REVOKE) { stopSelf(); return START_NOT_STICKY }
+        if (intent?.action == ACTION_APP_DECISION) {
+            relay?.sendAppDecision(intent.getStringExtra(EXTRA_REQUEST_ID).orEmpty(), intent.getStringExtra(EXTRA_PACKAGE_NAME).orEmpty(), intent.getBooleanExtra(EXTRA_APPROVED, false), intent.getStringExtra(EXTRA_REASON).orEmpty())
+            return START_NOT_STICKY
+        }
         val code = intent?.getStringExtra(EXTRA_CODE).orEmpty()
         val relayUrl = intent?.getStringExtra(EXTRA_RELAY_URL).orEmpty()
         val caps = intent?.getStringArrayListExtra(EXTRA_CAPABILITIES)?.toSet().orEmpty()
         if (relay == null && code.isNotBlank()) {
-            relay = RemoteRelayClient(relayUrl, code, caps, { state -> sendBroadcast(Intent(ACTION_STATE).putExtra(EXTRA_STATE, state)) }, { raw -> RemoteInputService.dispatch(raw) }, { offer -> sendBroadcast(Intent(ACTION_FILE_OFFER).putExtra(EXTRA_FILE_OFFER, offer)) })
+            relay = RemoteRelayClient(relayUrl, code, caps, { state -> sendBroadcast(Intent(ACTION_STATE).putExtra(EXTRA_STATE, state)) }, { raw -> RemoteInputService.dispatch(raw) }, { offer -> sendBroadcast(Intent(ACTION_FILE_OFFER).putExtra(EXTRA_FILE_OFFER, offer)) }, { request -> sendBroadcast(Intent(ACTION_APP_REQUEST).putExtra(EXTRA_APP_REQUEST, request)) })
             relay?.connect()
         }
         val resultCode = intent?.getIntExtra(EXTRA_RESULT_CODE, 0) ?: 0
@@ -54,8 +58,15 @@ class ScreenShareService : Service() {
         const val ACTION_REVOKE = "com.waw.userremote.REVOKE"
         const val ACTION_STATE = "com.waw.userremote.STATE"
         const val ACTION_FILE_OFFER = "com.waw.userremote.FILE_OFFER"
+        const val ACTION_APP_REQUEST = "com.waw.userremote.APP_REQUEST"
+        const val ACTION_APP_DECISION = "com.waw.userremote.APP_DECISION"
         const val EXTRA_STATE = "state"
         const val EXTRA_FILE_OFFER = "fileOffer"
+        const val EXTRA_APP_REQUEST = "appRequest"
+        const val EXTRA_REQUEST_ID = "requestId"
+        const val EXTRA_PACKAGE_NAME = "packageName"
+        const val EXTRA_APPROVED = "approved"
+        const val EXTRA_REASON = "reason"
         const val EXTRA_CODE = "code"
         const val EXTRA_RELAY_URL = "relayUrl"
         const val EXTRA_CAPABILITIES = "capabilities"
