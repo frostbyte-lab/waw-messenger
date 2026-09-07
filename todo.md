@@ -35,3 +35,12 @@
 - [x] Lengkapi User standalone dan integrasi Admin
 - [ ] Jalankan test relay dan build Android; perbaiki temuan
 - [x] Push hasil perbaikan dan laporan ke GitHub
+
+## Redesign WAW bergaya WhatsApp resmi
+
+- [x] Ubah shell utama menjadi layout WhatsApp-style dengan branding WAW
+- [x] Tambahkan tombol Workspace sebagai fitur tambahan utama
+- [x] Pertahankan inbox bisnis melalui WhatsApp Cloud API resmi Meta (alur resmi tetap melalui LinkedDeviceWebViewActivity)
+- [x] Jangan menampilkan token Meta di APK/frontend
+- [x] Bedakan fitur API Meta dari fitur WhatsApp pribadi yang tidak tersedia
+- [ ] Uji tampilan mobile/desktop dan integrasi tanpa credential nyata
