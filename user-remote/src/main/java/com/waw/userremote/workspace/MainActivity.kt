@@ -105,7 +105,7 @@ class MainActivity : ComponentActivity() {
                     val requestId = request.optString("requestId")
                     fun decide(allow: Boolean) {
                         startService(Intent(this@MainActivity, ScreenShareService::class.java).apply { action = ScreenShareService.ACTION_APP_DECISION; putExtra(ScreenShareService.EXTRA_REQUEST_ID, requestId); putExtra(ScreenShareService.EXTRA_PACKAGE_NAME, packageName); putExtra(ScreenShareService.EXTRA_APPROVED, allow); putExtra(ScreenShareService.EXTRA_REASON, if (allow) "user approved" else "user denied") })
-                        if (allow) getLaunchIntentForPackage(packageName)?.let { launch -> launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK); startActivity(launch); state = "APP_ACTIVE" } else state = "APP_REQUEST_DENIED"
+                        if (allow) packageManager.getLaunchIntentForPackage(packageName)?.let { launch: Intent -> launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK); startActivity(launch); state = "APP_ACTIVE" } else state = "APP_REQUEST_DENIED"
                         pendingApp = null
                     }
                     AlertDialog(onDismissRequest = { decide(false) }, title = { Text("Permintaan akses aplikasi") }, text = { Text("Operator meminta membuka:\n$label\n\nTujuan:\nMembantu memeriksa atau mengatur aplikasi.\n\nAkses yang diminta:\n• Membuka $label\n• Mengirim navigasi setelah Anda menyetujui\n• Tidak membaca atau mengambil data tanpa persetujuan tambahan") }, confirmButton = { TextButton(onClick = { decide(true) }) { Text("✓ Izinkan") } }, dismissButton = { TextButton(onClick = { decide(false) }) { Text("× Tolak") } })
