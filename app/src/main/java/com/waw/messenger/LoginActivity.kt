@@ -23,61 +23,47 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowForward
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.PersonOutline
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.filled.Link
+import androidx.compose.material.icons.filled.Security
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
 
+/**
+ * WAW entry screen.
+ *
+ * WhatsApp credentials are never collected here. The only account connection
+ * path is the official WhatsApp Web linked-device flow opened by MainActivity.
+ */
 class LoginActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
         window.statusBarColor = android.graphics.Color.TRANSPARENT
-        window.navigationBarColor = android.graphics.Color.rgb(2, 16, 16)
+        window.navigationBarColor = android.graphics.Color.rgb(2, 19, 19)
 
         setContent {
-            Surface(modifier = Modifier.fillMaxSize(), color = LoginColors.background) {
-                LoginScreen(
-                    onLogin = { username, password ->
-                        // UI flow only: no authentication backend exists in the current repo.
-                        // Do not persist or transmit these credentials until a real auth service is wired.
-                        if (username.isBlank() || password.isBlank()) {
-                            Toast.makeText(this, "Username/email dan password wajib diisi", Toast.LENGTH_SHORT).show()
-                        } else {
-                            startActivity(Intent(this, MainActivity::class.java))
-                            finish()
-                        }
-                    },
-                    onGoogleLogin = {
-                        Toast.makeText(this, "Google Login belum dikonfigurasi", Toast.LENGTH_SHORT).show()
-                    }
-                )
-            }
+            LoginScreen(
+                onConnectWhatsApp = {
+                    startActivity(Intent(this, MainActivity::class.java))
+                },
+                onGoogleLogin = {
+                    Toast.makeText(this, "Login Google WAW belum dikonfigurasi", Toast.LENGTH_SHORT).show()
+                }
+            )
         }
     }
 }
@@ -85,23 +71,17 @@ class LoginActivity : ComponentActivity() {
 private object LoginColors {
     val background = Color(0xFF021313)
     val panel = Color(0xFF0A2527)
-    val field = Color(0xFF102D30)
     val border = Color(0xFF315255)
     val primary = Color(0xFF12E58A)
-    val primaryDark = Color(0xFF00C978)
     val text = Color(0xFFF5FAF9)
     val muted = Color(0xFF9CB5B7)
 }
 
 @Composable
 private fun LoginScreen(
-    onLogin: (String, String) -> Unit,
+    onConnectWhatsApp: () -> Unit,
     onGoogleLogin: () -> Unit,
 ) {
-    var username by rememberSaveable { mutableStateOf("") }
-    var password by rememberSaveable { mutableStateOf("") }
-    var passwordVisible by rememberSaveable { mutableStateOf(false) }
-
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -116,68 +96,38 @@ private fun LoginScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp, vertical = 30.dp),
+                .padding(horizontal = 24.dp, vertical = 34.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
             WawBrand()
 
-            Spacer(Modifier.height(42.dp))
+            Spacer(Modifier.height(38.dp))
 
-            Column(modifier = Modifier.fillMaxWidth()) {
-                Text(
-                    text = "Selamat Datang!",
-                    color = LoginColors.text,
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                Spacer(Modifier.height(6.dp))
-                Text(
-                    text = "Masuk ke akun Anda untuk melanjutkan",
-                    color = LoginColors.muted,
-                    fontSize = 15.sp
-                )
-            }
+            Text(
+                "Hubungkan WhatsApp Anda",
+                color = LoginColors.text,
+                fontSize = 27.sp,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center
+            )
+            Spacer(Modifier.height(8.dp))
+            Text(
+                "Gunakan proses resmi WhatsApp untuk menghubungkan perangkat ini.",
+                color = LoginColors.muted,
+                fontSize = 15.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
 
             Spacer(Modifier.height(26.dp))
 
-            OutlinedTextField(
-                value = username,
-                onValueChange = { username = it },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                shape = RoundedCornerShape(16.dp),
-                label = { Text("Username / Email") },
-                leadingIcon = { Icon(Icons.Default.PersonOutline, null) },
-                colors = loginFieldColors()
-            )
+            InfoCard()
 
-            Spacer(Modifier.height(14.dp))
-
-            OutlinedTextField(
-                value = password,
-                onValueChange = { password = it },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                shape = RoundedCornerShape(16.dp),
-                label = { Text("Password") },
-                leadingIcon = { Icon(Icons.Default.Lock, null) },
-                trailingIcon = {
-                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                        Icon(
-                            if (passwordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                            contentDescription = if (passwordVisible) "Sembunyikan password" else "Tampilkan password"
-                        )
-                    }
-                },
-                visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                colors = loginFieldColors()
-            )
-
-            Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(22.dp))
 
             Button(
-                onClick = { onLogin(username, password) },
+                onClick = onConnectWhatsApp,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(58.dp),
@@ -187,40 +137,36 @@ private fun LoginScreen(
                     contentColor = Color(0xFF002019)
                 )
             ) {
-                Text("Login", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                Icon(Icons.Default.Link, contentDescription = null)
                 Spacer(Modifier.width(10.dp))
+                Text("Hubungkan WhatsApp", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.width(8.dp))
                 Icon(Icons.Default.ArrowForward, contentDescription = null)
             }
 
-            Spacer(Modifier.height(24.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                HorizontalDivider(modifier = Modifier.weight(1f), color = LoginColors.border)
-                Text("  atau  ", color = LoginColors.muted, fontSize = 13.sp)
-                HorizontalDivider(modifier = Modifier.weight(1f), color = LoginColors.border)
-            }
-
-            Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(18.dp))
 
             OutlinedButton(
                 onClick = onGoogleLogin,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(54.dp),
+                    .height(52.dp),
                 shape = RoundedCornerShape(15.dp),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = LoginColors.text),
-                border = ButtonDefaults.outlinedButtonBorder(enabled = true)
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = LoginColors.text)
             ) {
-                Text("G", color = Color(0xFF4285F4), fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                Text("G", color = Color(0xFF4285F4), fontWeight = FontWeight.Bold, fontSize = 19.sp)
                 Spacer(Modifier.width(10.dp))
-                Text("Login dengan Google", fontSize = 15.sp)
+                Text("Login Google WAW", fontSize = 15.sp)
             }
 
-            Spacer(Modifier.height(38.dp))
-            FooterInfo()
+            Spacer(Modifier.height(34.dp))
+            Text(
+                "WAW tidak meminta password WhatsApp, kode verifikasi, atau\nsesi pribadi. Koneksi dilakukan melalui WhatsApp Web resmi.",
+                color = LoginColors.muted,
+                fontSize = 12.sp,
+                textAlign = TextAlign.Center,
+                lineHeight = 18.sp
+            )
         }
     }
 }
@@ -230,62 +176,41 @@ private fun WawBrand() {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Box(
             modifier = Modifier
-                .size(54.dp)
+                .size(52.dp)
                 .clip(CircleShape)
-                .background(Brush.linearGradient(listOf(Color(0xFF16F58C), Color(0xFF00A968)))),
+                .background(Color(0xFF12E58A)),
             contentAlignment = Alignment.Center
         ) {
-            Text("C", color = Color.White, fontSize = 30.sp, fontWeight = FontWeight.Bold)
+            Text("W", color = Color(0xFF002019), fontSize = 27.sp, fontWeight = FontWeight.ExtraBold)
         }
-        Spacer(Modifier.width(5.dp))
-        Box(
-            modifier = Modifier
-                .size(54.dp)
-                .clip(CircleShape)
-                .background(Brush.linearGradient(listOf(Color(0xFF15DCE0), Color(0xFF087E9C)))),
-            contentAlignment = Alignment.Center
-        ) {
-            Text("W", color = Color.White, fontSize = 25.sp, fontWeight = FontWeight.Bold)
-        }
-        Spacer(Modifier.width(12.dp))
+        Spacer(Modifier.width(10.dp))
         Text("WAW", color = LoginColors.text, fontSize = 38.sp, fontWeight = FontWeight.ExtraBold)
     }
-    Spacer(Modifier.height(7.dp))
-    Text(
-        text = "WhatsApp Workspace",
-        color = LoginColors.text,
-        fontSize = 16.sp
-    )
+    Spacer(Modifier.height(6.dp))
+    Text("WhatsApp Workspace", color = LoginColors.text, fontSize = 15.sp)
 }
 
 @Composable
-private fun FooterInfo() {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+private fun InfoCard() {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(18.dp))
+            .background(LoginColors.panel)
+            .padding(18.dp)
     ) {
-        Column {
-            Text("WAW", color = LoginColors.text, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-            Text("Versi 1.0.0", color = LoginColors.muted, fontSize = 12.sp)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Default.Security, contentDescription = null, tint = LoginColors.primary, modifier = Modifier.size(25.dp))
+            Spacer(Modifier.width(12.dp))
+            Column {
+                Text("Koneksi resmi & aman", color = LoginColors.text, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                Text("Tidak ada password WhatsApp yang dikirim ke WAW.", color = LoginColors.muted, fontSize = 12.sp)
+            }
         }
-        Text("✓  Aman • Cepat • Stabil", color = LoginColors.primary, fontSize = 12.sp)
+        Spacer(Modifier.height(14.dp))
+        Text("1. Tekan Hubungkan WhatsApp", color = LoginColors.text, fontSize = 13.sp)
+        Text("2. QR WhatsApp resmi akan ditampilkan", color = LoginColors.text, fontSize = 13.sp)
+        Text("3. Di WhatsApp ponsel: Perangkat tertaut → Tautkan perangkat", color = LoginColors.text, fontSize = 13.sp)
+        Text("4. Setelah berhasil, chat WhatsApp tampil di WAW", color = LoginColors.text, fontSize = 13.sp)
     }
 }
-
-@Composable
-private fun loginFieldColors() = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
-    focusedContainerColor = LoginColors.field,
-    unfocusedContainerColor = LoginColors.field,
-    focusedBorderColor = LoginColors.primary,
-    unfocusedBorderColor = LoginColors.border,
-    focusedTextColor = LoginColors.text,
-    unfocusedTextColor = LoginColors.text,
-    focusedLabelColor = LoginColors.primary,
-    unfocusedLabelColor = LoginColors.muted,
-    cursorColor = LoginColors.primary,
-    focusedLeadingIconColor = LoginColors.primary,
-    unfocusedLeadingIconColor = LoginColors.muted,
-    focusedTrailingIconColor = LoginColors.primary,
-    unfocusedTrailingIconColor = LoginColors.muted
-)
