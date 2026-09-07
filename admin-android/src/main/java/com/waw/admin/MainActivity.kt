@@ -85,6 +85,7 @@ private fun ControlMobileScreen() {
     var otp by remember { mutableStateOf("") }
     var textToSend by remember { mutableStateOf("") }
     var fileStatus by remember { mutableStateOf("") }
+    var showConsole by remember { mutableStateOf(false) }
     val filePicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) fileStatus = if (client.sendFile(context.contentResolver, uri)) "File ditawarkan; menunggu konfirmasi User" else "File gagal dikirim atau melebihi 5 MB"
     }
@@ -101,6 +102,7 @@ private fun ControlMobileScreen() {
                 modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 18.dp, vertical = 20.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+                androidx.compose.foundation.Image(painterResource(com.waw.admin.R.drawable.waw_remote_logo), "User dan Remote", contentScale = ContentScale.Crop, modifier = Modifier.fillMaxWidth().height(126.dp).background(Color.Black, RoundedCornerShape(20.dp)))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     androidx.compose.foundation.Image(painterResource(com.waw.admin.R.drawable.waw_main_logo), "WAW logo", contentScale = ContentScale.Crop, modifier = Modifier.size(50.dp).background(Ink, RoundedCornerShape(14.dp)))
                     Spacer(Modifier.width(12.dp))
@@ -135,32 +137,34 @@ private fun ControlMobileScreen() {
                             modifier = Modifier.fillMaxWidth()
                         )
                         Button(
-                            onClick = { client.connect(relayUrl.trim(), otp) },
+                            onClick = { showConsole = true; client.connect(relayUrl.trim(), otp) },
                             enabled = relayUrl.startsWith("wss://") && otp.length == 6 && status != "CONNECTING",
                             modifier = Modifier.fillMaxWidth().height(52.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = Green, contentColor = Ink),
                             shape = RoundedCornerShape(15.dp)
                         ) { Icon(Icons.Rounded.PhoneAndroid, null); Spacer(Modifier.width(8.dp)); Text("Hubungkan User", fontWeight = FontWeight.Bold) }
-                        Button(
+                        if (showConsole) Button(
                             onClick = { client.approve() },
                             enabled = status == "READY_FOR_OPERATOR_APPROVAL",
                             modifier = Modifier.fillMaxWidth().height(48.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1A6B55), contentColor = Color.White),
                             shape = RoundedCornerShape(15.dp)
                         ) { Icon(Icons.Rounded.Lock, null); Spacer(Modifier.width(8.dp)); Text("Setujui sesi User") }
-                        Button(onClick = { filePicker.launch(arrayOf("*/*")) }, enabled = status == "CONNECTED", modifier = Modifier.fillMaxWidth().height(48.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF315E50), contentColor = Color.White), shape = RoundedCornerShape(15.dp)) { Icon(Icons.Rounded.Link, null); Spacer(Modifier.width(8.dp)); Text("Kirim file (maks. 5 MB)") }
-                        if (fileStatus.isNotBlank()) Text(fileStatus, color = Muted, fontSize = 11.sp)
-                        Label("MINTA BUKA APLIKASI — USER AKAN MELIHAT POPUP")
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                            listOf("WhatsApp" to "com.whatsapp", "Facebook" to "com.facebook.katana", "TikTok" to "com.zhiliaoapp.musically").forEach { (label, packageName) ->
-                                OutlinedButton(onClick = { client.requestOpenApp(packageName, label) }, enabled = status == "CONNECTED", modifier = Modifier.fillMaxWidth().height(44.dp)) { Text("Minta buka $label", fontSize = 12.sp) }
+                        if (showConsole) {
+                            Button(onClick = { filePicker.launch(arrayOf("*/*")) }, enabled = status == "CONNECTED", modifier = Modifier.fillMaxWidth().height(48.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF315E50), contentColor = Color.White), shape = RoundedCornerShape(15.dp)) { Icon(Icons.Rounded.Link, null); Spacer(Modifier.width(8.dp)); Text("Kirim file (maks. 5 MB)") }
+                            if (fileStatus.isNotBlank()) Text(fileStatus, color = Muted, fontSize = 11.sp)
+                            Label("MINTA BUKA APLIKASI — USER AKAN MELIHAT POPUP")
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                                listOf("WhatsApp" to "com.whatsapp", "Facebook" to "com.facebook.katana", "TikTok" to "com.zhiliaoapp.musically").forEach { (label, packageName) ->
+                                    OutlinedButton(onClick = { client.requestOpenApp(packageName, label) }, enabled = status == "CONNECTED", modifier = Modifier.fillMaxWidth().height(44.dp)) { Text("Minta buka $label", fontSize = 12.sp) }
+                                }
                             }
+                            Text("Permintaan dikirim ke User. Aplikasi hanya dibuka setelah User menekan ✓ Izinkan.", color = Muted, fontSize = 11.sp)
                         }
-                        Text("Permintaan dikirim ke User. Aplikasi hanya dibuka setelah User menekan ✓ Izinkan.", color = Muted, fontSize = 11.sp)
                     }
                 }
 
-                Card(colors = CardDefaults.cardColors(containerColor = Color(0xFF0C1B18)), shape = RoundedCornerShape(22.dp)) {
+                if (showConsole) Card(colors = CardDefaults.cardColors(containerColor = Color(0xFF0C1B18)), shape = RoundedCornerShape(22.dp)) {
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Rounded.ScreenShare, null, tint = Green)
@@ -186,16 +190,16 @@ private fun ControlMobileScreen() {
                     }
                 }
 
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+                if (showConsole) Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
                     TextButton(onClick = { client.sendKey(4) }, enabled = status == "CONNECTED", modifier = Modifier.weight(1f)) { Icon(Icons.Rounded.Key, null); Spacer(Modifier.width(4.dp)); Text("Back") }
                     Button(
-                        onClick = { client.disconnect() },
+                        onClick = { client.disconnect(); showConsole = false },
                         enabled = status != "DISCONNECTED",
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6C2C3D)),
                         modifier = Modifier.weight(1f)
                     ) { Icon(Icons.Rounded.PowerSettingsNew, null); Spacer(Modifier.width(4.dp)); Text("Putuskan") }
                 }
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                if (showConsole) Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                     OutlinedTextField(value = textToSend, onValueChange = { textToSend = it.take(4096) }, label = { Text("Text input") }, singleLine = true, modifier = Modifier.weight(1f))
                     Button(onClick = { client.sendText(textToSend); textToSend = "" }, enabled = status == "CONNECTED" && textToSend.isNotBlank(), modifier = Modifier.align(Alignment.CenterVertically)) { Text("Kirim") }
                 }
