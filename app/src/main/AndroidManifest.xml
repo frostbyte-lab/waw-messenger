@@ -1,47 +1,15 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <permission
-        android:name="com.waw.messenger.permission.INTERNAL_ADMIN"
-        android:protectionLevel="signature" />
     <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-    <application android:theme="@style/Theme.WAW" android:label="WAW" android:allowBackup="false" android:supportsRtl="true">
-        <activity android:name=".SplashActivity" android:exported="true">
+    <application android:theme="@style/Theme.WAW" android:label="WAW" android:icon="@drawable/waw_main_logo" android:roundIcon="@drawable/waw_main_logo" android:allowBackup="true" android:supportsRtl="true">
+        <activity android:name=".MainActivity" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".LoginActivity" android:exported="false" />
-        <activity android:name=".MainActivity" android:exported="false" />
-        <activity android:name=".linked.LinkedDeviceWebViewActivity" android:exported="false" />
-        <activity android:name=".linked.WorkspaceActivity" android:exported="false" />
-        <activity android:name=".remote.RemoteHostActivity" android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="waw" android:host="remote" android:pathPrefix="/invite" />
-            </intent-filter>
-        </activity>
-        <service
-            android:name=".remote.ScreenShareService"
-            android:exported="false"
-            android:foregroundServiceType="mediaProjection" />
-        <service
-            android:name=".remote.RemoteAccessibilityService"
-            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.accessibilityservice.AccessibilityService" />
-            </intent-filter>
-            <meta-data
-                android:name="android.accessibilityservice"
-                android:resource="@xml/accessibility_service_config" />
-        </service>
     </application>
 </manifest>
