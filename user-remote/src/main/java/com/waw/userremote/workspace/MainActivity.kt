@@ -16,12 +16,16 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -36,6 +40,8 @@ class MainActivity : ComponentActivity() {
         var pendingOffer by remember { mutableStateOf<JSONObject?>(null) }
         val manager = remember { RemoteSessionManager(this@MainActivity) }
         val allChecked = items.all { checked[it.first] == true }
+        val connectionPulse by rememberInfiniteTransition(label = "connection").animateFloat(initialValue = 0.2f, targetValue = 1f, animationSpec = infiniteRepeatable(animation = tween(1200), repeatMode = RepeatMode.Reverse), label = "connectionPulse")
+        val movingDot by rememberInfiniteTransition(label = "data-flow").animateFloat(initialValue = 0f, targetValue = 1f, animationSpec = infiniteRepeatable(animation = tween(1800), repeatMode = RepeatMode.Restart), label = "movingDot")
         val saveFile = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/octet-stream")) { uri: Uri? ->
             val offer = pendingOffer; pendingOffer = null
             if (uri != null && offer != null) runCatching {
@@ -66,6 +72,19 @@ class MainActivity : ComponentActivity() {
         }
         Surface(color = Color(0xFF07110F), modifier = Modifier.fillMaxSize()) {
             Column(Modifier.fillMaxSize().padding(22.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Card(colors = CardDefaults.cardColors(containerColor = Color(0xFF0B1D19)), shape = RoundedCornerShape(24.dp), modifier = Modifier.fillMaxWidth()) {
+                    Box(Modifier.fillMaxWidth().height(152.dp)) {
+                        androidx.compose.foundation.Image(painterResource(com.waw.messenger.R.drawable.waw_remote_logo), contentDescription = "User Remote connection", contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                        Canvas(Modifier.fillMaxSize()) {
+                            val y = size.height * 0.51f
+                            val left = size.width * 0.28f
+                            val right = size.width * 0.72f
+                            drawLine(Color(0xFF6DE7C1).copy(alpha = 0.35f), androidx.compose.ui.geometry.Offset(left, y), androidx.compose.ui.geometry.Offset(right, y), 3.dp.toPx(), cap = StrokeCap.Round)
+                            drawCircle(Color(0xFFB9FFE9).copy(alpha = connectionPulse), 8.dp.toPx(), androidx.compose.ui.geometry.Offset(left + (right - left) * movingDot, y))
+                            drawCircle(Color(0xFF20D486).copy(alpha = 0.2f + connectionPulse * 0.2f), (16.dp.toPx() + connectionPulse * 8.dp.toPx()), androidx.compose.ui.geometry.Offset(size.width / 2f, y), style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2.dp.toPx()))
+                        }
+                    }
+                }
                 Text("USER REMOTE WORKSPACE", color = Color(0xFFFFA44A), fontSize = 12.sp)
                 Text("Persetujuan akses remote", color = Color.White, fontSize = 28.sp)
                 Text("Tidak ada akses sebelum User menyetujui, MediaProjection diberikan, dan Operator menyetujui sesi.", color = Color(0xFFA7BBB3))
