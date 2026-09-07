@@ -10,12 +10,13 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <application android:theme="@style/Theme.WAW" android:label="WAW" android:allowBackup="true" android:supportsRtl="true">
-        <activity android:name=".MainActivity" android:exported="true">
+        <activity android:name=".LoginActivity" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity android:name=".MainActivity" android:exported="false" />
         <activity android:name=".remote.RemoteHostActivity" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
