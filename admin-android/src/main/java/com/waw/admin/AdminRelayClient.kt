@@ -101,8 +101,6 @@ class AdminRelayClient {
         return socket?.send(JSONObject().put("type", "file-offer").put("sessionId", sessionId).put("capability", "FILE_TRANSFER").put("name", name.take(120)).put("size", bytes.size).put("sha256", digest).put("payloadBase64", Base64.encodeToString(bytes, Base64.NO_WRAP)).toString()) == true
     }
 
-    fun approve() { send(JSONObject().put("type", "approve").put("sessionId", sessionId)) }
-
     fun disconnect() {
         socket?.send(JSONObject().put("type", "disconnect").toString())
         socket?.close(1000, "admin disconnected")
