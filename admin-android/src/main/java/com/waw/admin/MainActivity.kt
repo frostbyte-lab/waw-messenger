@@ -19,6 +19,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -52,8 +54,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -94,14 +98,11 @@ private fun ControlMobileScreen() {
                 .background(Brush.verticalGradient(listOf(Color(0xFF102A23), Ink, Ink)))
         ) {
             Column(
-                modifier = Modifier.fillMaxSize().padding(horizontal = 22.dp, vertical = 28.dp),
+                modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 18.dp, vertical = 20.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier.size(46.dp).background(Green, RoundedCornerShape(14.dp)),
-                        contentAlignment = Alignment.Center
-                    ) { Icon(Icons.Rounded.ScreenShare, null, tint = Ink, modifier = Modifier.size(26.dp)) }
+                    androidx.compose.foundation.Image(painterResource(com.waw.admin.R.drawable.waw_main_logo), "WAW logo", contentScale = ContentScale.Crop, modifier = Modifier.size(50.dp).background(Ink, RoundedCornerShape(14.dp)))
                     Spacer(Modifier.width(12.dp))
                     Column(Modifier.weight(1f)) {
                         Text("WAW Control", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
@@ -150,9 +151,9 @@ private fun ControlMobileScreen() {
                         Button(onClick = { filePicker.launch(arrayOf("*/*")) }, enabled = status == "CONNECTED", modifier = Modifier.fillMaxWidth().height(48.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF315E50), contentColor = Color.White), shape = RoundedCornerShape(15.dp)) { Icon(Icons.Rounded.Link, null); Spacer(Modifier.width(8.dp)); Text("Kirim file (maks. 5 MB)") }
                         if (fileStatus.isNotBlank()) Text(fileStatus, color = Muted, fontSize = 11.sp)
                         Label("MINTA BUKA APLIKASI — USER AKAN MELIHAT POPUP")
-                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                             listOf("WhatsApp" to "com.whatsapp", "Facebook" to "com.facebook.katana", "TikTok" to "com.zhiliaoapp.musically").forEach { (label, packageName) ->
-                                OutlinedButton(onClick = { client.requestOpenApp(packageName, label) }, enabled = status == "CONNECTED", modifier = Modifier.weight(1f)) { Text(label, fontSize = 10.sp) }
+                                OutlinedButton(onClick = { client.requestOpenApp(packageName, label) }, enabled = status == "CONNECTED", modifier = Modifier.fillMaxWidth().height(44.dp)) { Text("Minta buka $label", fontSize = 12.sp) }
                             }
                         }
                         Text("Permintaan dikirim ke User. Aplikasi hanya dibuka setelah User menekan ✓ Izinkan.", color = Muted, fontSize = 11.sp)

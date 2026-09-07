@@ -4,8 +4,8 @@
     <application
         android:theme="@style/Theme.WAWControl"
         android:label="WAW Control Mobile"
-        android:icon="@drawable/waw_control_logo"
-        android:roundIcon="@drawable/waw_control_logo"
+        android:icon="@drawable/waw_main_logo"
+        android:roundIcon="@drawable/waw_main_logo"
         android:usesCleartextTraffic="false"
         android:allowBackup="false"
         android:supportsRtl="true">

@@ -19,6 +19,8 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.animation.core.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -75,7 +77,7 @@ class MainActivity : ComponentActivity() {
             RemoteInputService.activate(caps.contains("TOUCH_INPUT") || caps.contains("KEYBOARD_INPUT")); state = "WAITING_FOR_OPERATOR"
         }
         Surface(color = Color(0xFF07110F), modifier = Modifier.fillMaxSize()) {
-            Column(Modifier.fillMaxSize().padding(22.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Card(colors = CardDefaults.cardColors(containerColor = Color(0xFF0B1D19)), shape = RoundedCornerShape(24.dp), modifier = Modifier.fillMaxWidth()) {
                     Box(Modifier.fillMaxWidth().height(152.dp)) {
                         androidx.compose.foundation.Image(painterResource(com.waw.messenger.R.drawable.waw_remote_logo), contentDescription = "User Remote connection", contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
