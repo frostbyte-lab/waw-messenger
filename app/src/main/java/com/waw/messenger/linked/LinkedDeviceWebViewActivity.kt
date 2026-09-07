@@ -117,7 +117,16 @@ open class LinkedDeviceWebViewActivity : FragmentActivity() {
                 setTextColor(Color.rgb(20, 30, 35))
                 setTypeface(typeface, android.graphics.Typeface.BOLD)
                 setPadding(10, 0, 0, 0)
-            })
+            }, LinearLayout.LayoutParams(0, 48, 1f))
+            brand.addView(TextView(context).apply {
+                text = "KEMBALI"
+                textSize = 11f
+                setTextColor(Color.rgb(0, 125, 75))
+                setTypeface(typeface, android.graphics.Typeface.BOLD)
+                gravity = Gravity.CENTER
+                setPadding(10, 8, 10, 8)
+                setOnClickListener { finish() }
+            }, LinearLayout.LayoutParams(-2, 48))
             addView(brand, LinearLayout.LayoutParams(-1, 48))
             addView(TextView(context).apply {
                 text = "Official Linked Viewer  •  Lokal & Aman"
