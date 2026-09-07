@@ -41,17 +41,22 @@ class RemoteRelayClient(
     }
 
     fun sendImage(image: Image) {
+        val ws = socket ?: return
+        if (ws.queueSize() > 2L * 1024L * 1024L) return
         val plane = image.planes.firstOrNull() ?: return
-        val buffer: ByteBuffer = plane.buffer
-        val bytes = ByteArray(buffer.remaining())
-        buffer.get(bytes)
-        val bitmap = Bitmap.createBitmap(image.width, image.height, Bitmap.Config.ARGB_8888)
-        bitmap.copyPixelsFromBuffer(ByteBuffer.wrap(bytes))
+        val pixelStride = plane.pixelStride.coerceAtLeast(1)
+        val rowStride = plane.rowStride.coerceAtLeast(image.width * pixelStride)
+        val paddedWidth = (rowStride / pixelStride).coerceAtLeast(image.width)
+        val bitmap = runCatching {
+            val full = Bitmap.createBitmap(paddedWidth, image.height, Bitmap.Config.ARGB_8888)
+            full.copyPixelsFromBuffer(plane.buffer)
+            if (paddedWidth == image.width) full else Bitmap.createBitmap(full, 0, 0, image.width, image.height).also { full.recycle() }
+        }.getOrNull() ?: return
         val output = ByteArrayOutputStream()
         bitmap.compress(Bitmap.CompressFormat.JPEG, 65, output)
         val payload = Base64.encodeToString(output.toByteArray(), Base64.NO_WRAP)
         val message = "{\"type\":\"screen-frame\",\"sequence\":${sequence++},\"width\":${image.width},\"height\":${image.height},\"payloadBase64\":\"$payload\"}"
-        socket?.send(message)
+        ws.send(message)
         bitmap.recycle()
     }
 

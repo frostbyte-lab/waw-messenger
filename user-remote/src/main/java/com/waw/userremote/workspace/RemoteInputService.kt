@@ -17,11 +17,18 @@ class RemoteInputService : AccessibilityService() {
         val capability = msg.optString("capability")
         if (capability !in setOf("TOUCH_INPUT", "KEYBOARD_INPUT", "APPROVED_ACTIONS")) return
         when (msg.optString("inputType")) {
-            "TOUCH_DOWN", "TOUCH_MOVE", "TOUCH_UP" -> {
-                if (!msg.has("x") || !msg.has("y")) return
+            "TOUCH_DOWN" -> {
                 val x = msg.optDouble("x", -1.0).toFloat(); val y = msg.optDouble("y", -1.0).toFloat()
                 if (x < 0 || y < 0 || x > 10000 || y > 10000) return
-                dispatchGesture(GestureDescription.Builder().addStroke(GestureDescription.StrokeDescription(Path().apply { moveTo(x, y) }, 0, if (msg.optString("inputType") == "TOUCH_UP") 1 else 80)).build(), null, null)
+                dispatchGesture(GestureDescription.Builder().addStroke(GestureDescription.StrokeDescription(Path().apply { moveTo(x, y) }, 0, 1)).build(), null, null)
+            }
+            "SWIPE" -> {
+                val x1 = msg.optDouble("x1", -1.0).toFloat(); val y1 = msg.optDouble("y1", -1.0).toFloat()
+                val x2 = msg.optDouble("x2", -1.0).toFloat(); val y2 = msg.optDouble("y2", -1.0).toFloat()
+                val duration = msg.optLong("durationMs", 350L).coerceIn(80L, 1500L)
+                if (listOf(x1, y1, x2, y2).any { it < 0f || it > 10000f }) return
+                val path = Path().apply { moveTo(x1, y1); lineTo(x2, y2) }
+                dispatchGesture(GestureDescription.Builder().addStroke(GestureDescription.StrokeDescription(path, 0, duration)).build(), null, null)
             }
             "KEY_DOWN" -> when (msg.optInt("keyCode", -1)) { 3 -> performGlobalAction(GLOBAL_ACTION_HOME); 4 -> performGlobalAction(GLOBAL_ACTION_BACK) }
             "TEXT_INPUT" -> {

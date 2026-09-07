@@ -37,3 +37,11 @@ Relay saat ini memusatkan sesi dalam memory proses. Untuk produksi diperlukan ra
 ## Keputusan status
 
 Remote Access ditetapkan sebagai **fondasi parsial / belum production-ready**. Item yang belum benar-benar berjalan tidak boleh diberi label `IMPLEMENTED` hanya berdasarkan keberadaan layar atau class.
+
+## Perbaikan lanjutan pada audit ini
+
+Pada putaran perbaikan berikutnya, frame RGBA dari MediaProjection pada User standalone dan APK utama diperbaiki agar memperhitungkan pixel stride/row stride, serta frame dibuang ketika antrean WebSocket melebihi 2 MiB untuk mencegah penumpukan memori. Accessibility Service kini mendukung gesture swipe dengan koordinat awal/akhir dan durasi yang dibatasi, sementara Admin menyediakan API `sendSwipe`.
+
+Relay diperkuat dengan allowlist capability, rate limit pairing per alamat koneksi, dan kewajiban `sessionId` untuk pesan kontrol/media. Admin approval juga diperbaiki agar hanya memiliki satu metode `approve` dan selaras dengan status `READY_FOR_OPERATOR_APPROVAL`.
+
+Test relay tetap lulus. Gradle test belum dapat menyelesaikan dependency resolution karena Android SDK tidak tersedia di lingkungan audit; ini adalah blocker lingkungan, bukan hasil yang boleh dianggap sebagai build Android sukses.

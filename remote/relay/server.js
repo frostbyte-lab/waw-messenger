@@ -6,7 +6,11 @@ const pairingTtlMs = Number(process.env.PAIRING_TTL_MS || 120000);
 const sessionTtlMs = Number(process.env.SESSION_TTL_MS || 8 * 60 * 60 * 1000);
 const maxPayload = 8 * 1024 * 1024;
 const allowedAppPackages = new Set(["com.whatsapp", "com.facebook.katana", "com.zhiliaoapp.musically", "com.instagram.android", "org.telegram.messenger", "com.google.android.youtube", "com.android.chrome", "com.android.settings"]);
+const allowedCapabilities = new Set(["SCREEN_SHARE", "TOUCH_INPUT", "KEYBOARD_INPUT", "FILE_TRANSFER", "APPROVED_ACTIONS", "APP_ACCESS"]);
 const sessions = new Map();
+const pairingAttempts = new Map();
+const MAX_PAIRING_ATTEMPTS = 8;
+const PAIRING_ATTEMPT_WINDOW_MS = 60_000;
 const wss = new WebSocketServer({ port, maxPayload });
 
 const json = (value) => JSON.stringify(value);
@@ -64,6 +68,11 @@ wss.on("connection", (socket) => {
     }
 
     if (hello.type === "viewer" && /^[0-9]{6}$/.test(hello.code)) {
+      const address = socket._socket?.remoteAddress || "unknown";
+      const now = Date.now();
+      const attempts = pairingAttempts.get(address);
+      if (!attempts || now - attempts.startedAt > PAIRING_ATTEMPT_WINDOW_MS) pairingAttempts.set(address, { startedAt: now, count: 1 });
+      else if (++attempts.count > MAX_PAIRING_ATTEMPTS) return close(socket, 1008, "pairing rate limited");
       const session = sessions.get(hello.code);
       if (!session || session.expiresAt < Date.now() || session.viewer) return close(socket, 1008, "pairing unavailable");
       session.viewer = socket;
@@ -87,7 +96,9 @@ wss.on("connection", (socket) => {
 
     if (message.type === "user-consent" && socket.role === "host") {
       session.userApproved = true;
-      session.capabilities = Array.isArray(message.capabilities) ? message.capabilities.slice(0, 8) : [];
+      session.capabilities = Array.isArray(message.capabilities)
+        ? [...new Set(message.capabilities.filter((value) => typeof value === "string" && allowedCapabilities.has(value)))].slice(0, 8)
+        : [];
       audit(session, "user-consent", { capabilities: session.capabilities });
       send(session.viewer, { type: "user-consent", sessionId: session.id, capabilities: session.capabilities });
       return;
@@ -108,6 +119,7 @@ wss.on("connection", (socket) => {
       return remove(session, "revoked");
     }
     if (message.sessionId && message.sessionId !== session.id) return;
+    if (["input-command", "file-offer", "app-request", "app-decision", "screen-frame"].includes(message.type) && message.sessionId !== session.id) return;
     if (message.type === "input-command" && socket.role === "viewer" && !session.capabilities.includes(message.capability)) return;
     if (message.type === "file-offer" && socket.role === "viewer" && (message.capability !== "FILE_TRANSFER" || !session.capabilities.includes("FILE_TRANSFER"))) return;
     if (message.type === "app-request" && socket.role === "viewer") {

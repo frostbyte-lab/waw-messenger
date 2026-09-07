@@ -64,8 +64,8 @@ class AdminRelayClient {
     }
 
     fun approve() {
-        if (_status.value == "WAITING_FOR_USER_APPROVAL") {
-            socket?.send(JSONObject().put("type", "approve").toString())
+        if (_status.value == "READY_FOR_OPERATOR_APPROVAL" || _status.value == "WAITING_FOR_USER_APPROVAL") {
+            socket?.send(JSONObject().put("type", "approve").put("sessionId", sessionId).toString())
         }
     }
 
@@ -75,6 +75,10 @@ class AdminRelayClient {
 
     fun sendKey(keyCode: Int) {
         send(JSONObject().put("type", "input-command").put("sessionId", sessionId).put("capability", "KEYBOARD_INPUT").put("inputType", "KEY_DOWN").put("keyCode", keyCode))
+    }
+
+    fun sendSwipe(x1: Float, y1: Float, x2: Float, y2: Float, durationMs: Long = 350L) {
+        send(JSONObject().put("type", "input-command").put("sessionId", sessionId).put("capability", "TOUCH_INPUT").put("inputType", "SWIPE").put("x1", x1).put("y1", y1).put("x2", x2).put("y2", y2).put("durationMs", durationMs.coerceIn(80L, 1500L)))
     }
 
     fun sendText(text: String) {

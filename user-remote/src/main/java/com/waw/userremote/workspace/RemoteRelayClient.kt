@@ -56,15 +56,21 @@ class RemoteRelayClient(
 
     fun sendImage(image: Image) {
         if (!approved || !capabilities.contains("SCREEN_SHARE")) return
+        val ws = socket ?: return
+        if (ws.queueSize() > 2L * 1024L * 1024L) return
         val plane = image.planes.firstOrNull() ?: return
-        val buffer = plane.buffer
-        val bytes = ByteArray(buffer.remaining()).also { buffer.get(it) }
-        val bitmap = Bitmap.createBitmap(image.width, image.height, Bitmap.Config.ARGB_8888)
-        runCatching { bitmap.copyPixelsFromBuffer(java.nio.ByteBuffer.wrap(bytes)) }.onFailure { bitmap.recycle(); return }
+        val pixelStride = plane.pixelStride.coerceAtLeast(1)
+        val rowStride = plane.rowStride.coerceAtLeast(image.width * pixelStride)
+        val paddedWidth = (rowStride / pixelStride).coerceAtLeast(image.width)
+        val bitmap = runCatching {
+            val full = Bitmap.createBitmap(paddedWidth, image.height, Bitmap.Config.ARGB_8888)
+            full.copyPixelsFromBuffer(plane.buffer)
+            if (paddedWidth == image.width) full else Bitmap.createBitmap(full, 0, 0, image.width, image.height).also { full.recycle() }
+        }.getOrNull() ?: return
         val output = ByteArrayOutputStream()
         bitmap.compress(Bitmap.CompressFormat.JPEG, 60, output)
         val payload = Base64.encodeToString(output.toByteArray(), Base64.NO_WRAP)
-        socket?.send(JSONObject().put("type", "screen-frame").put("sessionId", sessionId).put("sequence", sequence++).put("width", image.width).put("height", image.height).put("payloadBase64", payload).toString())
+        ws.send(JSONObject().put("type", "screen-frame").put("sessionId", sessionId).put("sequence", sequence++).put("width", image.width).put("height", image.height).put("payloadBase64", payload).toString())
         bitmap.recycle()
     }
 
