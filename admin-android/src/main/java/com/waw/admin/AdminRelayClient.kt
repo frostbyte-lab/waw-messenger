@@ -63,6 +63,12 @@ class AdminRelayClient {
         })
     }
 
+    fun approve() {
+        if (_status.value == "WAITING_FOR_USER_APPROVAL") {
+            socket?.send(JSONObject().put("type", "approve").toString())
+        }
+    }
+
     fun sendTouch(x: Float, y: Float) {
         send(JSONObject().put("type", "input-command").put("sessionId", sessionId).put("capability", "TOUCH_INPUT").put("inputType", "TOUCH_DOWN").put("x", x).put("y", y))
     }
