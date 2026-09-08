@@ -46,7 +46,10 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.ScreenShare
+import androidx.compose.material.icons.filled.ArrowForward
 import java.util.Locale
+import com.waw.messenger.remote.RemoteHostActivity
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -66,6 +69,7 @@ fun WorkspaceShell(modifier: Modifier = Modifier) {
     var menuUri by remember { mutableStateOf<Uri?>(null) }
     var pendingTransfer by remember { mutableStateOf<Transfer?>(null) }
     var watermarkOpen by remember { mutableStateOf(false) }
+    var hubOpen by remember { mutableStateOf(true) }
 
     fun refresh(uri: Uri) {
         currentUri = uri
@@ -105,7 +109,16 @@ fun WorkspaceShell(modifier: Modifier = Modifier) {
     }
 
     if (watermarkOpen) {
-        WatermarkScreen(onBack = { watermarkOpen = false }, modifier = modifier)
+        WatermarkScreen(onBack = { watermarkOpen = false; hubOpen = true }, modifier = modifier)
+        return
+    }
+    if (hubOpen) {
+        WorkspaceHub(
+            modifier = modifier,
+            onFiles = { hubOpen = false },
+            onWatermark = { watermarkOpen = true },
+            onRemote = { context.startActivity(Intent(context, RemoteHostActivity::class.java)) }
+        )
         return
     }
     if (editorUri != null) {
@@ -150,6 +163,7 @@ fun WorkspaceShell(modifier: Modifier = Modifier) {
                         }
                         context.startActivity(Intent.createChooser(intent, "Bagikan lokasi"))
                     }) { Icon(Icons.Default.Share, "Bagikan") }
+                    if (currentUri == null) IconButton(onClick = { hubOpen = true }) { Icon(Icons.Default.ArrowBack, "Workspace") }
                 }
             )
         },
@@ -273,6 +287,52 @@ fun WorkspaceShell(modifier: Modifier = Modifier) {
 
     notice?.let { message ->
         AlertDialog(onDismissRequest = { notice = null }, title = { Text("WAW") }, text = { Text(message) }, confirmButton = { TextButton(onClick = { notice = null }) { Text("OK") } })
+    }
+}
+
+
+@Composable
+private fun WorkspaceHub(
+    modifier: Modifier = Modifier,
+    onFiles: () -> Unit,
+    onWatermark: () -> Unit,
+    onRemote: () -> Unit,
+) {
+    Scaffold(
+        modifier = modifier.fillMaxSize(),
+        topBar = { TopAppBar(title = { Text("WAW Workspace") }) }
+    ) { padding ->
+        LazyColumn(
+            modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            item {
+                Text("Workspace", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(top = 12.dp))
+                Text("Pilih fitur yang tersedia. Fitur yang belum siap tidak ditampilkan.", modifier = Modifier.padding(top = 4.dp, bottom = 8.dp), style = MaterialTheme.typography.bodyMedium)
+            }
+            item { WorkspaceHubCard(Icons.Default.Folder, "File & Dokumen", "File Manager, dokumen teks, dan ekspor PDF", onFiles) }
+            item { WorkspaceHubCard(Icons.Default.Image, "Watermark", "Logo, metadata, lokasi, kompas, dan ekspor PNG", onWatermark) }
+            item { WorkspaceHubCard(Icons.Default.ScreenShare, "Remote", "OTP pairing, screen share, dan kontrol sentuh", onRemote) }
+        }
+    }
+}
+
+@Composable
+private fun WorkspaceHubCard(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    title: String,
+    subtitle: String,
+    onClick: () -> Unit,
+) {
+    Card(modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)) {
+        Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+            Icon(icon, contentDescription = title, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(end = 14.dp))
+            Column(Modifier.weight(1f)) {
+                Text(title, style = MaterialTheme.typography.titleMedium)
+                Text(subtitle, style = MaterialTheme.typography.bodySmall)
+            }
+            Icon(Icons.Default.ArrowForward, contentDescription = "Buka $title")
+        }
     }
 }
 
