@@ -2,7 +2,7 @@
 
 ## Konsep wajib
 
-Aplikasi memakai `waw-lengkap-final-targeted.html` sebagai **tampilan utama**. HTML tersebut menjadi shell UI WAW Business/Workspace: header, kartu fitur, warna, ikon, badge, modal, dan navigasi utamanya tidak diganti dengan tampilan lain.
+Aplikasi memakai `waw-lengkap-final-targeted.html` sebagai **tampilan utama**. HTML tersebut memiliki alur `onboarding → login → chatlist → workspace`; launcher dibuka pada state `chatlist` sebagai beranda setelah login. Header, daftar obrolan, tab, bottom navigation, kartu, warna, ikon, badge, modal, dan navigasinya tidak diganti dengan tampilan lain.
 
 Aplikasi tidak menampilkan WhatsApp Web. Tidak ada WebView ke `web.whatsapp.com`, tidak ada tampilan login/scan QR WhatsApp, dan tidak ada UI WhatsApp yang ditempel di atas dashboard WAW.
 
@@ -10,7 +10,9 @@ Sistem WhatsApp, bila diaktifkan, hanya berada sebagai kanal/backend resmi di be
 
 ## Tampilan utama
 
-Urutan kartu pada dashboard utama:
+Halaman pertama adalah **Beranda/Chatlist setelah login**. Isinya mengikuti bagian HTML `LABEL: BERANDA / SETELAH LOGIN`: header WAW BUSINESS, status terhubung, tab Chat/Panggilan/Status/Fitur/Workspace, Workspace Quick Access, daftar obrolan, dan bottom navigation.
+
+Lima kartu berikut berada di **MENU WORKSPACE**, bukan di halaman utama:
 
 1. **Remote Access** — OTP pairing, screen sharing, relay, dan kontrol sentuh.
 2. **IP & Lokasi Tracker** — diagnostik IP lokal dan lokasi perangkat dengan izin Android.
