@@ -50,6 +50,9 @@ import androidx.compose.material.icons.filled.ScreenShare
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
 import java.util.Locale
 import com.waw.messenger.remote.RemoteHostActivity
 
@@ -119,7 +122,8 @@ fun WorkspaceShell(modifier: Modifier = Modifier) {
             modifier = modifier,
             onFiles = { hubOpen = false },
             onWatermark = { watermarkOpen = true },
-            onRemote = { context.startActivity(Intent(context, RemoteHostActivity::class.java)) }
+            onRemote = { context.startActivity(Intent(context, RemoteHostActivity::class.java)) },
+            onUnavailable = { notice = it }
         )
         return
     }
@@ -299,47 +303,70 @@ private fun WorkspaceHub(
     onFiles: () -> Unit,
     onWatermark: () -> Unit,
     onRemote: () -> Unit,
+    onUnavailable: (String) -> Unit,
 ) {
+    val dark = androidx.compose.ui.graphics.Color(0xFF07110F)
+    val green = androidx.compose.ui.graphics.Color(0xFF20D486)
     Scaffold(
         modifier = modifier.fillMaxSize(),
-        topBar = { TopAppBar(title = { Text("WAW Workspace") }) }
+        containerColor = androidx.compose.ui.graphics.Color(0xFFF5F7F6),
     ) { padding ->
         LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp),
+            modifier = Modifier.fillMaxSize().padding(padding),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             item {
-                Text("Workspace", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(top = 12.dp))
-                Text("Pilih fitur yang tersedia. Fitur yang belum siap tidak ditampilkan.", modifier = Modifier.padding(top = 4.dp, bottom = 8.dp), style = MaterialTheme.typography.bodyMedium)
+                Column(
+                    Modifier.fillMaxWidth().background(dark).padding(horizontal = 20.dp, vertical = 24.dp)
+                ) {
+                    Text("WAW BUSINESS", color = green, style = MaterialTheme.typography.labelLarge)
+                    Text("Workspace", color = androidx.compose.ui.graphics.Color.White, style = MaterialTheme.typography.headlineMedium)
+                    Text("Satu ruang untuk alat kerja lapangan yang aman dan teratur.", color = androidx.compose.ui.graphics.Color(0xFFB5C8C3), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 6.dp))
+                }
             }
-            item { WorkspaceHubCard(Icons.Default.Folder, "File & Dokumen", "File Manager, dokumen teks, dan ekspor PDF", onFiles) }
-            item { WorkspaceHubCard(Icons.Default.Image, "Watermark", "Logo, metadata, lokasi, kompas, dan ekspor PNG", onWatermark) }
-            item { WorkspaceHubCard(Icons.Default.ScreenShare, "Remote", "OTP pairing, screen share, dan kontrol sentuh", onRemote) }
-            item { WorkspaceHubCard(Icons.Default.PictureAsPdf, "Scan PDF", "Mesin PDF tersedia; layar scanner belum terhubung", null, enabled = false) }
-            item { WorkspaceHubCard(Icons.Default.Fingerprint, "Absensi Fingerprint", "Penyimpanan absensi lokal tersedia; layar belum terhubung", null, enabled = false) }
-            item { WorkspaceHubCard(Icons.Default.LocationOn, "IP & Lokasi", "Diagnostik IP dan lokasi perangkat tersedia; layar belum terhubung", null, enabled = false) }
-            item { WorkspaceHubCard(Icons.Default.PictureAsPdf, "Convert Image to PDF", "Engine konversi gambar tersedia; layar belum terhubung", null, enabled = false) }
+            item {
+                Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+                    Text("Fitur Utama", style = MaterialTheme.typography.titleLarge)
+                    Text("Pilih alat Workspace yang Anda perlukan.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+            item { ReferenceFeatureCard(Icons.Default.ScreenShare, "Remote Access", "Device Management", "OTP pairing, screen sharing, relay, dan kontrol sentuh", true, onRemote) }
+            item { ReferenceFeatureCard(Icons.Default.LocationOn, "IP & Lokasi Tracker", "Security Layer", "Diagnostik IP lokal dan lokasi perangkat", false) { onUnavailable("IP & Lokasi tersedia di engine perangkat, tetapi layar diagnostiknya belum terhubung.") } }
+            item { ReferenceFeatureCard(Icons.Default.PictureAsPdf, "Scan PDF & Edit Dokumen", "Document Tools", "File Manager, editor dokumen, dan export PDF", true, onFiles) }
+            item { ReferenceFeatureCard(Icons.Default.Fingerprint, "Absensi Fingerprint", "HR Integration", "Verifikasi biometrik dan catatan absensi lokal", false) { onUnavailable("Absensi Fingerprint tersedia di engine biometrik, tetapi layar absensinya belum terhubung.") } }
+            item { ReferenceFeatureCard(Icons.Default.Image, "Custom Watermark", "Brand Protect", "Logo, field custom, timestamp, lokasi, kompas, dan export PNG", true, onWatermark) }
+            item {
+                Text("WAW Workspace Tools", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall, modifier = Modifier.fillMaxWidth().padding(16.dp))
+            }
         }
     }
 }
 
 @Composable
-private fun WorkspaceHubCard(
+private fun ReferenceFeatureCard(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     title: String,
-    subtitle: String,
-    onClick: (() -> Unit)?,
-    enabled: Boolean = true,
+    badge: String,
+    description: String,
+    active: Boolean,
+    onClick: () -> Unit,
 ) {
-    val cardModifier = if (enabled && onClick != null) Modifier.fillMaxWidth().clickable(onClick = onClick) else Modifier.fillMaxWidth()
-    Card(modifier = cardModifier) {
+    val green = androidx.compose.ui.graphics.Color(0xFF159A67)
+    Card(
+        modifier = Modifier.padding(horizontal = 16.dp).fillMaxWidth().clickable(onClick = onClick),
+        colors = androidx.compose.material3.CardDefaults.cardColors(containerColor = androidx.compose.ui.graphics.Color.White)
+    ) {
         Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-            Icon(icon, contentDescription = title, tint = if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f), modifier = Modifier.padding(end = 14.dp))
-            Column(Modifier.weight(1f)) {
-                Text(title, style = MaterialTheme.typography.titleMedium, color = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f))
-                Text(subtitle, style = MaterialTheme.typography.bodySmall)
+            androidx.compose.foundation.layout.Box(
+                Modifier.size(52.dp).background(if (active) androidx.compose.ui.graphics.Color(0xFFE4F8EE) else androidx.compose.ui.graphics.Color(0xFFF0F1F1), androidx.compose.foundation.shape.RoundedCornerShape(16.dp)),
+                contentAlignment = androidx.compose.ui.Alignment.Center
+            ) { Icon(icon, contentDescription = title, tint = if (active) green else androidx.compose.ui.graphics.Color(0xFF77817E), modifier = Modifier.size(27.dp)) }
+            Column(Modifier.weight(1f).padding(start = 14.dp)) {
+                Text(title, style = MaterialTheme.typography.titleMedium)
+                Text(badge, color = green, style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(top = 2.dp))
+                Text(description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 4.dp))
             }
-            if (enabled) Icon(Icons.Default.ArrowForward, contentDescription = "Buka $title")
+            Icon(Icons.Default.ArrowForward, contentDescription = "Buka $title", tint = if (active) green else androidx.compose.ui.graphics.Color(0xFF9AA39F))
         }
     }
 }
