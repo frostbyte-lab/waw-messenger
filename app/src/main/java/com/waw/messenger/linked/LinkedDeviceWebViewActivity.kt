@@ -55,7 +55,8 @@ open class LinkedDeviceWebViewActivity : FragmentActivity() {
                   const text = (document.body?.innerText || '').toLowerCase();
                   const loginText = /scan to log in|pindai untuk login|use whatsapp on your computer|gunakan whatsapp di komputer|link with phone number|tautkan dengan nomor telepon/.test(text);
                   const qr = document.querySelector('[data-testid="qr-code"], canvas[aria-label*="scan" i], [aria-label*="scan to log in" i], [aria-label*="pindai" i]');
-                  return !(loginText || !!qr);
+                  const ready = document.readyState === 'complete' && text.length > 40;
+                  return ready && !(loginText || !!qr);
                 })();
                 """.trimIndent()
             ) { result ->
@@ -107,7 +108,7 @@ open class LinkedDeviceWebViewActivity : FragmentActivity() {
         }
         webView = WebView(this)
         root = FrameLayout(this).apply {
-            setBackgroundColor(Color.BLACK)
+            setBackgroundColor(Color.rgb(247, 249, 248))
             addView(webView, FrameLayout.LayoutParams(-1, -1))
         }
         setContentView(root)
