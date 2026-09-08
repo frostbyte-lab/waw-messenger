@@ -34,6 +34,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Image as ImageIcon
 import androidx.compose.material.icons.filled.LocationOn
@@ -105,6 +106,11 @@ fun WatermarkScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
         preview = uri?.let { decodeBitmap(context, it) }
         notice = if (preview == null) "Gambar tidak bisa dibaca" else null
     }
+    val cameraPicker = rememberLauncherForActivityResult(ActivityResultContracts.TakePicturePreview()) { bitmap ->
+        preview = bitmap
+        sourceUri = null
+        notice = if (bitmap == null) "Kamera dibatalkan" else null
+    }
     val brandPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         brandUri = uri
         brandPreview = uri?.let { decodeBitmap(context, it) }
@@ -146,7 +152,10 @@ fun WatermarkScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
         Column(Modifier.fillMaxSize().padding(padding).padding(16.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text("Watermark resmi WAW", color = Color(0xFF0F766E))
             Text("Watermark dapat dipakai langsung di Workspace WAW. Branding WAW dan Made by Frostbyte Tech Ltd selalu ikut serta.")
-            OutlinedButton(onClick = { imagePicker.launch(arrayOf("image/*")) }, modifier = Modifier.fillMaxWidth()) { Icon(Icons.Default.ImageIcon, "Pilih gambar"); Text("  Pilih gambar") }
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(onClick = { cameraPicker.launch(null) }, modifier = Modifier.weight(1f)) { Icon(Icons.Default.CameraAlt, "Kamera"); Text("  Kamera") }
+                OutlinedButton(onClick = { imagePicker.launch(arrayOf("image/*")) }, modifier = Modifier.weight(1f)) { Icon(Icons.Default.ImageIcon, "Pilih gambar"); Text("  Dari file") }
+            }
             preview?.let { Image(it.asImageBitmap(), "Pratinjau", Modifier.fillMaxWidth().height(220.dp)) }
             OutlinedButton(onClick = { brandPicker.launch(arrayOf("image/*")) }, modifier = Modifier.fillMaxWidth()) { Icon(Icons.Default.Add, null); Text("  Tambah logo perusahaan / brand") }
             brandPreview?.let { Image(it.asImageBitmap(), "Logo brand", Modifier.size(72.dp)) }

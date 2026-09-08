@@ -51,7 +51,19 @@ Error generating stack: `+l.message+`
       if (window.PublicKeyCredential) respond('Absensi Fingerprint', 'Browser mendukung WebAuthn; gunakan APK untuk sensor fingerprint Android');
       else respond('Absensi Fingerprint', 'Gunakan APK Android WAW Workspace untuk fingerprint');
     },
-    openWatermark: function(){ pick('image/*,.pdf', 'Custom Watermark'); }
+    openWatermark: function(){
+      var old = document.getElementById('waw-watermark-modal'); if(old) old.remove();
+      var modal=document.createElement('div'); modal.id='waw-watermark-modal'; modal.style.cssText='position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.65);display:flex;align-items:flex-end;justify-content:center;padding:12px';
+      modal.innerHTML='<div style="width:100%;max-width:480px;background:#fff;border-radius:22px;padding:18px;color:#111;font:14px system-ui"><b style="font-size:18px">Custom Watermark</b><div id="waw-wm-preview" style="margin:14px 0;background:#f1f5f3;border-radius:14px;min-height:180px;display:flex;align-items:center;justify-content:center;color:#64748b">Pilih foto untuk pratinjau</div><div style="display:flex;gap:8px"><button id="waw-wm-camera" style="flex:1;padding:12px;border:0;border-radius:12px;background:#111;color:#fff">Kamera</button><button id="waw-wm-file" style="flex:1;padding:12px;border:1px solid #ddd;border-radius:12px;background:#fff">Pilih gambar</button></div><input id="waw-wm-text" placeholder="Teks watermark custom" style="box-sizing:border-box;width:100%;margin-top:12px;padding:12px;border:1px solid #ddd;border-radius:12px"><div style="display:flex;gap:8px;margin-top:12px"><button id="waw-wm-save" style="flex:1;padding:12px;border:0;border-radius:12px;background:#16a34a;color:#fff;font-weight:700">Simpan</button><button id="waw-wm-close" style="padding:12px 18px;border:1px solid #ddd;border-radius:12px;background:#fff">Tutup</button></div></div>';
+      document.body.appendChild(modal);
+      var file=document.createElement('input'); file.type='file'; file.accept='image/*'; file.style.display='none'; document.body.appendChild(file);
+      var camera=document.createElement('input'); camera.type='file'; camera.accept='image/*'; camera.capture='environment'; camera.style.display='none'; document.body.appendChild(camera);
+      var selected=null, preview=modal.querySelector('#waw-wm-preview');
+      function load(input){ if(!input.files||!input.files[0])return; selected=input.files[0]; var url=URL.createObjectURL(selected); preview.innerHTML='<img src="'+url+'" style="max-width:100%;max-height:260px;border-radius:12px;object-fit:contain">'; }
+      modal.querySelector('#waw-wm-file').onclick=function(){file.click()}; modal.querySelector('#waw-wm-camera').onclick=function(){camera.click()}; file.onchange=function(){load(file)}; camera.onchange=function(){load(camera)};
+      modal.querySelector('#waw-wm-save').onclick=function(){ if(!selected){respond('Custom Watermark','Pilih gambar atau gunakan kamera dahulu');return;} var text=modal.querySelector('#waw-wm-text').value||'WAW Workspace'; var c=document.createElement('canvas'), img=new Image(); img.onload=function(){c.width=img.naturalWidth;c.height=img.naturalHeight;var x=c.getContext('2d');x.drawImage(img,0,0);x.font=Math.max(24,c.width*.035)+'px sans-serif';x.fillStyle='white';x.strokeStyle='black';x.lineWidth=4;x.strokeText(text,24,c.height-32);x.fillText(text,24,c.height-32);var a=document.createElement('a');a.download='waw-watermark.png';a.href=c.toDataURL('image/png');a.click();modal.remove();file.remove();camera.remove();};img.src=URL.createObjectURL(selected);};
+      modal.querySelector('#waw-wm-close').onclick=function(){modal.remove();file.remove();camera.remove()};
+    }
   };
 })();
 </script>
