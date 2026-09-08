@@ -20,5 +20,40 @@ Error generating stack: `+l.message+`
 </script>
   <script>(function(){function m(a){var h=a.getAttribute("href");if(!h)return;try{var u=new URL(h,document.baseURI);if((u.protocol==="http:"||u.protocol==="https:")&&u.host!==location.host){a.target="_blank";a.rel="noopener noreferrer";}}catch(e){}}function s(){document.querySelectorAll("a[href]").forEach(m);}if(document.readyState!=="loading"){s();}else{document.addEventListener("DOMContentLoaded",s);}document.addEventListener("click",function(e){var a=e.target&&e.target.closest&&e.target.closest("a[href]");if(a){m(a);}},true);})();</script>
   
+<script>
+(function () {
+  if (window.WAW) return;
+  function respond(title, detail) {
+    var old = document.getElementById('waw-action-status');
+    if (old) old.remove();
+    var el = document.createElement('div');
+    el.id = 'waw-action-status';
+    el.textContent = title + ' — ' + detail;
+    el.style.cssText = 'position:fixed;left:16px;right:16px;bottom:18px;z-index:9999;padding:14px 16px;border-radius:14px;background:#070e0c;color:#fff;font:600 13px system-ui;box-shadow:0 8px 24px rgba(0,0,0,.25)';
+    document.body.appendChild(el);
+    setTimeout(function(){ if (el.parentNode) el.remove(); }, 3500);
+  }
+  function pick(type, title) {
+    var input = document.createElement('input');
+    input.type = 'file'; input.accept = type; input.style.display = 'none';
+    document.body.appendChild(input);
+    input.onchange = function(){ respond(title, input.files && input.files[0] ? input.files[0].name + ' dipilih' : 'dibatalkan'); input.remove(); };
+    input.click();
+  }
+  window.WAW = {
+    openRemote: function(){ respond('Remote Access', 'Fungsi remote tersedia di APK Android WAW Workspace'); },
+    openLocation: function(){
+      if (!navigator.geolocation) return respond('IP & Lokasi Tracker', 'Geolocation tidak didukung browser');
+      navigator.geolocation.getCurrentPosition(function(pos){ respond('IP & Lokasi Tracker', 'Lokasi tersedia: ' + pos.coords.latitude.toFixed(5) + ', ' + pos.coords.longitude.toFixed(5)); }, function(){ respond('IP & Lokasi Tracker', 'Izin lokasi ditolak atau belum tersedia'); });
+    },
+    openTools: function(){ pick('.pdf,.doc,.docx,.txt', 'Scan PDF & Edit Dokumen'); },
+    openAttendance: function(){
+      if (window.PublicKeyCredential) respond('Absensi Fingerprint', 'Browser mendukung WebAuthn; gunakan APK untuk sensor fingerprint Android');
+      else respond('Absensi Fingerprint', 'Gunakan APK Android WAW Workspace untuk fingerprint');
+    },
+    openWatermark: function(){ pick('image/*,.pdf', 'Custom Watermark'); }
+  };
+})();
+</script>
 </body>
 </html>
