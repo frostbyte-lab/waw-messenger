@@ -130,7 +130,7 @@ open class LinkedDeviceWebViewActivity : FragmentActivity() {
         val green = Color.rgb(0, 150, 90)
         val header = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(20, 14, 12, 8)
+            setPadding(18, 8, 12, 8)
             setBackgroundColor(Color.WHITE)
             val brand = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
             brand.addView(ImageView(context).apply {
@@ -139,7 +139,7 @@ open class LinkedDeviceWebViewActivity : FragmentActivity() {
             }, LinearLayout.LayoutParams(44, 44))
             brand.addView(TextView(context).apply {
                 text = "WAW  BUSINESS"
-                textSize = 21f
+                textSize = 18f
                 setTextColor(Color.rgb(20, 30, 35))
                 setTypeface(typeface, android.graphics.Typeface.BOLD)
                 setPadding(10, 0, 0, 0)
@@ -155,9 +155,9 @@ open class LinkedDeviceWebViewActivity : FragmentActivity() {
             }, LinearLayout.LayoutParams(-2, 48))
             addView(brand, LinearLayout.LayoutParams(-1, 48))
             addView(TextView(context).apply {
-                text = "Official Linked Viewer  •  Lokal & Aman"
-                textSize = 13f
-                setTextColor(Color.rgb(0, 125, 75))
+                text = "WhatsApp Workspace"
+                textSize = 12.5f
+                setTextColor(Color.rgb(107, 114, 128))
             })
             val tabs = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL }
             listOf("\uf075" to "Chat", "\uf2a0" to "Panggilan", "\uf1ea" to "Status", "\uf1b3" to "Fitur", "\uf07b" to "Workspace").forEach { (icon, label) ->
@@ -165,10 +165,10 @@ open class LinkedDeviceWebViewActivity : FragmentActivity() {
                     FaText.set(this, context, icon, label)
                     textSize = 12f
                     maxLines = 1
-                    setTextColor(if (label.endsWith("Chat")) Color.WHITE else Color.DKGRAY)
+                    setTextColor(if (label.endsWith("Chat")) Color.WHITE else Color.rgb(107, 114, 128))
                     background = GradientDrawable().apply {
-                        setColor(if (label.endsWith("Chat")) Color.rgb(20, 35, 45) else Color.rgb(245, 247, 248))
-                        cornerRadius = 10f
+                        setColor(if (label.endsWith("Chat")) Color.rgb(22, 24, 28) else Color.rgb(247, 248, 250))
+                        cornerRadius = 40f
                     }
                     gravity = android.view.Gravity.CENTER
                     setPadding(4, 10, 4, 10)
@@ -185,7 +185,7 @@ open class LinkedDeviceWebViewActivity : FragmentActivity() {
             addView(TextView(context).apply {
                 text = "● TERHUBUNG  •  WhatsApp Web resmi"
                 textSize = 10f
-                setTextColor(Color.rgb(0, 145, 85))
+                setTextColor(Color.rgb(14, 122, 87))
                 setPadding(2, 3, 0, 0)
             })
         }
