@@ -366,12 +366,12 @@ open class LinkedDeviceWebViewActivity : FragmentActivity() {
         top.addView(TextView(this).apply {
             textSize = 17f
             setTextColor(ink)
-        }.also { FaText.set(it, context, "\uf002", "") })
+        }.also { FaText.set(it, this@LinkedDeviceWebViewActivity, "\uf002", "") })
         top.addView(TextView(this).apply {
             textSize = 17f
             setTextColor(ink)
             setPadding(20.dpx(), 0, 0, 0)
-        }.also { FaText.set(it, context, "\uf142", "") })
+        }.also { FaText.set(it, this@LinkedDeviceWebViewActivity, "\uf142", "") })
         header.addView(top, LinearLayout.LayoutParams(-1, 44.dpx()))
 
         fun tab(label: String, active: Boolean, onClick: (() -> Unit)? = null): TextView = TextView(this).apply {
@@ -409,7 +409,7 @@ open class LinkedDeviceWebViewActivity : FragmentActivity() {
         sectionHead.addView(TextView(this).apply {
             textSize = 14f
             setTextColor(Color.rgb(46, 99, 214))
-        }.also { FaText.set(it, context, "\uf5fd", "") })
+        }.also { FaText.set(it, this@LinkedDeviceWebViewActivity, "\uf5fd", "") })
         sectionHead.addView(TextView(this).apply {
             text = "Workspace Quick Access"
             textSize = 14.5f
@@ -506,7 +506,7 @@ open class LinkedDeviceWebViewActivity : FragmentActivity() {
                 textSize = 13f
                 setTextColor(greenInk)
                 setPadding(6.dpx(), 0, 0, 0)
-            }.also { FaText.set(it, context, "\uf061", "") })
+            }.also { FaText.set(it, this@LinkedDeviceWebViewActivity, "\uf061", "") })
         }
         ctaRow.addView(ctaBtn)
         cta.addView(ctaRow)
