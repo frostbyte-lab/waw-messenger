@@ -18,6 +18,7 @@ import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.view.Gravity
 import android.view.animation.AlphaAnimation
+import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -29,6 +30,7 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import com.waw.messenger.security.WawShield
+import com.waw.messenger.remote.RemoteHostActivity
 
 /**
  * Official-first WhatsApp linked viewer.
@@ -40,6 +42,7 @@ open class LinkedDeviceWebViewActivity : FragmentActivity() {
     private lateinit var dashboard: LinearLayout
     private lateinit var headerChrome: LinearLayout
     private lateinit var bottomChrome: LinearLayout
+    private lateinit var chatComposer: LinearLayout
     private var pendingFileCallback: ValueCallback<Array<Uri>>? = null
     private var pendingWebPermission: PermissionRequest? = null
 
@@ -96,6 +99,7 @@ open class LinkedDeviceWebViewActivity : FragmentActivity() {
         configureWebView()
         addBlueprintChrome()
         addBlueprintDashboard()
+        addWawChatComposer()
         setLinkedChromeVisible(false)
         requestRuntimePermissionsIfNeeded()
     }
@@ -147,7 +151,10 @@ open class LinkedDeviceWebViewActivity : FragmentActivity() {
                     gravity = android.view.Gravity.CENTER
                     setPadding(4, 10, 4, 10)
                     setOnClickListener {
-                        if (label.endsWith("Workspace")) startActivity(Intent(this@LinkedDeviceWebViewActivity, WorkspaceActivity::class.java))
+                        when {
+                            label.endsWith("Workspace") -> startActivity(Intent(this@LinkedDeviceWebViewActivity, WorkspaceActivity::class.java))
+                            label.endsWith("Fitur") -> startActivity(Intent(this@LinkedDeviceWebViewActivity, RemoteHostActivity::class.java))
+                        }
                     }
                 }
                 tabs.addView(tab, LinearLayout.LayoutParams(0, 44, 1f).apply { setMargins(4, 10, 4, 0) })
@@ -175,7 +182,10 @@ open class LinkedDeviceWebViewActivity : FragmentActivity() {
                     setTextColor(if (label.endsWith("Workspace")) green else Color.DKGRAY)
                     setPadding(4, 12, 4, 12)
                     setOnClickListener {
-                        if (label.endsWith("Workspace")) startActivity(Intent(this@LinkedDeviceWebViewActivity, WorkspaceActivity::class.java))
+                        when {
+                            label.endsWith("Workspace") -> startActivity(Intent(this@LinkedDeviceWebViewActivity, WorkspaceActivity::class.java))
+                            label.endsWith("Fitur") -> startActivity(Intent(this@LinkedDeviceWebViewActivity, RemoteHostActivity::class.java))
+                        }
                     }
                 }, LinearLayout.LayoutParams(0, 60, 1f))
             }
@@ -248,10 +258,94 @@ open class LinkedDeviceWebViewActivity : FragmentActivity() {
         if (::headerChrome.isInitialized) headerChrome.visibility = state
         if (::bottomChrome.isInitialized) bottomChrome.visibility = state
         if (::dashboard.isInitialized) dashboard.visibility = android.view.View.GONE
+        if (::chatComposer.isInitialized) chatComposer.visibility = state
         if (visible && ::headerChrome.isInitialized) {
             AlphaAnimation(0f, 1f).apply { duration = 260; fillAfter = true }.also { headerChrome.startAnimation(it) }
             if (::bottomChrome.isInitialized) AlphaAnimation(0f, 1f).apply { duration = 320; fillAfter = true }.also { bottomChrome.startAnimation(it) }
         }
+    }
+
+    private fun addWawChatComposer() {
+        val panel = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(12, 7, 12, 7)
+            setBackgroundColor(Color.WHITE)
+            elevation = 18f
+        }
+        val status = TextView(this).apply {
+            text = "● TERHUBUNG  •  siap mengirim"
+            textSize = 10f
+            setTextColor(Color.rgb(0, 145, 85))
+            setPadding(4, 0, 0, 3)
+        }
+        val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
+        val input = EditText(this).apply {
+            hint = "Tulis pesan dengan WAW..."
+            textSize = 14f
+            singleLine = true
+            setPadding(15, 0, 12, 0)
+            background = GradientDrawable().apply {
+                setColor(Color.rgb(245, 248, 247))
+                cornerRadius = 42f
+                setStroke(1, Color.rgb(210, 231, 224))
+            }
+            setOnFocusChangeListener { _, hasFocus ->
+                status.text = if (hasFocus) "● SEDANG MENGETIK  •  WAW composer" else "● TERHUBUNG  •  siap mengirim"
+            }
+        }
+        fun action(icon: String, label: String, onClick: () -> Unit) = TextView(this).apply {
+            FaText.set(this, context, icon, label)
+            textSize = 13f
+            gravity = Gravity.CENTER
+            setTextColor(Color.rgb(0, 125, 95))
+            setPadding(8, 0, 8, 0)
+            setOnClickListener { onClick() }
+        }
+        row.addView(action("\uf03d", "Panggilan video") { clickWhatsAppAction("video") }, LinearLayout.LayoutParams(42, 48))
+        row.addView(action("\uf095", "Panggilan suara") { clickWhatsAppAction("voice") }, LinearLayout.LayoutParams(42, 48))
+        row.addView(input, LinearLayout.LayoutParams(0, 48, 1f))
+        row.addView(action("\uf118", "Emoji") { input.append("🙂") }, LinearLayout.LayoutParams(42, 48))
+        row.addView(action("\uf1d8", "Kirim") {
+            val message = input.text.toString().trim()
+            if (message.isNotEmpty()) {
+                sendMessageToWhatsApp(message)
+                input.text.clear()
+                status.text = "● TERKIRIM  •  melalui koneksi resmi WhatsApp"
+            }
+        }, LinearLayout.LayoutParams(46, 48))
+        panel.addView(status, LinearLayout.LayoutParams(-1, 22))
+        panel.addView(row, LinearLayout.LayoutParams(-1, 50))
+        chatComposer = panel
+        root.addView(panel, FrameLayout.LayoutParams(-1, 78, Gravity.BOTTOM).apply { bottomMargin = 68 })
+    }
+
+    private fun sendMessageToWhatsApp(message: String) {
+        val escaped = org.json.JSONObject.quote(message)
+        webView.evaluateJavascript("""
+            (() => {
+              const text = $escaped;
+              const box = document.querySelector('[contenteditable="true"]');
+              if (!box) return false;
+              box.focus();
+              document.execCommand('insertText', false, text);
+              box.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: text }));
+              box.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', bubbles: true }));
+              return true;
+            })();
+        """, null)
+    }
+
+    private fun clickWhatsAppAction(type: String) {
+        val labels = if (type == "video") "video|video call|panggilan video" else "voice|phone|panggilan suara"
+        webView.evaluateJavascript("""
+            (() => {
+              const pattern = /$labels/i;
+              const button = [...document.querySelectorAll('button,[role="button"]')]
+                .find(node => pattern.test(node.getAttribute('aria-label') || node.textContent || ''));
+              if (button) { button.click(); return true; }
+              return false;
+            })();
+        """, null)
     }
 
     private fun requestRuntimePermissionsIfNeeded() {
