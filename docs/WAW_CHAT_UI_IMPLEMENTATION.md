@@ -38,3 +38,9 @@ Jangan menambahkan selector untuk mengekstrak QR, cookie, session secret, daftar
 ## Bugfix login/scan
 
 Pada layar login atau QR scan, seluruh chrome WAW kini disembunyikan: header, tab, bottom navigation, dan composer chat tidak tampil. UI WAW baru ditampilkan setelah WhatsApp Web tidak lagi memiliki indikator login/scan. Deteksi dilakukan berulang selama halaman aktif dan di-reset setiap navigasi halaman agar tidak ada tombol yang menumpuk di atas QR.
+
+## Update kondisional dan tema chat
+
+Tab/tombol `Update` tidak dirender saat tidak ada release GitHub yang lebih baru. Saat versi baru ditemukan, tombol muncul bersama dialog update. Setelah pengguna memilih update, state update dibersihkan sehingga tombol hilang kembali.
+
+WebView dipaksa ke tema terang dan diberi lapisan style WAW untuk menghindari latar hitam bawaan. Baris daftar chat diberi aksen warna bergilir agar setiap percakapan memiliki identitas visual berbeda. WhatsApp Web tetap menjadi transport resmi di balik layar.

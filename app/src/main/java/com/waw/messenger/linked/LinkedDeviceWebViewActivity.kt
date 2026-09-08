@@ -16,6 +16,7 @@ import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.webkit.WebSettings
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.view.Gravity
@@ -330,6 +331,9 @@ open class LinkedDeviceWebViewActivity : FragmentActivity() {
             allowFileAccess = true
             allowContentAccess = true
             userAgentString = DESKTOP_USER_AGENT
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                forceDark = WebSettings.FORCE_DARK_OFF
+            }
         }
         CookieManager.getInstance().setAcceptCookie(true)
         CookieManager.getInstance().setAcceptThirdPartyCookies(webView, true)
@@ -343,6 +347,7 @@ open class LinkedDeviceWebViewActivity : FragmentActivity() {
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
                 setLinkedChromeVisible(false)
+                applyWawWebTheme()
                 loginUiHandler.removeCallbacks(loginUiCheck)
                 loginUiHandler.post(loginUiCheck)
             }
@@ -396,6 +401,35 @@ open class LinkedDeviceWebViewActivity : FragmentActivity() {
     private fun loadOfficialWhatsApp() {
         if (!::webView.isInitialized) return
         webView.loadUrl(OFFICIAL_URL)
+    }
+
+    private fun applyWawWebTheme() {
+        webView.evaluateJavascript("""
+            (() => {
+              const id = 'waw-production-theme';
+              document.getElementById(id)?.remove();
+              const style = document.createElement('style');
+              style.id = id;
+              style.textContent = `
+                :root { color-scheme: light !important; }
+                html, body, #app, body > div { background: #f7f9f8 !important; color: #18211f !important; }
+                [data-testid="conversation-panel-wrapper"], [data-testid="conversation-panel-messages"], [data-testid="chatlist"] {
+                  background: #f7f9f8 !important;
+                }
+                [data-testid="cell-frame-container"] {
+                  margin: 5px 10px !important; border-radius: 16px !important;
+                  border-left: 4px solid #25d366 !important; background: #ffffff !important;
+                  box-shadow: 0 3px 12px rgba(18,140,126,.08) !important;
+                }
+                [data-testid="chat-list"] [data-testid="cell-frame-container"]:nth-child(3n) { border-left-color: #6b8cff !important; }
+                [data-testid="chat-list"] [data-testid="cell-frame-container"]:nth-child(3n+1) { border-left-color: #ffb84d !important; }
+                [data-testid="chat-list"] [data-testid="cell-frame-container"]:nth-child(3n+2) { border-left-color: #d28cff !important; }
+                [data-testid="conversation-panel-header"] { background: #128c7e !important; color: #ffffff !important; }
+                [data-testid="conversation-compose-box-input"] { background: #ffffff !important; border-radius: 24px !important; }
+              `;
+              document.head.appendChild(style);
+            })();
+        """, null)
     }
 
     override fun onBackPressed() {

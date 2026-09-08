@@ -78,7 +78,7 @@ class MainActivity : ComponentActivity() {
             LaunchedEffect(Unit) {
                 update = UpdateManager.findUpdate()
             }
-            WawApp(onConnect = {
+            WawApp(hasUpdate = update != null, onConnect = {
                 startActivity(Intent(this, LinkedDeviceWebViewActivity::class.java))
             })
             if (showUpdate && update != null) {
@@ -90,6 +90,7 @@ class MainActivity : ComponentActivity() {
                     confirmButton = {
                         TextButton(onClick = {
                             showUpdate = false
+                            update = null
                             UpdateManager.downloadAndInstall(this@MainActivity, available)
                         }) { Text("Update sekarang") }
                     },
@@ -146,7 +147,7 @@ private fun GlowingIcon(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun WawApp(onConnect: () -> Unit) {
+private fun WawApp(hasUpdate: Boolean, onConnect: () -> Unit) {
     Scaffold(
         containerColor = WawBg,
         topBar = {
@@ -163,7 +164,9 @@ private fun WawApp(onConnect: () -> Unit) {
         bottomBar = {
             NavigationBar(containerColor = Color.White, tonalElevation = 3.dp) {
                 NavigationBarItem(selected = true, onClick = {}, icon = { GlowingIcon(Icons.Default.Chat, "Chat", tint = WawDark, glow = WawBrightGreen, size = 34.dp) }, label = { Text("Chat") })
-                NavigationBarItem(selected = false, onClick = {}, icon = { GlowingIcon(Icons.Default.Update, "Pembaruan", glow = Color(0xFF6B8CFF), size = 34.dp) }, label = { Text("Pembaruan") })
+                if (hasUpdate) {
+                    NavigationBarItem(selected = false, onClick = {}, icon = { GlowingIcon(Icons.Default.Update, "Pembaruan tersedia", glow = Color(0xFF6B8CFF), size = 34.dp) }, label = { Text("Update") })
+                }
                 NavigationBarItem(selected = false, onClick = {}, icon = { GlowingIcon(Icons.Default.Call, "Panggilan", glow = Color(0xFFFFB84D), size = 34.dp) }, label = { Text("Panggilan") })
                 NavigationBarItem(selected = false, onClick = {}, icon = { GlowingIcon(Icons.Default.Settings, "Setelan", glow = Color(0xFFD28CFF), size = 34.dp) }, label = { Text("Setelan") })
             }
