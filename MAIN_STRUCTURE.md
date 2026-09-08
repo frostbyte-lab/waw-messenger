@@ -2,7 +2,7 @@
 
 ## Konsep wajib
 
-Aplikasi memakai `waw-lengkap-final-targeted.html` sebagai **tampilan utama**. HTML tersebut memiliki alur `onboarding → login → chatlist → workspace`; launcher dibuka pada state `chatlist` sebagai beranda setelah login. Header, daftar obrolan, tab, bottom navigation, kartu, warna, ikon, badge, modal, dan navigasinya tidak diganti dengan tampilan lain.
+Aplikasi memakai `waw-lengkap-final-targeted.html` sebagai **tampilan utama**. HTML tersebut memiliki alur `onboarding → login → chatlist → workspace`; launcher dibuka pada state `chatlist` sebagai beranda setelah login, dengan tab aktif `Chat` (bukan `Workspace`). Header, daftar obrolan, tab, bottom navigation, kartu, warna, ikon, badge, modal, dan navigasinya tidak diganti dengan tampilan lain.
 
 Aplikasi tidak menampilkan WhatsApp Web. Tidak ada WebView ke `web.whatsapp.com`, tidak ada tampilan login/scan QR WhatsApp, dan tidak ada UI WhatsApp yang ditempel di atas dashboard WAW.
 
