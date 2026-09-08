@@ -18,14 +18,18 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.webkit.WebSettings
 import android.graphics.Color
+import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.view.Gravity
+import android.view.View
 import android.view.animation.AlphaAnimation
 import android.widget.EditText
 import android.widget.FrameLayout
-import android.widget.LinearLayout
-import android.widget.TextView
+import android.widget.HorizontalScrollView
 import android.widget.ImageView
+import android.widget.LinearLayout
+import android.widget.ScrollView
+import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.FragmentActivity
 import androidx.core.content.ContextCompat
@@ -45,6 +49,8 @@ open class LinkedDeviceWebViewActivity : FragmentActivity() {
     private lateinit var headerChrome: LinearLayout
     private lateinit var bottomChrome: LinearLayout
     private lateinit var chatComposer: LinearLayout
+    private var preLoginOverlay: LinearLayout? = null
+    private var chromeHeaderVisible = false
     private val loginUiHandler = Handler(Looper.getMainLooper())
     private val loginUiCheck = object : Runnable {
         override fun run() {
@@ -60,7 +66,16 @@ open class LinkedDeviceWebViewActivity : FragmentActivity() {
                 })();
                 """.trimIndent()
             ) { result ->
-                setLinkedChromeVisible(result == "true")
+                val loggedIn = result == "true"
+                val overlayVisible = preLoginOverlay?.visibility == View.VISIBLE
+                if (loggedIn && overlayVisible) {
+                    preLoginOverlay?.visibility = View.GONE
+                }
+                if (overlayVisible && !loggedIn) {
+                    setLinkedChromeVisible(false)
+                } else {
+                    setLinkedChromeVisible(true, includeComposer = loggedIn)
+                }
                 loginUiHandler.postDelayed(this, 1000L)
             }
         }
@@ -121,6 +136,7 @@ open class LinkedDeviceWebViewActivity : FragmentActivity() {
         configureWebView()
         addWawChrome()
         addWawChatComposer()
+        addWawPreLoginOverlay()
         setLinkedChromeVisible(false)
         loginUiHandler.post(loginUiCheck)
         requestRuntimePermissionsIfNeeded()
@@ -216,12 +232,14 @@ open class LinkedDeviceWebViewActivity : FragmentActivity() {
         root.addView(bottom, FrameLayout.LayoutParams(-1, 68, Gravity.BOTTOM))
     }
 
-    private fun setLinkedChromeVisible(visible: Boolean) {
-        val state = if (visible) android.view.View.VISIBLE else android.view.View.GONE
+    private fun setLinkedChromeVisible(visible: Boolean, includeComposer: Boolean = true) {
+        val state = if (visible) View.VISIBLE else View.GONE
+        val headerChanged = visible != chromeHeaderVisible
+        chromeHeaderVisible = visible
         if (::headerChrome.isInitialized) headerChrome.visibility = state
         if (::bottomChrome.isInitialized) bottomChrome.visibility = state
-        if (::chatComposer.isInitialized) chatComposer.visibility = state
-        if (visible && ::headerChrome.isInitialized) {
+        if (::chatComposer.isInitialized) chatComposer.visibility = if (includeComposer) state else View.GONE
+        if (visible && headerChanged && ::headerChrome.isInitialized) {
             AlphaAnimation(0f, 1f).apply { duration = 260; fillAfter = true }.also { headerChrome.startAnimation(it) }
             if (::bottomChrome.isInitialized) AlphaAnimation(0f, 1f).apply { duration = 320; fillAfter = true }.also { bottomChrome.startAnimation(it) }
         }
@@ -279,6 +297,330 @@ open class LinkedDeviceWebViewActivity : FragmentActivity() {
         panel.addView(row, LinearLayout.LayoutParams(-1, 50))
         chatComposer = panel
         root.addView(panel, FrameLayout.LayoutParams(-1, 78, Gravity.BOTTOM).apply { bottomMargin = 68 })
+    }
+
+    private fun dismissPreLogin() {
+        preLoginOverlay?.visibility = View.GONE
+        setLinkedChromeVisible(true, includeComposer = false)
+    }
+
+    /** WAW-owned pre-login home, aligned with the waw-home UI reference. */
+    private fun addWawPreLoginOverlay() {
+        val d = resources.displayMetrics.density
+        fun Int.dpx() = (this * d).toInt()
+        val white = Color.WHITE
+        val bg = Color.rgb(247, 248, 250)
+        val ink = Color.rgb(17, 24, 39)
+        val muted = Color.rgb(107, 114, 128)
+        val line = Color.rgb(236, 238, 241)
+        val g1 = Color.rgb(13, 166, 120)
+        val g2 = Color.rgb(14, 142, 139)
+        val greenInk = Color.rgb(14, 122, 87)
+        val greenTint = Color.rgb(231, 247, 241)
+        val pillDark = Color.rgb(22, 24, 28)
+        val openWorkspace = { startActivity(Intent(this@LinkedDeviceWebViewActivity, WorkspaceActivity::class.java)) }
+
+        val overlay = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setBackgroundColor(bg)
+        }
+
+        // Header: brand mark + WAW BUSINESS + subtitle
+        val header = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setBackgroundColor(white)
+            setPadding(18.dpx(), 8.dpx(), 12.dpx(), 12.dpx())
+        }
+        val top = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
+        top.addView(TextView(this).apply {
+            text = "W"
+            textSize = 19f
+            gravity = Gravity.CENTER
+            setTextColor(white)
+            setTypeface(typeface, Typeface.BOLD)
+            background = GradientDrawable().apply {
+                colors = intArrayOf(g1, g2)
+                cornerRadius = 12.dpx().toFloat()
+            }
+        }, LinearLayout.LayoutParams(40.dpx(), 40.dpx()))
+        val brandCol = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER_VERTICAL }
+        val brandRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
+        brandRow.addView(TextView(this).apply {
+            text = "WAW"
+            textSize = 18f
+            setTextColor(ink)
+            setTypeface(typeface, Typeface.BOLD)
+        })
+        brandRow.addView(TextView(this).apply {
+            text = "BUSINESS"
+            textSize = 10f
+            setTypeface(typeface, Typeface.BOLD)
+            setTextColor(Color.rgb(37, 99, 235))
+            gravity = Gravity.CENTER
+            background = GradientDrawable().apply { setColor(Color.rgb(231, 240, 254)); cornerRadius = 30f }
+            setPadding(14.dpx(), 3.dpx(), 14.dpx(), 3.dpx())
+        }, LinearLayout.LayoutParams(-2, -2).apply { leftMargin = 8.dpx() })
+        brandCol.addView(brandRow)
+        brandCol.addView(TextView(this).apply { text = "WhatsApp Workspace"; textSize = 12.5f; setTextColor(muted) })
+        top.addView(brandCol, LinearLayout.LayoutParams(0, -2, 1f).apply { leftMargin = 10.dpx() })
+        top.addView(TextView(this).apply {
+            textSize = 17f
+            setTextColor(ink)
+        }.also { FaText.set(it, context, "\uf002", "") })
+        top.addView(TextView(this).apply {
+            textSize = 17f
+            setTextColor(ink)
+            setPadding(20.dpx(), 0, 0, 0)
+        }.also { FaText.set(it, context, "\uf142", "") })
+        header.addView(top, LinearLayout.LayoutParams(-1, 44.dpx()))
+
+        fun tab(label: String, active: Boolean, onClick: (() -> Unit)? = null): TextView = TextView(this).apply {
+            text = label
+            textSize = 13f
+            setTypeface(typeface, Typeface.BOLD)
+            setTextColor(if (active) white else muted)
+            background = GradientDrawable().apply {
+                setColor(if (active) pillDark else bg)
+                cornerRadius = 60f
+            }
+            gravity = Gravity.CENTER
+            setPadding(30.dpx(), 7.dpx(), 30.dpx(), 7.dpx())
+            setOnClickListener { onClick?.invoke() }
+        }
+        val tabsScroll = HorizontalScrollView(this).apply {
+            isHorizontalScrollBarEnabled = false
+            isVerticalScrollBarEnabled = false
+        }
+        val tabs = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(0, 14.dpx(), 0, 0) }
+        tabs.addView(tab("Chat", true))
+        tabs.addView(tab("Panggilan", false))
+        tabs.addView(tab("Status", false))
+        tabs.addView(tab("Fitur", false))
+        tabs.addView(tab("Workspace", false) { openWorkspace() })
+        tabsScroll.addView(tabs, FrameLayout.LayoutParams(-2, -2))
+        header.addView(tabsScroll, LinearLayout.LayoutParams(-1, -2))
+        overlay.addView(header, LinearLayout.LayoutParams(-1, -2))
+
+        // Body
+        val body = ScrollView(this).apply { isVerticalScrollBarEnabled = false }
+        val bodyCol = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(0, 0, 0, 18.dpx()) }
+
+        val sectionHead = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(18.dpx(), 18.dpx(), 18.dpx(), 0) }
+        sectionHead.addView(TextView(this).apply {
+            textSize = 14f
+            setTextColor(Color.rgb(46, 99, 214))
+        }.also { FaText.set(it, context, "\uf5fd", "") })
+        sectionHead.addView(TextView(this).apply {
+            text = "Workspace Quick Access"
+            textSize = 14.5f
+            setTypeface(typeface, Typeface.BOLD)
+            setTextColor(ink)
+            setPadding(8.dpx(), 0, 0, 0)
+        }, LinearLayout.LayoutParams(0, -2, 1f))
+        sectionHead.addView(TextView(this).apply {
+            text = "Lihat semua"
+            textSize = 13f
+            setTypeface(typeface, Typeface.BOLD)
+            setTextColor(g2)
+            setOnClickListener { openWorkspace() }
+        })
+        bodyCol.addView(sectionHead, LinearLayout.LayoutParams(-1, -2))
+
+        fun quickCard(icon: String, title: String, sub: String, tint: Int, iconColor: Int): LinearLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            background = GradientDrawable().apply {
+                setColor(white)
+                cornerRadius = 16.dpx().toFloat()
+                setStroke(1, line)
+            }
+            setPadding(14.dpx(), 14.dpx(), 14.dpx(), 14.dpx())
+            setOnClickListener { openWorkspace() }
+            addView(TextView(this@LinkedDeviceWebViewActivity).apply {
+                textSize = 15f
+                gravity = Gravity.CENTER
+                setTextColor(iconColor)
+                background = GradientDrawable().apply { setColor(tint); cornerRadius = 12.dpx().toFloat() }
+            }.also { FaText.set(it, this@LinkedDeviceWebViewActivity, icon, "") }, LinearLayout.LayoutParams(40.dpx(), 40.dpx()))
+            val col = LinearLayout(this@LinkedDeviceWebViewActivity).apply { orientation = LinearLayout.VERTICAL }
+            col.addView(TextView(this@LinkedDeviceWebViewActivity).apply {
+                text = title
+                textSize = 13.5f
+                setTypeface(typeface, Typeface.BOLD)
+                setTextColor(ink)
+            })
+            col.addView(TextView(this@LinkedDeviceWebViewActivity).apply { text = sub; textSize = 12f; setTextColor(muted) })
+            addView(col, LinearLayout.LayoutParams(-2, -2).apply { leftMargin = 12.dpx() })
+        }
+
+        fun quickRow(first: LinearLayout, second: LinearLayout) = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            setPadding(18.dpx(), 10.dpx(), 18.dpx(), 0)
+            addView(first, LinearLayout.LayoutParams(0, -2, 1f))
+            addView(second, LinearLayout.LayoutParams(0, -2, 1f).apply { leftMargin = 10.dpx() })
+        }
+        bodyCol.addView(quickRow(
+            quickCard("\uf15c", "Dokumen", "12 file", Color.rgb(234, 241, 254), Color.rgb(46, 99, 214)),
+            quickCard("\uf058", "Tugas", "8 aktif", greenTint, greenInk)
+        ), LinearLayout.LayoutParams(-1, -2))
+        bodyCol.addView(quickRow(
+            quickCard("\uf133", "Kalender", "3 meeting", Color.rgb(241, 236, 254), Color.rgb(110, 66, 214)),
+            quickCard("\uf07b", "File", "2,4 GB", Color.rgb(254, 241, 230), Color.rgb(196, 105, 26))
+        ), LinearLayout.LayoutParams(-1, -2))
+
+        // Connect CTA (pre-login action)
+        val cta = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            background = GradientDrawable().apply {
+                colors = intArrayOf(g1, g2)
+                cornerRadius = 20.dpx().toFloat()
+            }
+            setPadding(18.dpx(), 18.dpx(), 18.dpx(), 18.dpx())
+            setOnClickListener { dismissPreLogin() }
+        }
+        cta.addView(TextView(this).apply {
+            text = "Mulai pakai WAW"
+            textSize = 17f
+            setTypeface(typeface, Typeface.BOLD)
+            setTextColor(white)
+        })
+        cta.addView(TextView(this).apply {
+            text = "Hubungkan akun lewat WhatsApp Web resmi. Tanpa password, tanpa token di perangkat."
+            textSize = 12.5f
+            setTextColor(Color.rgb(226, 247, 241))
+            setPadding(0, 4.dpx(), 0, 0)
+        })
+        val ctaRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(0, 16.dpx(), 0, 0) }
+        val ctaBtn = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER
+            background = GradientDrawable().apply { setColor(white); cornerRadius = 50f }
+            setPadding(16.dpx(), 9.dpx(), 16.dpx(), 9.dpx())
+            addView(TextView(context).apply {
+                text = "Hubungkan sekarang"
+                textSize = 13f
+                setTypeface(typeface, Typeface.BOLD)
+                setTextColor(greenInk)
+            })
+            addView(TextView(context).apply {
+                textSize = 13f
+                setTextColor(greenInk)
+                setPadding(6.dpx(), 0, 0, 0)
+            }.also { FaText.set(it, context, "\uf061", "") })
+        }
+        ctaRow.addView(ctaBtn)
+        cta.addView(ctaRow)
+        val ctaWrap = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(18.dpx(), 20.dpx(), 18.dpx(), 0) }
+        ctaWrap.addView(cta)
+        bodyCol.addView(ctaWrap, LinearLayout.LayoutParams(-1, -2))
+
+        // Chats header + demo row (same as reference)
+        val chatsHead = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(18.dpx(), 24.dpx(), 18.dpx(), 10.dpx()) }
+        chatsHead.addView(TextView(this).apply {
+            text = "OBROLAN"
+            textSize = 12.5f
+            setTypeface(typeface, Typeface.BOLD)
+            setTextColor(muted)
+        }, LinearLayout.LayoutParams(0, -2, 1f))
+        chatsHead.addView(TextView(this).apply {
+            text = "6 \u2022 3 baru"
+            textSize = 12f
+            setTypeface(typeface, Typeface.BOLD)
+            setTextColor(greenInk)
+            gravity = Gravity.CENTER
+            background = GradientDrawable().apply { setColor(greenTint); cornerRadius = 60f }
+            setPadding(10.dpx(), 3.dpx(), 10.dpx(), 3.dpx())
+        })
+        bodyCol.addView(chatsHead, LinearLayout.LayoutParams(-1, -2))
+        bodyCol.addView(View(this).apply { setBackgroundColor(line) }, LinearLayout.LayoutParams(-1, 1).apply { leftMargin = 18.dpx(); rightMargin = 18.dpx() })
+
+        val chatItem = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(10.dpx(), 12.dpx(), 10.dpx(), 12.dpx())
+        }
+        chatItem.addView(TextView(this).apply {
+            text = "CW"
+            textSize = 14f
+            gravity = Gravity.CENTER
+            setTypeface(typeface, Typeface.BOLD)
+            setTextColor(white)
+            background = GradientDrawable().apply {
+                colors = intArrayOf(g1, g2)
+                cornerRadius = 13.dpx().toFloat()
+            }
+        }, LinearLayout.LayoutParams(46.dpx(), 46.dpx()))
+        val mid = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        mid.addView(TextView(this).apply {
+            text = "Tim WAW"
+            textSize = 14.5f
+            setTypeface(typeface, Typeface.BOLD)
+            setTextColor(ink)
+        })
+        mid.addView(TextView(this).apply {
+            text = "Aku tambahin animasi: pesan masuk slide kiri..."
+            textSize = 12.5f
+            setTextColor(muted)
+            maxLines = 1
+        })
+        chatItem.addView(mid, LinearLayout.LayoutParams(0, -2, 1f).apply { leftMargin = 12.dpx() })
+        val right = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.END }
+        right.addView(TextView(this).apply { text = "10:44"; textSize = 11.5f; setTextColor(muted) })
+        right.addView(TextView(this).apply {
+            text = "3"
+            textSize = 10f
+            gravity = Gravity.CENTER
+            setTypeface(typeface, Typeface.BOLD)
+            setTextColor(white)
+            background = GradientDrawable().apply { setColor(Color.rgb(23, 166, 115)); cornerRadius = 50f }
+        }, LinearLayout.LayoutParams(18.dpx(), 18.dpx()).apply { topMargin = 6.dpx() })
+        chatItem.addView(right)
+        bodyCol.addView(chatItem, LinearLayout.LayoutParams(-1, -2))
+        bodyCol.addView(TextView(this).apply {
+            text = "Obrolan lain akan muncul di sini"
+            textSize = 12.5f
+            setTextColor(muted)
+            gravity = Gravity.CENTER
+            setPadding(0, 10.dpx(), 0, 10.dpx())
+        }, LinearLayout.LayoutParams(-1, -2))
+
+        body.addView(bodyCol, FrameLayout.LayoutParams(-1, -2))
+        overlay.addView(body, LinearLayout.LayoutParams(-1, 0, 1f))
+
+        // Bottom nav
+        overlay.addView(View(this).apply { setBackgroundColor(line) }, LinearLayout.LayoutParams(-1, 1))
+        val bottom = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            setBackgroundColor(white)
+            setPadding(6.dpx(), 8.dpx(), 6.dpx(), 14.dpx())
+        }
+        fun navItem(icon: String, label: String, active: Boolean, onClick: (() -> Unit)? = null): LinearLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            setPadding(0, 2.dpx(), 0, 2.dpx())
+            setOnClickListener { onClick?.invoke() }
+            addView(TextView(this@LinkedDeviceWebViewActivity).apply {
+                FaText.set(this, this@LinkedDeviceWebViewActivity, icon, "")
+                textSize = 12f
+                gravity = Gravity.CENTER
+                setTextColor(if (active) greenInk else muted)
+            })
+            addView(TextView(this@LinkedDeviceWebViewActivity).apply {
+                text = label
+                textSize = 11f
+                setTypeface(typeface, Typeface.BOLD)
+                setTextColor(if (active) greenInk else muted)
+            })
+        }
+        bottom.addView(navItem("\uf075", "Chat", true), LinearLayout.LayoutParams(0, -2, 1f))
+        bottom.addView(navItem("\uf2a0", "Panggilan", false), LinearLayout.LayoutParams(0, -2, 1f))
+        bottom.addView(navItem("\uf1ea", "Status", false), LinearLayout.LayoutParams(0, -2, 1f))
+        bottom.addView(navItem("\uf1b3", "Fitur", false), LinearLayout.LayoutParams(0, -2, 1f))
+        bottom.addView(navItem("\uf07b", "Workspace", false) { openWorkspace() }, LinearLayout.LayoutParams(0, -2, 1f))
+        overlay.addView(bottom, LinearLayout.LayoutParams(-1, -2))
+
+        preLoginOverlay = overlay
+        root.addView(overlay, FrameLayout.LayoutParams(-1, -1))
     }
 
     private fun sendMessageToWhatsApp(message: String) {

@@ -4,6 +4,7 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import com.waw.messenger.linked.LinkedDeviceWebViewActivity
 import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -49,7 +50,7 @@ class SplashActivity : ComponentActivity() {
             LaunchedEffect(Unit) {
                 progress = 1f
                 delay(1100)
-                startActivity(Intent(this@SplashActivity, LoginActivity::class.java))
+                startActivity(Intent(this@SplashActivity, LinkedDeviceWebViewActivity::class.java))
                 finish()
             }
 
