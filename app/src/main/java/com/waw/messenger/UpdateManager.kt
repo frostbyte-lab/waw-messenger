@@ -21,6 +21,7 @@ internal data class WawUpdate(
 
 internal object UpdateManager {
     private const val RELEASES_API = "https://api.github.com/repos/frostbyte-lab/waw-messenger/releases/latest"
+    private const val APK_ASSET_NAME = "waw-release.apk"
     private val client = OkHttpClient()
 
     suspend fun findUpdate(): WawUpdate? = withContext(Dispatchers.IO) {
@@ -28,20 +29,30 @@ internal object UpdateManager {
             val request = Request.Builder()
                 .url(RELEASES_API)
                 .header("Accept", "application/vnd.github+json")
+                .header("User-Agent", "WAW-Android-Updater")
                 .build()
             client.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) return@withContext null
-                val body = response.body?.string() ?: return@withContext null
-                val release = JSONObject(body)
+                val release = JSONObject(response.body?.string().orEmpty())
+                if (release.optBoolean("draft") || release.optBoolean("prerelease")) {
+                    return@withContext null
+                }
+
                 val latest = normalize(release.optString("tag_name"))
                 val current = normalize(BuildConfig.VERSION_NAME)
                 val apkUrl = release.optJSONArray("assets")?.let { assets ->
-                    (0 until assets.length()).map { assets.getJSONObject(it) }
-                        .firstOrNull { it.optString("name").endsWith("waw-release.apk") }
+                    (0 until assets.length())
+                        .map { assets.getJSONObject(it) }
+                        .firstOrNull { it.optString("name") == APK_ASSET_NAME }
                         ?.optString("browser_download_url")
                 }.orEmpty()
-                if (isNewer(latest, current) && apkUrl.isNotBlank()) {
-                    WawUpdate(latest, apkUrl, release.optString("html_url"))
+
+                if (isNewer(latest, current) && apkUrl.startsWith("https://github.com/")) {
+                    WawUpdate(
+                        version = latest.joinToString("."),
+                        downloadUrl = apkUrl,
+                        releaseUrl = release.optString("html_url"),
+                    )
                 } else null
             }
         }.getOrNull()
@@ -62,13 +73,19 @@ internal object UpdateManager {
         val receiver = object : BroadcastReceiver() {
             override fun onReceive(receiverContext: Context, intent: Intent) {
                 if (intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1L) != downloadId) return
-                val apkUri = manager.getUriForDownloadedFile(downloadId) ?: return
-                val installIntent = Intent(Intent.ACTION_VIEW).apply {
-                    setDataAndType(apkUri, "application/vnd.android.package-archive")
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                try {
+                    if (manager.getUriForDownloadedFile(downloadId) != null) {
+                        manager.getUriForDownloadedFile(downloadId)?.let { apkUri ->
+                            val installIntent = Intent(Intent.ACTION_VIEW).apply {
+                                setDataAndType(apkUri, "application/vnd.android.package-archive")
+                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                            }
+                            receiverContext.startActivity(installIntent)
+                        }
+                    }
+                } finally {
+                    receiverContext.unregisterReceiver(this)
                 }
-                receiverContext.startActivity(installIntent)
-                receiverContext.unregisterReceiver(this)
             }
         }
         androidx.core.content.ContextCompat.registerReceiver(
@@ -93,4 +110,3 @@ internal object UpdateManager {
 internal fun Context.openReleasePage(url: String) {
     startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
 }
-

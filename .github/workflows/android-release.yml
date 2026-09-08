@@ -1,29 +1,33 @@
-name: WAW Android Release Artifact
+name: WAW Android Automatic Release
 
 on:
+  push:
+    branches: [ main ]
   workflow_dispatch:
-    inputs:
-      version_name:
-        description: "Release version label"
-        required: true
-        default: "0.1.0"
-        type: string
 
 permissions:
   contents: write
 
 env:
   RELEASE_APK: app/build/outputs/apk/release/app-release-unsigned.apk
-  USER_RELEASE_APK: user-remote/build/outputs/apk/release/user-remote-release-unsigned.apk
 
 jobs:
   release:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     environment: production
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Set release version from workflow run
+        run: |
+          version_name="0.2.${GITHUB_RUN_NUMBER}"
+          version_code=$((1000 + GITHUB_RUN_NUMBER))
+          sed -i -E "s/versionCode = [0-9]+/versionCode = ${version_code}/; s/versionName = \"[^\"]+\"/versionName = \"${version_name}\"/" app/build.gradle.kts
+          echo "VERSION_NAME=${version_name}" >> "$GITHUB_ENV"
+          echo "VERSION_CODE=${version_code}" >> "$GITHUB_ENV"
+          grep -E 'versionCode|versionName' app/build.gradle.kts
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -35,10 +39,10 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Build release APKs
-        run: ./gradlew --no-daemon :app:assembleRelease :user-remote:assembleRelease
+      - name: Build release APK
+        run: ./gradlew --no-daemon :app:assembleRelease
 
-      - name: Check signing configuration
+      - name: Check production signing configuration
         id: signing
         env:
           KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
@@ -46,15 +50,13 @@ jobs:
           KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
-          if [[ -n "$KEYSTORE_B64" && -n "$KEYSTORE_PASSWORD" && -n "$KEY_ALIAS" && -n "$KEY_PASSWORD" ]]; then
-            echo "configured=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "Production signing secrets are required for a release. Configure ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, and ANDROID_KEY_PASSWORD in the production environment."
+          if [[ -z "$KEYSTORE_B64" || -z "$KEYSTORE_PASSWORD" || -z "$KEY_ALIAS" || -z "$KEY_PASSWORD" ]]; then
+            echo "Production signing secrets are required: ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD."
             exit 1
           fi
+          echo "configured=true" >> "$GITHUB_OUTPUT"
 
-      - name: Sign release APK
-        if: steps.signing.outputs.configured == 'true'
+      - name: Sign APK with the permanent production key
         env:
           KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
@@ -73,89 +75,27 @@ jobs:
             --out app/build/outputs/apk/release/signed/waw-release.apk \
             "$RUNNER_TEMP/waw-release-aligned.apk"
           "$build_tools/apksigner" verify --verbose app/build/outputs/apk/release/signed/waw-release.apk
-          mkdir -p user-remote/build/outputs/apk/release/signed
-          "$build_tools/zipalign" -f -p 4 "$USER_RELEASE_APK" "$RUNNER_TEMP/user-remote-aligned.apk"
-          "$build_tools/apksigner" sign \
-            --ks "$RUNNER_TEMP/waw-release.jks" \
-            --ks-pass "pass:$KEYSTORE_PASSWORD" \
-            --ks-key-alias "$KEY_ALIAS" \
-            --key-pass "pass:$KEY_PASSWORD" \
-            --out user-remote/build/outputs/apk/release/signed/user-remote-release.apk \
-            "$RUNNER_TEMP/user-remote-aligned.apk"
-          "$build_tools/apksigner" verify --verbose user-remote/build/outputs/apk/release/signed/user-remote-release.apk
 
-      - name: Prepare unsigned release APK
-        if: steps.signing.outputs.configured != 'true'
-        run: |
-          mkdir -p app/build/outputs/apk/release/test-signed
-          keytool -genkeypair -noprompt \
-            -keystore "$RUNNER_TEMP/waw-test-release.jks" \
-            -storepass changeit -keypass changeit \
-            -alias waw-test -keyalg RSA -keysize 2048 -validity 3650 \
-            -dname "CN=WAW Test,O=Frostbyte Lab,C=ID"
-          build_tools="$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -1)"
-          "$build_tools/zipalign" -f -p 4 "$RELEASE_APK" "$RUNNER_TEMP/waw-test-aligned.apk"
-          "$build_tools/apksigner" sign \
-            --ks "$RUNNER_TEMP/waw-test-release.jks" \
-            --ks-pass pass:changeit --key-pass pass:changeit \
-            --ks-key-alias waw-test \
-            --out app/build/outputs/apk/release/test-signed/waw-release-test-signed.apk \
-            "$RUNNER_TEMP/waw-test-aligned.apk"
-          "$build_tools/apksigner" verify --verbose app/build/outputs/apk/release/test-signed/waw-release-test-signed.apk
-          mkdir -p user-remote/build/outputs/apk/release/test-signed
-          "$build_tools/zipalign" -f -p 4 "$USER_RELEASE_APK" "$RUNNER_TEMP/user-remote-test-aligned.apk"
-          "$build_tools/apksigner" sign \
-            --ks "$RUNNER_TEMP/waw-test-release.jks" \
-            --ks-pass pass:changeit --key-pass pass:changeit \
-            --ks-key-alias waw-test \
-            --out user-remote/build/outputs/apk/release/test-signed/user-remote-release-test-signed.apk \
-            "$RUNNER_TEMP/user-remote-test-aligned.apk"
-          "$build_tools/apksigner" verify --verbose user-remote/build/outputs/apk/release/test-signed/user-remote-release-test-signed.apk
+      - name: Generate checksum
+        run: sha256sum app/build/outputs/apk/release/signed/waw-release.apk > app/build/outputs/apk/release/SHA256SUMS.txt
 
-      - name: Generate SHA-256 checksums
-        run: |
-          find app/build/outputs/apk/release -type f -name '*.apk' -print0 \
-            | xargs -0 sha256sum > app/build/outputs/apk/release/SHA256SUMS.txt
-          cat app/build/outputs/apk/release/SHA256SUMS.txt
-
-      - name: Publish APKs to GitHub Release
+      - name: Publish GitHub Release for the updater
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          tag="user-remote-${{ inputs.version_name }}"
-          if ! gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release create "$tag" --repo "$GITHUB_REPOSITORY" --title "User Remote Workspace ${{ inputs.version_name }}" --notes "APK User Remote Workspace standalone. APK Admin tidak didistribusikan."
-          fi
-          if [[ "${{ steps.signing.outputs.configured }}" == "true" ]]; then
-            gh release upload "$tag" \
-              app/build/outputs/apk/release/signed/waw-release.apk \
-              user-remote/build/outputs/apk/release/signed/user-remote-release.apk \
-              app/build/outputs/apk/release/SHA256SUMS.txt --clobber
-          else
-            gh release upload "$tag" \
-              app/build/outputs/apk/release/test-signed/waw-release-test-signed.apk \
-              user-remote/build/outputs/apk/release/test-signed/user-remote-release-test-signed.apk \
-              app/build/outputs/apk/release/SHA256SUMS.txt --clobber
-          fi
-
-      - name: Upload signed release APK
-        if: steps.signing.outputs.configured == 'true'
-        uses: actions/upload-artifact@v4
-        with:
-          name: waw-release-${{ inputs.version_name }}-signed
-          path: |
-            app/build/outputs/apk/release/signed/*.apk
-            user-remote/build/outputs/apk/release/signed/*.apk
+          tag="v${VERSION_NAME}"
+          gh release create "$tag" \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "WAW ${VERSION_NAME}" \
+            --generate-notes \
+            app/build/outputs/apk/release/signed/waw-release.apk \
             app/build/outputs/apk/release/SHA256SUMS.txt
-          if-no-files-found: error
 
-      - name: Upload test-signed release APK
-        if: steps.signing.outputs.configured != 'true'
+      - name: Upload release artifact
         uses: actions/upload-artifact@v4
         with:
-          name: waw-release-${{ inputs.version_name }}-test-signed
+          name: waw-${{ env.VERSION_NAME }}-signed
           path: |
-            app/build/outputs/apk/release/test-signed/*.apk
-            user-remote/build/outputs/apk/release/test-signed/*.apk
+            app/build/outputs/apk/release/signed/waw-release.apk
             app/build/outputs/apk/release/SHA256SUMS.txt
           if-no-files-found: error
