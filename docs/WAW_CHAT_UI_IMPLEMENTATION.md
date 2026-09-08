@@ -34,3 +34,7 @@ Panggilan suara/video tetap menggunakan media pipeline resmi WhatsApp Web. Kontr
 ## Keamanan
 
 Jangan menambahkan selector untuk mengekstrak QR, cookie, session secret, daftar kontak, atau isi chat ke luar WebView. Semua koneksi harus tetap dibatasi ke host resmi WhatsApp dan aksi sensitif harus dimulai dari persetujuan pengguna.
+
+## Bugfix login/scan
+
+Pada layar login atau QR scan, seluruh chrome WAW kini disembunyikan: header, tab, bottom navigation, dan composer chat tidak tampil. UI WAW baru ditampilkan setelah WhatsApp Web tidak lagi memiliki indikator login/scan. Deteksi dilakukan berulang selama halaman aktif dan di-reset setiap navigasi halaman agar tidak ada tombol yang menumpuk di atas QR.

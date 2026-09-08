@@ -7,6 +7,8 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.webkit.CookieManager
 import android.webkit.PermissionRequest
 import android.webkit.ValueCallback
@@ -42,6 +44,25 @@ open class LinkedDeviceWebViewActivity : FragmentActivity() {
     private lateinit var headerChrome: LinearLayout
     private lateinit var bottomChrome: LinearLayout
     private lateinit var chatComposer: LinearLayout
+    private val loginUiHandler = Handler(Looper.getMainLooper())
+    private val loginUiCheck = object : Runnable {
+        override fun run() {
+            if (!::webView.isInitialized) return
+            webView.evaluateJavascript(
+                """
+                (() => {
+                  const text = (document.body?.innerText || '').toLowerCase();
+                  const loginText = /scan to log in|pindai untuk login|use whatsapp on your computer|gunakan whatsapp di komputer|link with phone number|tautkan dengan nomor telepon/.test(text);
+                  const qr = document.querySelector('[data-testid="qr-code"], canvas[aria-label*="scan" i], [aria-label*="scan to log in" i], [aria-label*="pindai" i]');
+                  return !(loginText || !!qr);
+                })();
+                """.trimIndent()
+            ) { result ->
+                setLinkedChromeVisible(result == "true")
+                loginUiHandler.postDelayed(this, 1000L)
+            }
+        }
+    }
     private var pendingFileCallback: ValueCallback<Array<Uri>>? = null
     private var pendingWebPermission: PermissionRequest? = null
 
@@ -99,6 +120,7 @@ open class LinkedDeviceWebViewActivity : FragmentActivity() {
         addWawChrome()
         addWawChatComposer()
         setLinkedChromeVisible(false)
+        loginUiHandler.post(loginUiCheck)
         requestRuntimePermissionsIfNeeded()
     }
 
@@ -313,12 +335,16 @@ open class LinkedDeviceWebViewActivity : FragmentActivity() {
         CookieManager.getInstance().setAcceptThirdPartyCookies(webView, true)
 
         webView.webViewClient = object : WebViewClient() {
+            override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
+                super.onPageStarted(view, url, favicon)
+                setLinkedChromeVisible(false)
+            }
+
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
-                view?.evaluateJavascript("document.body && document.body.innerText", { raw ->
-                    val loginScreen = raw?.contains("Pindai untuk login") == true || raw?.contains("Scan to log in") == true
-                    setLinkedChromeVisible(!loginScreen)
-                })
+                setLinkedChromeVisible(false)
+                loginUiHandler.removeCallbacks(loginUiCheck)
+                loginUiHandler.post(loginUiCheck)
             }
 
             override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
@@ -374,6 +400,11 @@ open class LinkedDeviceWebViewActivity : FragmentActivity() {
 
     override fun onBackPressed() {
         if (webView.canGoBack()) webView.goBack() else super.onBackPressed()
+    }
+
+    override fun onDestroy() {
+        loginUiHandler.removeCallbacks(loginUiCheck)
+        super.onDestroy()
     }
 
     companion object {
