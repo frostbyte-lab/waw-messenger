@@ -48,6 +48,8 @@ import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.ScreenShare
 import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.filled.Fingerprint
+import androidx.compose.material.icons.filled.LocationOn
 import java.util.Locale
 import com.waw.messenger.remote.RemoteHostActivity
 
@@ -313,6 +315,10 @@ private fun WorkspaceHub(
             item { WorkspaceHubCard(Icons.Default.Folder, "File & Dokumen", "File Manager, dokumen teks, dan ekspor PDF", onFiles) }
             item { WorkspaceHubCard(Icons.Default.Image, "Watermark", "Logo, metadata, lokasi, kompas, dan ekspor PNG", onWatermark) }
             item { WorkspaceHubCard(Icons.Default.ScreenShare, "Remote", "OTP pairing, screen share, dan kontrol sentuh", onRemote) }
+            item { WorkspaceHubCard(Icons.Default.PictureAsPdf, "Scan PDF", "Mesin PDF tersedia; layar scanner belum terhubung", null, enabled = false) }
+            item { WorkspaceHubCard(Icons.Default.Fingerprint, "Absensi Fingerprint", "Penyimpanan absensi lokal tersedia; layar belum terhubung", null, enabled = false) }
+            item { WorkspaceHubCard(Icons.Default.LocationOn, "IP & Lokasi", "Diagnostik IP dan lokasi perangkat tersedia; layar belum terhubung", null, enabled = false) }
+            item { WorkspaceHubCard(Icons.Default.PictureAsPdf, "Convert Image to PDF", "Engine konversi gambar tersedia; layar belum terhubung", null, enabled = false) }
         }
     }
 }
@@ -322,16 +328,18 @@ private fun WorkspaceHubCard(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     title: String,
     subtitle: String,
-    onClick: () -> Unit,
+    onClick: (() -> Unit)?,
+    enabled: Boolean = true,
 ) {
-    Card(modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)) {
+    val cardModifier = if (enabled && onClick != null) Modifier.fillMaxWidth().clickable(onClick = onClick) else Modifier.fillMaxWidth()
+    Card(modifier = cardModifier) {
         Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-            Icon(icon, contentDescription = title, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(end = 14.dp))
+            Icon(icon, contentDescription = title, tint = if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f), modifier = Modifier.padding(end = 14.dp))
             Column(Modifier.weight(1f)) {
-                Text(title, style = MaterialTheme.typography.titleMedium)
+                Text(title, style = MaterialTheme.typography.titleMedium, color = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f))
                 Text(subtitle, style = MaterialTheme.typography.bodySmall)
             }
-            Icon(Icons.Default.ArrowForward, contentDescription = "Buka $title")
+            if (enabled) Icon(Icons.Default.ArrowForward, contentDescription = "Buka $title")
         }
     }
 }
