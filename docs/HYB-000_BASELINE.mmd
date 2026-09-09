@@ -1,0 +1,52 @@
+flowchart TB
+    U[Developer / Maintainer]
+    PR[Pull Request ke main]
+    BP{{Branch protection main\n1 approval + CODEOWNER\nrequired checks: build + secret-scan}}
+
+    U --> PR --> BP
+
+    subgraph CI[Required CI Checks]
+      B[build\nAndroid debug/release\nunit tests\ninstrumentation emulator]
+      S[secret-scan\nGitleaks\nfull git history]
+    end
+    BP --> B
+    BP --> S
+    B --> M
+    S --> M
+
+    M[(main\nWAW UI shell\nofficial WhatsApp Web boundary)]
+
+    subgraph BASE[HYB-000 Repository Baseline]
+      ENV[.env.example\nvariable names only\nno real secrets]
+      SEC[SECURITY.md\nsecret policy\nWhatsApp boundary\nremote consent rules]
+      OWN[.github/CODEOWNERS\nreview ownership]
+      DOC[README.md + MAIN_STRUCTURE.md\ncanonical WAW Hybrid source of truth]
+    end
+    M --- ENV
+    M --- SEC
+    M --- OWN
+    M --- DOC
+
+    subgraph BOUNDARY[Protected Integration Boundary]
+      WAW[WAW UI Shell]
+      WA[WhatsApp Web resmi\nweb.whatsapp.com]
+      API[Future WAW API / backend\nserver-side only]
+      META[Future Meta WhatsApp\nBusiness Cloud API]
+    end
+    M --> WAW
+    WAW -->|official WebView/linking| WA
+    WAW -. future channel .-> API
+    API -. future official business adapter .-> META
+    WA -. no cookie / QR / session token .-> API
+
+    HYB[Hybrid branches\nhyb-000-baseline\ndocs/wa-hybrid-implementation-order]
+    HYB -. not merged yet .-> M
+
+    classDef gate fill:#14352b,stroke:#20d486,color:#fff
+    classDef file fill:#10231f,stroke:#6de7c1,color:#fff
+    classDef future fill:#28303b,stroke:#9aa8b8,color:#fff
+    classDef warning fill:#3b2930,stroke:#e58d9f,color:#fff
+    class BP,B,BP,M gate
+    class ENV,SEC,OWN,DOC file
+    class API,META future
+    class HYB warning
