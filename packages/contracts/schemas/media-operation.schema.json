@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://waw.example/schemas/media-operation.schema.json",
+  "title": "WAW Media Operation",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["operationId", "mediaId", "tenantId", "workspaceId", "operation", "expiresAt"],
+  "properties": {
+    "operationId": { "type": "string", "format": "uuid" },
+    "mediaId": { "type": "string", "format": "uuid" },
+    "tenantId": { "type": "string", "format": "uuid" },
+    "workspaceId": { "type": "string", "format": "uuid" },
+    "operation": { "type": "string", "enum": ["upload", "download"] },
+    "url": { "type": ["string", "null"], "format": "uri", "pattern": "^https://" },
+    "expiresAt": { "type": "string", "format": "date-time" },
+    "maxBytes": { "type": ["integer", "null"], "minimum": 1, "maximum": 52428800 },
+    "requiredContentType": { "type": ["string", "null"] }
+  }
+}
