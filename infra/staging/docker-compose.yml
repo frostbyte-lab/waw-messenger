@@ -1,0 +1,64 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-waw}
+      POSTGRES_USER: ${POSTGRES_USER:-waw}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ../../infra/migrations/0001_hyb030_core.sql:/docker-entrypoint-initdb.d/0001_hyb030_core.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks: [waw]
+
+  api:
+    build: ../../services/api
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 8788
+      DATABASE_URL: postgres://${POSTGRES_USER:-waw}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-waw}
+      META_ACCESS_TOKEN: ${META_ACCESS_TOKEN:?set META_ACCESS_TOKEN}
+      META_APP_SECRET: ${META_APP_SECRET:?set META_APP_SECRET}
+      META_VERIFY_TOKEN: ${META_VERIFY_TOKEN:?set META_VERIFY_TOKEN}
+      META_PHONE_NUMBER_ID: ${META_PHONE_NUMBER_ID:?set META_PHONE_NUMBER_ID}
+      META_GRAPH_API_VERSION: ${META_GRAPH_API_VERSION:-v23.0}
+    depends_on:
+      postgres: { condition: service_healthy }
+    expose: ["8788"]
+    networks: [waw]
+
+  relay:
+    build: ../../remote/relay
+    restart: unless-stopped
+    environment:
+      PORT: 8787
+      PAIRING_TTL_MS: 120000
+      SESSION_TTL_MS: 28800000
+    expose: ["8787"]
+    networks: [waw]
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports: ["80:80", "443:443"]
+    environment:
+      PUBLIC_DOMAIN: ${PUBLIC_DOMAIN:?set PUBLIC_DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on: [api, relay]
+    networks: [waw]
+
+networks:
+  waw:
+volumes:
+  postgres_data:
+  caddy_data:
+  caddy_config:
