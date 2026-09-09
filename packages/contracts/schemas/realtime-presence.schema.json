@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://waw.example/schemas/realtime-presence.schema.json",
+  "title": "WAW Internal Realtime Presence",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["tenantId", "workspaceId", "userId", "state", "occurredAt"],
+  "properties": {
+    "tenantId": { "type": "string", "format": "uuid" },
+    "workspaceId": { "type": "string", "format": "uuid" },
+    "userId": { "type": "string", "format": "uuid" },
+    "conversationId": { "type": ["string", "null"], "format": "uuid" },
+    "state": { "type": "string", "enum": ["online", "away", "offline", "typing"] },
+    "messageId": { "type": ["string", "null"], "format": "uuid" },
+    "occurredAt": { "type": "string", "format": "date-time" }
+  }
+}

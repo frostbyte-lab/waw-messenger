@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://waw.example/schemas/internal-message.schema.json",
+  "title": "WAW Internal Message",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["messageId", "conversationId", "tenantId", "workspaceId", "senderId", "kind", "createdAt"],
+  "properties": {
+    "messageId": { "type": "string", "format": "uuid" },
+    "conversationId": { "type": "string", "format": "uuid" },
+    "tenantId": { "type": "string", "format": "uuid" },
+    "workspaceId": { "type": "string", "format": "uuid" },
+    "senderId": { "type": "string", "format": "uuid" },
+    "kind": { "type": "string", "enum": ["text", "media", "system"] },
+    "text": { "type": ["string", "null"], "maxLength": 10000 },
+    "mediaId": { "type": ["string", "null"], "format": "uuid" },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "editedAt": { "type": ["string", "null"], "format": "date-time" },
+    "deletedAt": { "type": ["string", "null"], "format": "date-time" }
+  }
+}
