@@ -120,8 +120,20 @@ private fun WawApp(onConnect: () -> Unit) {
                 NavigationBarItem(
                     selected = selectedTab == 2,
                     onClick = { selectedTab = 2 },
-                    icon = { Icon(Icons.Default.Settings, contentDescription = "Pengaturan") },
-                    label = { Text("Pengaturan") }
+                    icon = { Icon(Icons.Default.Settings, contentDescription = "Status") },
+                    label = { Text("Status") }
+                )
+                NavigationBarItem(
+                    selected = selectedTab == 3,
+                    onClick = { selectedTab = 3 },
+                    icon = { Icon(Icons.Default.MoreVert, contentDescription = "Fitur") },
+                    label = { Text("Fitur") }
+                )
+                NavigationBarItem(
+                    selected = selectedTab == 4,
+                    onClick = { selectedTab = 4 },
+                    icon = { Icon(Icons.Default.Link, contentDescription = "Workspace") },
+                    label = { Text("Workspace") }
                 )
             }
         }
@@ -139,11 +151,25 @@ private fun WawApp(onConnect: () -> Unit) {
                 actionLabel = "Hubungkan WhatsApp",
                 onAction = onConnect
             )
-            else -> EmptySection(
-                title = "Pengaturan",
-                message = "Pengaturan WAW akan tersedia di sini. Credential WhatsApp tidak disimpan oleh WAW.",
+            2 -> EmptySection(
+                title = "Status",
+                message = "Status resmi WhatsApp tersedia setelah akun terhubung melalui WhatsApp Web.",
+                modifier = Modifier.fillMaxSize().padding(padding),
+                actionLabel = "Hubungkan WhatsApp",
+                onAction = onConnect
+            )
+            3 -> EmptySection(
+                title = "Fitur",
+                message = "Fitur tambahan WAW akan tampil di sini tanpa mencampur data WhatsApp personal.",
                 modifier = Modifier.fillMaxSize().padding(padding),
                 actionLabel = null,
+                onAction = {}
+            )
+            else -> EmptySection(
+                title = "Workspace",
+                message = "Remote, dokumen, watermark, dan alat WAW tersedia di Workspace.",
+                modifier = Modifier.fillMaxSize().padding(padding),
+                actionLabel = "Buka Workspace",
                 onAction = {}
             )
         }
