@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://waw.example/schemas/media-object.schema.json",
+  "title": "WAW Tenant Media Object",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["mediaId", "tenantId", "workspaceId", "storageKey", "state", "contentType", "sizeBytes", "createdAt"],
+  "properties": {
+    "mediaId": { "type": "string", "format": "uuid" },
+    "tenantId": { "type": "string", "format": "uuid" },
+    "workspaceId": { "type": "string", "format": "uuid" },
+    "storageKey": { "type": "string", "minLength": 1, "maxLength": 500 },
+    "state": { "type": "string", "enum": ["pending", "quarantined", "available", "blocked", "deleted"] },
+    "contentType": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9!#$&^_.+-]*/[a-zA-Z0-9][a-zA-Z0-9!#$&^_.+-]*$" },
+    "sizeBytes": { "type": "integer", "minimum": 1, "maximum": 52428800 },
+    "sha256": { "type": ["string", "null"], "pattern": "^[a-fA-F0-9]{64}$" },
+    "originalName": { "type": ["string", "null"], "maxLength": 255 },
+    "thumbnailMediaId": { "type": ["string", "null"], "format": "uuid" },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "expiresAt": { "type": ["string", "null"], "format": "date-time" },
+    "deletedAt": { "type": ["string", "null"], "format": "date-time" }
+  }
+}
