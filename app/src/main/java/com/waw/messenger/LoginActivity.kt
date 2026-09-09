@@ -43,7 +43,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
 import com.waw.messenger.linked.LinkedDeviceWebViewActivity
 
-/** WAW authentication shell. WhatsApp linking is delegated to the official component. */
+/** WAW UI shell. WhatsApp linking stays inside the official in-app WebView component. */
 class LoginActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -53,6 +53,9 @@ class LoginActivity : ComponentActivity() {
         setContent {
             LoginScreen(
                 onConnectWhatsApp = {
+                    // Keep the user inside WAW. The official WhatsApp Web page is
+                    // rendered by LinkedDeviceWebViewActivity; no external browser
+                    // redirect and no WAW credential form are used.
                     startActivity(Intent(this, LinkedDeviceWebViewActivity::class.java))
                 },
                 onGoogleLogin = {
@@ -92,7 +95,7 @@ private fun LoginScreen(onConnectWhatsApp: () -> Unit, onGoogleLogin: () -> Unit
             Spacer(Modifier.height(38.dp))
             Text("Hubungkan WhatsApp Anda", color = LoginColors.text, fontSize = 27.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
             Spacer(Modifier.height(8.dp))
-            Text("UI WAW tetap milik WAW. Koneksi akun dilakukan melalui komponen WhatsApp resmi.", color = LoginColors.muted, fontSize = 15.sp, textAlign = TextAlign.Center)
+            Text("UI WAW tetap milik WAW. QR/linking resmi WhatsApp ditampilkan langsung di dalam aplikasi.", color = LoginColors.muted, fontSize = 15.sp, textAlign = TextAlign.Center)
             Spacer(Modifier.height(26.dp))
             Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(LoginColors.panel).padding(18.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -105,7 +108,7 @@ private fun LoginScreen(onConnectWhatsApp: () -> Unit, onGoogleLogin: () -> Unit
                 }
                 Spacer(Modifier.height(14.dp))
                 Text("1. Hubungkan akun", color = LoginColors.text, fontSize = 13.sp)
-                Text("2. QR/login resmi WhatsApp ditampilkan", color = LoginColors.text, fontSize = 13.sp)
+                Text("2. QR/linking resmi WhatsApp ditampilkan di dalam WAW", color = LoginColors.text, fontSize = 13.sp)
                 Text("3. Selesaikan Perangkat Tertaut di WhatsApp", color = LoginColors.text, fontSize = 13.sp)
                 Text("4. Kembali ke UI WAW", color = LoginColors.text, fontSize = 13.sp)
             }

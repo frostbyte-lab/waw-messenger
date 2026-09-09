@@ -146,7 +146,7 @@ open class LinkedDeviceWebViewActivity : FragmentActivity() {
             }
             addView(tabs, LinearLayout.LayoutParams(-1, 54))
             addView(TextView(context).apply {
-                text = "● TERHUBUNG  •  WhatsApp Web resmi"
+                text = "● WHATSAPP WEB RESMI  •  Linking di dalam WAW"
                 textSize = 10f
                 setTextColor(Color.rgb(0, 145, 85))
                 setPadding(2, 3, 0, 0)
@@ -300,10 +300,9 @@ open class LinkedDeviceWebViewActivity : FragmentActivity() {
         webView.webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
-                view?.evaluateJavascript("document.body && document.body.innerText", { raw ->
-                    val loginScreen = raw?.contains("Pindai untuk login") == true || raw?.contains("Scan to log in") == true
-                    setLinkedChromeVisible(!loginScreen)
-                })
+                // Keep the WAW shell visible during QR/linking and after connection.
+                // The page underneath remains the official WhatsApp Web origin.
+                setLinkedChromeVisible(true)
             }
 
             override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
