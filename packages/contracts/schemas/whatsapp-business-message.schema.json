@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://waw.example/schemas/whatsapp-business-message.schema.json",
+  "title": "WhatsApp Business Cloud Message",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["messageId", "tenantId", "workspaceId", "channel", "direction", "externalId", "kind", "occurredAt"],
+  "properties": {
+    "messageId": { "type": "string", "format": "uuid" },
+    "tenantId": { "type": "string", "format": "uuid" },
+    "workspaceId": { "type": "string", "format": "uuid" },
+    "channel": { "const": "whatsapp_business" },
+    "direction": { "type": "string", "enum": ["inbound", "outbound"] },
+    "externalId": { "type": "string", "minLength": 1, "maxLength": 255 },
+    "businessPhoneNumberId": { "type": ["string", "null"], "maxLength": 255 },
+    "customerWaId": { "type": ["string", "null"], "maxLength": 255 },
+    "kind": { "type": "string", "enum": ["text", "template", "media", "interactive", "status"] },
+    "text": { "type": ["string", "null"], "maxLength": 10000 },
+    "mediaId": { "type": ["string", "null"], "format": "uuid" },
+    "deliveryStatus": { "type": ["string", "null"], "enum": ["sent", "delivered", "read", "failed", null] },
+    "occurredAt": { "type": "string", "format": "date-time" },
+    "expiresAt": { "type": ["string", "null"], "format": "date-time" },
+    "deletedAt": { "type": ["string", "null"], "format": "date-time" }
+  }
+}
