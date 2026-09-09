@@ -1,0 +1,64 @@
+name: WAW Relay and Contracts
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  relay-and-contracts:
+    name: relay-and-contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: |
+            remote/relay/package-lock.json
+            services/api/package-lock.json
+
+      - name: Install relay dependencies
+        working-directory: remote/relay
+        run: npm ci --ignore-scripts
+
+      - name: Run relay pairing and revoke test
+        working-directory: remote/relay
+        run: npm test
+
+      - name: Install API dependencies
+        working-directory: services/api
+        run: npm ci --ignore-scripts
+
+      - name: Run API tenant and webhook tests
+        run: node --test services/api/server.test.js
+
+      - name: Validate relay compose configuration
+        working-directory: remote/relay
+        run: docker compose -f docker-compose.yml config
+
+      - name: Parse JSON contracts
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          paths = sorted(Path('packages/contracts/schemas').glob('*.json'))
+          for path in paths:
+              with path.open() as handle:
+                  json.load(handle)
+              print(f'PASS: {path}')
+          print(f'Validated {len(paths)} contracts')
+          PY
+
+      - name: Check repository diff
+        run: git diff --check
