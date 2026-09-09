@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://waw.example/schemas/waw-status.schema.json",
+  "title": "WAW Internal Status",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["statusId", "tenantId", "workspaceId", "authorId", "visibility", "createdAt", "expiresAt"],
+  "properties": {
+    "statusId": { "type": "string", "format": "uuid" },
+    "tenantId": { "type": "string", "format": "uuid" },
+    "workspaceId": { "type": "string", "format": "uuid" },
+    "authorId": { "type": "string", "format": "uuid" },
+    "visibility": { "type": "string", "enum": ["workspace", "tenant", "selected"] },
+    "selectedUserIds": { "type": "array", "items": { "type": "string", "format": "uuid" }, "uniqueItems": true },
+    "text": { "type": ["string", "null"], "maxLength": 2000 },
+    "mediaId": { "type": ["string", "null"], "format": "uuid" },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "expiresAt": { "type": "string", "format": "date-time" },
+    "deletedAt": { "type": ["string", "null"], "format": "date-time" }
+  }
+}
