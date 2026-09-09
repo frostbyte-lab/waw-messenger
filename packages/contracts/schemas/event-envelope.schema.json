@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://waw.example/schemas/event-envelope.schema.json",
+  "title": "WAW Hybrid Event Envelope",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "schemaVersion",
+    "tenantId",
+    "workspaceId",
+    "channel",
+    "type",
+    "externalId",
+    "occurredAt",
+    "actorId",
+    "traceId",
+    "payload"
+  ],
+  "properties": {
+    "id": { "type": "string", "format": "uuid" },
+    "schemaVersion": { "type": "integer", "minimum": 1 },
+    "tenantId": { "type": "string", "format": "uuid" },
+    "workspaceId": { "type": ["string", "null"], "format": "uuid" },
+    "channel": { "$ref": "channel.schema.json" },
+    "type": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*){1,3}$"
+    },
+    "externalId": { "type": ["string", "null"], "minLength": 1 },
+    "occurredAt": { "type": "string", "format": "date-time" },
+    "actorId": { "type": ["string", "null"], "minLength": 1 },
+    "traceId": { "type": "string", "minLength": 8, "maxLength": 128 },
+    "payload": { "type": "object" }
+  }
+}
