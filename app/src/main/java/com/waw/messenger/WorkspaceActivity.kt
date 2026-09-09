@@ -28,7 +28,8 @@ class WorkspaceActivity : FragmentActivity() {
                             const label = (el.innerText || el.textContent || '').toLowerCase();
                             if (el.dataset.wawBound) return;
                             el.dataset.wawBound = '1';
-                            if (label.includes('remote')) el.addEventListener('click', () => WAW.openRemote());
+                            if (label.includes('chat') || label.includes('panggilan') || label.includes('status') || label.includes('whatsapp')) el.addEventListener('click', () => WAW.openWhatsApp());
+                            else if (label.includes('remote')) el.addEventListener('click', () => WAW.openRemote());
                             else if (label.includes('watermark')) el.addEventListener('click', () => WAW.openWatermark());
                             else if (label.includes('lokasi') || label.includes('fingerprint') || label.includes('absensi') || label.includes('pdf') || label.includes('dokumen')) el.addEventListener('click', () => WAW.openTools());
                           });
@@ -49,6 +50,7 @@ class WorkspaceActivity : FragmentActivity() {
     }
 
     private inner class WawDashboardBridge {
+        @JavascriptInterface fun openWhatsApp() = runOnUiThread { startActivity(Intent(this@WorkspaceActivity, com.waw.messenger.linked.LinkedDeviceWebViewActivity::class.java)) }
         @JavascriptInterface fun openRemote() = runOnUiThread { startActivity(Intent(this@WorkspaceActivity, com.waw.messenger.remote.RemoteHostActivity::class.java)) }
         @JavascriptInterface fun openTools() = runOnUiThread { startActivity(Intent(this@WorkspaceActivity, ToolsActivity::class.java)) }
         @JavascriptInterface fun openWatermark() = openTools()
