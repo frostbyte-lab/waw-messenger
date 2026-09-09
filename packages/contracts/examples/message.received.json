@@ -1,0 +1,18 @@
+{
+  "id": "b8d2c0e2-ec6c-4ca7-a0b8-6bb3ec4c1f01",
+  "schemaVersion": 1,
+  "tenantId": "8d1f5a5e-8ea6-4b9b-9d74-7c7c8a9e2a11",
+  "workspaceId": "d8c8a3f2-6b71-4c4e-8fc2-2bca1b7c3e22",
+  "channel": "whatsapp_business",
+  "type": "message.received.v1",
+  "externalId": "wamid.HBgMNTUxMTk5OTk5OTk5FQIAERgSQUJDREVGR0hJSktMTU5PUA==",
+  "occurredAt": "2026-09-09T00:00:00Z",
+  "actorId": "service:whatsapp-webhook",
+  "traceId": "tr_01J7HYB000_MESSAGE_001",
+  "payload": {
+    "conversationId": "conv_01J7HYB000_001",
+    "senderExternalId": "5511999999999",
+    "messageKind": "text",
+    "text": "Pesan bisnis yang sudah melewati adapter resmi Meta"
+  }
+}

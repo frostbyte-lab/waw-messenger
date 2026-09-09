@@ -1,0 +1,18 @@
+{
+  "id": "0ce8cb6f-8a3c-426a-9097-0a9d0a6d7201",
+  "schemaVersion": 1,
+  "tenantId": "8d1f5a5e-8ea6-4b9b-9d74-7c7c8a9e2a11",
+  "workspaceId": "d8c8a3f2-6b71-4c4e-8fc2-2bca1b7c3e22",
+  "channel": "waw_internal",
+  "type": "message.created.v1",
+  "externalId": null,
+  "occurredAt": "2026-09-09T00:00:00Z",
+  "actorId": "user:8bdf3b4a-04b6-4f3e-8c86-8b4cde2f1111",
+  "traceId": "tr_01J7HYB000_INTERNAL_001",
+  "payload": {
+    "conversationId": "conv_01J7HYB000_INTERNAL_001",
+    "messageId": "msg_01J7HYB000_001",
+    "messageKind": "text",
+    "text": "Pesan internal WAW"
+  }
+}
