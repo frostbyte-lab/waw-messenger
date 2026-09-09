@@ -1,43 +1,101 @@
-# WAW Business Workspace — Struktur Utama
+# WAW Hybrid — Struktur Utama
 
-## Konsep wajib
+## Aturan utama
 
-Aplikasi memakai `waw-lengkap-final-targeted.html` sebagai **tampilan utama**. HTML tersebut memiliki alur `onboarding → login → chatlist → workspace`; launcher dibuka pada state `chatlist` sebagai beranda setelah login, dengan tab aktif `Chat` (bukan `Workspace`). Header, daftar obrolan, tab, bottom navigation, kartu, warna, ikon, badge, modal, dan navigasinya tidak diganti dengan tampilan lain.
+WAW memiliki satu UI produk yang menjadi shell utama. Komunikasi dibagi secara tegas menjadi dua channel:
 
-Aplikasi tidak menampilkan WhatsApp Web. Tidak ada WebView ke `web.whatsapp.com`, tidak ada tampilan login/scan QR WhatsApp, dan tidak ada UI WhatsApp yang ditempel di atas dashboard WAW.
+- `waw_internal`: akun, tenant, workspace, chat internal, Status WAW, WebRTC, assignment, notifikasi, audit, dan Remote Workspace.
+- `whatsapp_business`: WhatsApp Business Cloud API resmi Meta untuk pesan bisnis, media, template, delivery status, webhook, dan Calling API bila memenuhi syarat.
 
-Sistem WhatsApp, bila diaktifkan, hanya berada sebagai kanal/backend resmi di belakang UI WAW. Token, cookie, QR, session, dan credential tidak disimpan di APK.
+Catatan remote standalone lama, login WhatsApp buatan WAW, dan credential WhatsApp buatan sendiri adalah **legacy**. Catatan tersebut tidak boleh menjadi dasar perubahan baru.
 
-## Tampilan utama
+## WhatsApp resmi
 
-Halaman pertama adalah **Beranda/Chatlist setelah login**. Isinya mengikuti bagian HTML `LABEL: BERANDA / SETELAH LOGIN`: header WAW BUSINESS, status terhubung, tab Chat/Panggilan/Status/Fitur/Workspace, Workspace Quick Access, daftar obrolan, dan bottom navigation.
+Untuk linking dan komunikasi WhatsApp resmi, WAW membuka:
 
-Lima kartu berikut berada di **MENU WORKSPACE**, bukan di halaman utama:
+```text
+https://web.whatsapp.com
+```
 
-1. **Remote Access** — OTP pairing, screen sharing, relay, dan kontrol sentuh.
-2. **IP & Lokasi Tracker** — diagnostik IP lokal dan lokasi perangkat dengan izin Android.
-3. **Scan PDF & Edit Dokumen** — file manager, editor dokumen, scan/konversi PDF, dan export PDF.
-4. **Absensi Fingerprint** — verifikasi biometrik dan pencatatan absensi lokal.
-5. **Custom Watermark** — logo, field custom, timestamp, lokasi, kompas, dan export PNG.
+WhatsApp Web menangani login, QR/linking, chat, sinkronisasi, media, panggilan, Status, cookie, dan session. WAW hanya menyediakan shell visual dan navigasi yang aman.
 
-## Navigasi fitur
+WAW tidak boleh:
 
-Kartu `Remote Access` membuka modul `RemoteHostActivity`.
+- Meminta password WhatsApp.
+- Mengambil cookie, QR secret, token, session key, atau private key.
+- Mengirim isi chat personal ke backend WAW.
+- Membuat backend alternatif untuk WhatsApp personal.
+- Menyimulasikan Status atau daftar kontak WhatsApp sebagai data terpisah.
 
-Kartu `Scan PDF & Edit Dokumen` membuka alat native `ToolsActivity`/Workspace file manager.
+## Shell WAW
 
-Kartu `Custom Watermark` membuka `WatermarkScreen`.
+Shell WAW mempertahankan:
 
-Kartu `IP & Lokasi Tracker` membuka layar diagnostik lokasi/IP native.
+- Logo dan branding WAW.
+- Header WAW Business.
+- Tab Chat, Panggilan, Status, Fitur, dan Workspace.
+- Status koneksi resmi.
+- Area konten WhatsApp Web resmi.
+- Workspace milik WAW.
 
-Kartu `Absensi Fingerprint` membuka layar absensi native dan `BiometricGate`.
+Workspace tidak boleh mengklaim fitur internal WhatsApp.
 
-Jika suatu layar native belum selesai, kartu tetap mengikuti desain HTML tetapi harus menampilkan status yang jelas. Tidak boleh ada data demo, chat palsu, tombol kosong, atau fitur yang terlihat aktif padahal belum terhubung.
+## Modul Workspace
 
-## Batas produk
+Modul Workspace berada di bawah shell WAW:
 
-Yang dipertahankan hanya Remote, IP/Lokasi, Scan PDF/Edit Dokumen, Absensi Fingerprint, dan Custom Watermark. Sistem messenger mandiri, UI WhatsApp Web, backup, kalender, notes/tasks, dan modul di luar lima kelompok ini tidak menjadi tampilan utama.
+1. **Remote Workspace** — consent, OTP/invite, screen sharing, relay WSS, input, transfer file, revoke, dan audit.
+2. **IP & Location Tracker** — hanya dengan izin Android yang sesuai.
+3. **Scan PDF & Document Tools** — file manager, scan, edit, dan export.
+4. **Fingerprint Attendance** — biometric gate dan absensi lokal.
+5. **Custom Watermark** — logo, timestamp, lokasi, kompas, dan export.
 
-## Aturan implementasi
+Setiap kartu harus membuka fitur nyata atau menampilkan status `NOT_AVAILABLE`. Tidak boleh ada data demo atau tombol mati.
 
-Perubahan visual harus dimulai dari HTML referensi. Kode native hanya menjadi bridge untuk membuka fungsi perangkat. Setiap tombol dashboard harus terhubung ke fungsi nyata atau diberi status belum tersedia secara eksplisit. Tidak boleh membuat mockup visual yang tidak berasal dari kode aplikasi.
+## Remote Workspace
+
+Remote Workspace adalah fitur WAW, bukan fitur WhatsApp. Sesi wajib memiliki:
+
+- Explicit consent User.
+- Token one-time dan expiry.
+- Room isolation.
+- MediaProjection consent.
+- Accessibility consent.
+- Foreground notification.
+- File picker eksplisit.
+- Revoke dan emergency disconnect.
+- Audit lifecycle.
+- Tidak ada token Cloudflare di APK.
+
+## Struktur target hybrid
+
+```text
+apps/web                 # UI WAW dan responsive shell
+apps/api                 # auth, tenant guard, workspace, webhook, health
+packages/contracts       # DTO, channel enum, event schema, validation
+packages/ui              # design system WAW
+services/whatsapp        # Meta Graph API adapter dan webhook
+services/realtime        # WebSocket, presence, receipts, WebRTC signaling
+services/media           # upload, scan, thumbnail, retention, signed URL
+docs                     # architecture, security, decisions, runbooks
+infra                    # migration, deployment, monitoring, backup
+```
+
+## Urutan pengerjaan
+
+```text
+HYB-000 → HYB-010 → HYB-020 → HYB-030 → HYB-040 → HYB-050
+→ HYB-060 → HYB-070 → HYB-080 → HYB-090 → HYB-100 → HYB-110
+```
+
+Urutan resmi mengikuti:
+
+```text
+DESIGN → IMPLEMENT → BUILD → TEST → SECURITY REVIEW → DOCUMENT → LOCK
+```
+
+Lihat [README.md](README.md) dan [IMPLEMENTATION_ORDER.md](https://github.com/frostbyte-lab/waw-messenger/blob/docs/wa-hybrid-implementation-order/docs/IMPLEMENTATION_ORDER.md) sebagai sumber kebenaran sistem.
+
+## Aturan visual
+
+Web dan APK wajib memiliki visual parity terhadap referensi WAW: branding, shell, warna, typography, spacing, card, status, button treatment, responsive behavior, dan animasi. Perbedaan hanya diperbolehkan untuk dialog dan layar yang dipaksa oleh platform native.
