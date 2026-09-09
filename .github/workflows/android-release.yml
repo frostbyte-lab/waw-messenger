@@ -2,7 +2,7 @@ name: WAW Android Automatic Release
 
 on:
   push:
-    branches: [ main ]
+    tags: [ 'v*' ]
   workflow_dispatch:
 
 permissions:
@@ -22,7 +22,11 @@ jobs:
 
       - name: Set release version from workflow run
         run: |
-          version_name="0.2.${GITHUB_RUN_NUMBER}"
+          if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
+            version_name="${GITHUB_REF_NAME#v}"
+          else
+            version_name="0.2.${GITHUB_RUN_NUMBER}"
+          fi
           version_code=$((1000 + GITHUB_RUN_NUMBER))
           sed -i -E "s/versionCode = [0-9]+/versionCode = ${version_code}/; s/versionName = \"[^\"]+\"/versionName = \"${version_name}\"/" app/build.gradle.kts
           echo "VERSION_NAME=${version_name}" >> "$GITHUB_ENV"
@@ -83,7 +87,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          tag="v${VERSION_NAME}"
+          if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then tag="$GITHUB_REF_NAME"; else tag="v${VERSION_NAME}"; fi
           gh release create "$tag" \
             --repo "$GITHUB_REPOSITORY" \
             --title "WAW ${VERSION_NAME}" \
