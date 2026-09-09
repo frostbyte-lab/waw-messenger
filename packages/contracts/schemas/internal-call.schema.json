@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://waw.example/schemas/internal-call.schema.json",
+  "title": "WAW Internal WebRTC Call",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["callId", "tenantId", "workspaceId", "conversationId", "initiatorId", "state", "createdAt"],
+  "properties": {
+    "callId": { "type": "string", "format": "uuid" },
+    "tenantId": { "type": "string", "format": "uuid" },
+    "workspaceId": { "type": "string", "format": "uuid" },
+    "conversationId": { "type": "string", "format": "uuid" },
+    "initiatorId": { "type": "string", "format": "uuid" },
+    "state": { "type": "string", "enum": ["ringing", "active", "ended", "revoked", "failed"] },
+    "media": { "type": "array", "items": { "type": "string", "enum": ["audio", "video", "screen"] }, "uniqueItems": true },
+    "activeIndicator": { "type": "boolean" },
+    "emergencyEndedBy": { "type": ["string", "null"], "format": "uuid" },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "startedAt": { "type": ["string", "null"], "format": "date-time" },
+    "endedAt": { "type": ["string", "null"], "format": "date-time" }
+  }
+}

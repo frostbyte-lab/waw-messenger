@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://waw.example/schemas/webrtc-signal.schema.json",
+  "title": "WAW Internal WebRTC Signal",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["signalId", "callId", "tenantId", "workspaceId", "senderId", "kind", "occurredAt"],
+  "properties": {
+    "signalId": { "type": "string", "format": "uuid" },
+    "callId": { "type": "string", "format": "uuid" },
+    "tenantId": { "type": "string", "format": "uuid" },
+    "workspaceId": { "type": "string", "format": "uuid" },
+    "senderId": { "type": "string", "format": "uuid" },
+    "kind": { "type": "string", "enum": ["offer", "answer", "ice", "consent.request", "consent.grant", "consent.reject", "hangup", "emergency.hangup"] },
+    "payload": { "type": ["object", "null"], "additionalProperties": true },
+    "occurredAt": { "type": "string", "format": "date-time" }
+  }
+}
