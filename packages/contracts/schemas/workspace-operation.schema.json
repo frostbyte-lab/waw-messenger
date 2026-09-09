@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://waw.example/schemas/workspace-operation.schema.json",
+  "title": "WAW Workspace Operation",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["operationId", "tenantId", "workspaceId", "actorId", "operation", "occurredAt"],
+  "properties": {
+    "operationId": { "type": "string", "format": "uuid" },
+    "tenantId": { "type": "string", "format": "uuid" },
+    "workspaceId": { "type": "string", "format": "uuid" },
+    "actorId": { "type": "string", "format": "uuid" },
+    "resourceId": { "type": ["string", "null"], "format": "uuid" },
+    "operation": { "type": "string", "enum": ["create", "update", "delete", "restore", "share", "export", "scan", "search", "diagnose", "shield"] },
+    "targetUserIds": { "type": "array", "items": { "type": "string", "format": "uuid" }, "uniqueItems": true },
+    "sensitive": { "type": "boolean" },
+    "occurredAt": { "type": "string", "format": "date-time" },
+    "traceId": { "type": ["string", "null"], "maxLength": 255 }
+  }
+}
