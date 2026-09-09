@@ -1,0 +1,7 @@
+# HYB-000 repository ownership
+* @frostbyte-lab
+.github/ @frostbyte-lab
+app/ @frostbyte-lab
+remote/ @frostbyte-lab
+user-remote/ @frostbyte-lab
+docs/ @frostbyte-lab
