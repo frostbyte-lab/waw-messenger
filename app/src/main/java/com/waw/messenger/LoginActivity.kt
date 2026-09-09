@@ -2,7 +2,6 @@ package com.waw.messenger
 
 import android.content.Intent
 import android.os.Bundle
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
@@ -28,7 +27,6 @@ import androidx.compose.material.icons.filled.Security
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -57,9 +55,6 @@ class LoginActivity : ComponentActivity() {
                     // rendered by LinkedDeviceWebViewActivity; no external browser
                     // redirect and no WAW credential form are used.
                     startActivity(Intent(this, LinkedDeviceWebViewActivity::class.java))
-                },
-                onGoogleLogin = {
-                    Toast.makeText(this, "Login Google WAW belum dikonfigurasi", Toast.LENGTH_SHORT).show()
                 }
             )
         }
@@ -75,7 +70,7 @@ private object LoginColors {
 }
 
 @Composable
-private fun LoginScreen(onConnectWhatsApp: () -> Unit, onGoogleLogin: () -> Unit) {
+private fun LoginScreen(onConnectWhatsApp: () -> Unit) {
     Box(
         Modifier.fillMaxSize().background(Brush.radialGradient(colors = listOf(Color(0xFF063B32), LoginColors.background), radius = 900f))
     ) {
@@ -124,12 +119,6 @@ private fun LoginScreen(onConnectWhatsApp: () -> Unit, onGoogleLogin: () -> Unit
                 Text("Hubungkan WhatsApp", fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.width(8.dp))
                 Icon(Icons.Default.ArrowForward, null)
-            }
-            Spacer(Modifier.height(18.dp))
-            OutlinedButton(onClick = onGoogleLogin, Modifier.fillMaxWidth().height(52.dp), shape = RoundedCornerShape(15.dp)) {
-                Text("G", color = Color(0xFF4285F4), fontWeight = FontWeight.Bold, fontSize = 19.sp)
-                Spacer(Modifier.width(10.dp))
-                Text("Login Google WAW", fontSize = 15.sp, color = LoginColors.text)
             }
         }
     }
