@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://waw.example/schemas/error-envelope.schema.json",
+  "title": "WAW API Error Envelope",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["code", "message", "requestId"],
+  "properties": {
+    "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]{2,63}$" },
+    "message": { "type": "string", "minLength": 1, "maxLength": 300 },
+    "requestId": { "type": "string", "minLength": 8, "maxLength": 128 },
+    "details": { "type": "object", "additionalProperties": true }
+  }
+}
