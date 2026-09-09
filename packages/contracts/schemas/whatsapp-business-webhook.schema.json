@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://waw.example/schemas/whatsapp-business-webhook.schema.json",
+  "title": "WhatsApp Business Cloud Webhook Event",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["eventId", "tenantId", "channel", "externalId", "eventType", "receivedAt", "attempt"],
+  "properties": {
+    "eventId": { "type": "string", "format": "uuid" },
+    "tenantId": { "type": "string", "format": "uuid" },
+    "workspaceId": { "type": ["string", "null"], "format": "uuid" },
+    "channel": { "const": "whatsapp_business" },
+    "externalId": { "type": "string", "minLength": 1, "maxLength": 255 },
+    "eventType": { "type": "string", "enum": ["message.received", "message.status", "media.received"] },
+    "signatureVerified": { "type": "boolean" },
+    "receivedAt": { "type": "string", "format": "date-time" },
+    "processedAt": { "type": ["string", "null"], "format": "date-time" },
+    "attempt": { "type": "integer", "minimum": 1, "maximum": 10 },
+    "nextRetryAt": { "type": ["string", "null"], "format": "date-time" },
+    "deadLetteredAt": { "type": ["string", "null"], "format": "date-time" },
+    "errorCode": { "type": ["string", "null"], "maxLength": 100 }
+  }
+}
