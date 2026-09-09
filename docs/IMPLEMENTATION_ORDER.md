@@ -51,6 +51,8 @@ Dokumen ini adalah urutan kerja resmi. Setiap milestone mengikuti: **DESIGN → 
 
 **Selesai jika:** screenshot review menunjukkan parity visual terhadap referensi WAW dan browser smoke test lulus.
 
+**Visual contract wajib:** referensi https://waw-messenger-api.technologiesfrostbyte.workers.dev/ berlaku untuk web dan APK. Screenshot review harus mencakup desktop web, mobile web, APK WAW, Workspace, Workspace Remote, loading, empty, error, dan consent state. Dialog permission Android dan layar native boleh berbeda hanya karena batas platform.
+
 ## Milestone 5 — WAW Internal Chat dan Status
 
 - [ ] Thread/message/reaction/read receipt internal.

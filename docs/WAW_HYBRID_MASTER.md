@@ -36,9 +36,13 @@ waw-hybrid/
 
 Event minimal membawa `id`, `tenantId`, `workspaceId`, `channel`, `type`, `externalId`, `occurredAt`, dan `payload`. Webhook wajib idempotent berdasarkan `externalId` dan event type; kegagalan dipindahkan ke dead-letter queue dengan audit payload yang diperlukan.
 
-## UI dan Referensi Tampilan
+## UI Wajib dan Visual Contract
 
-Tampilan WAW dipertahankan dari UI yang sudah ada dan deployment referensi [WAW Messenger](https://waw-messenger-api.technologiesfrostbyte.workers.dev/). URL tersebut adalah referensi/entry point UI, bukan tempat menyimpan secret dan bukan otomatis endpoint API atau WSS.
+Tampilan WAW pada deployment referensi [WAW Messenger](https://waw-messenger-api.technologiesfrostbyte.workers.dev/) menjadi **visual contract wajib**. Web dan APK tidak boleh memiliki shell produk yang berbeda secara material. URL tersebut adalah referensi/entry point UI, bukan tempat menyimpan secret dan bukan otomatis endpoint API atau WSS.
+
+Persyaratan ini berlaku untuk `apps/web`, APK WAW Hybrid, WAW Workspace, Workspace Remote, dan Host Companion. Semua permukaan wajib mempertahankan branding WAW, shell navigasi, hirarki halaman, warna, typography, spacing, card, bubble, status indicator, button treatment, responsive behavior, serta animasi utama. Perbedaan hanya diperbolehkan jika dipaksa oleh platform, seperti system permission dialog Android, MediaProjection consent, Accessibility settings, file picker, atau safe-area/native back behavior.
+
+Setiap perubahan UI wajib menyertakan screenshot review untuk desktop web, mobile web, dan APK. Acceptance test visual harus membandingkan halaman entry, inbox/chat, Workspace, Workspace Remote, loading, empty, error, dan consent state terhadap referensi. Jika parity belum tercapai, milestone UI berstatus `IN_PROGRESS`, bukan `LOCKED`.
 
 Design system memakai WAW green/teal, blue secondary accent, white surface, compact typography, rounded cards, responsive layout, smooth navigation, message status transitions, attachment progress, dan Workspace sebagai tujuan utama.
 
