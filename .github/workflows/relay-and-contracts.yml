@@ -41,7 +41,7 @@ jobs:
         run: npm ci --ignore-scripts
 
       - name: Run API tenant and webhook tests
-        run: node --test services/api/server.test.js
+        run: node --test services/api/server.test.js services/api/realtime.test.js services/api/meta-client.test.js
 
       - name: Validate relay compose configuration
         working-directory: remote/relay
