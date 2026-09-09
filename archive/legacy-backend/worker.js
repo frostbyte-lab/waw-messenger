@@ -134,6 +134,23 @@ async function conversationMessages(request, env, conversationId) {
   const result = await env.DB.prepare("SELECT id,conversation_id,sender_id,client_id,text,status,created_at,updated_at,deleted_at FROM messages WHERE conversation_id=? ORDER BY created_at ASC LIMIT 500").bind(conversationId).all();
   return json({ messages: (result.results || []).map(item => ({ id: item.id, conversationId: item.conversation_id, senderId: item.sender_id, clientId: item.client_id || null, text: item.text, status: item.status, createdAt: item.created_at, updatedAt: item.updated_at, deletedAt: item.deleted_at || null })) });
 }
+async function updateReceipt(request, env, conversationId, messageId) {
+  const user = await currentUser(request, env); if (!user) return json({ error: "UNAUTHORIZED" }, 401);
+  const data = await body(request); const requestedStatus = String(data?.status || "").toUpperCase();
+  if (!["DELIVERED", "READ"].includes(requestedStatus)) return json({ error: "INVALID_RECEIPT_STATUS" }, 400);
+  const message = await env.DB.prepare("SELECT id,conversation_id,sender_id,status FROM messages WHERE id=? AND conversation_id=? LIMIT 1").bind(messageId, conversationId).first();
+  if (!message) return json({ error: "MESSAGE_NOT_FOUND" }, 404);
+  if (!await env.DB.prepare("SELECT 1 FROM conversation_members WHERE conversation_id=? AND user_id=? LIMIT 1").bind(conversationId, user.id).first()) return json({ error: "FORBIDDEN_CONVERSATION" }, 403);
+  if (message.sender_id === user.id) return json({ error: "INVALID_RECEIPT_OWNER" }, 400);
+  const now = Date.now();
+  await env.DB.prepare("INSERT INTO message_receipts (message_id,user_id,delivered_at,read_at) VALUES (?,?,?,?) ON CONFLICT(message_id,user_id) DO UPDATE SET delivered_at=COALESCE(message_receipts.delivered_at,excluded.delivered_at),read_at=CASE WHEN excluded.read_at IS NOT NULL THEN excluded.read_at ELSE message_receipts.read_at END").bind(messageId, user.id, now, requestedStatus === "READ" ? now : null).run();
+  const nextStatus = requestedStatus === "READ" ? "READ" : (message.status === "READ" ? "READ" : "DELIVERED");
+  await env.DB.prepare("UPDATE messages SET status=?,updated_at=? WHERE id=? AND status<>? OR (id=? AND status=?)").bind(nextStatus, now, messageId, "READ", messageId, nextStatus).run();
+  const updated = await env.DB.prepare("SELECT id,conversation_id,sender_id,client_id,text,status,created_at,updated_at,deleted_at FROM messages WHERE id=? LIMIT 1").bind(messageId).first();
+  await broadcastMessage(env, updated);
+  return json({ ok: true, message: updated, status: nextStatus });
+}
+
 async function markRead(request, env, conversationId) {
   const user = await currentUser(request, env); if (!user) return json({ error: "UNAUTHORIZED" }, 401);
   if (!await env.DB.prepare("SELECT 1 FROM conversation_members WHERE conversation_id=? AND user_id=? LIMIT 1").bind(conversationId, user.id).first()) return json({ error: "FORBIDDEN_CONVERSATION" }, 403);
@@ -184,6 +201,7 @@ export default {
     if (url.pathname === "/users" && request.method === "GET") return users(request, env);
     if (url.pathname === "/conversations" && (request.method === "GET" || request.method === "POST")) return conversations(request, env);
     const readMatch = url.pathname.match(/^\/conversations\/([^/]+)\/read$/); if (readMatch && request.method === "POST") return markRead(request, env, readMatch[1]);
+    const receiptMatch = url.pathname.match(/^\/conversations\/([^/]+)\/messages\/([^/]+)\/receipt$/); if (receiptMatch && request.method === "POST") return updateReceipt(request, env, receiptMatch[1], receiptMatch[2]);
     const messagesMatch = url.pathname.match(/^\/conversations\/([^/]+)\/messages$/); if (messagesMatch && request.method === "GET") return conversationMessages(request, env, messagesMatch[1]); if (messagesMatch && request.method === "POST") return postMessage(request, env, messagesMatch[1]);
     if (url.pathname === "/ws") {
       if (request.headers.get("Upgrade") !== "websocket") return new Response("WebSocket required", { status: 426 });

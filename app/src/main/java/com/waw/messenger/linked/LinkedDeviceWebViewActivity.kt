@@ -1,0 +1,372 @@
+package com.waw.messenger.linked
+
+import android.Manifest
+import android.annotation.SuppressLint
+import android.app.Activity
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.net.Uri
+import android.os.Bundle
+import android.webkit.CookieManager
+import android.webkit.PermissionRequest
+import android.webkit.ValueCallback
+import android.webkit.WebChromeClient
+import android.webkit.WebResourceRequest
+import android.webkit.WebView
+import android.webkit.WebViewClient
+import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
+import android.view.Gravity
+import android.view.animation.AlphaAnimation
+import android.widget.FrameLayout
+import android.widget.LinearLayout
+import android.widget.TextView
+import android.widget.ImageView
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.fragment.app.FragmentActivity
+import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import com.waw.messenger.security.WawShield
+
+/**
+ * Official-first WhatsApp linked viewer.
+ * The app loads only WhatsApp Web and never exports cookies/session data to WAW.
+ */
+open class LinkedDeviceWebViewActivity : FragmentActivity() {
+    private lateinit var webView: WebView
+    private lateinit var root: FrameLayout
+    private lateinit var dashboard: LinearLayout
+    private lateinit var headerChrome: LinearLayout
+    private lateinit var bottomChrome: LinearLayout
+    private var pendingFileCallback: ValueCallback<Array<Uri>>? = null
+    private var pendingWebPermission: PermissionRequest? = null
+
+    private val permissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { grants ->
+        if (grants[Manifest.permission.CAMERA] == true || grants[Manifest.permission.RECORD_AUDIO] == true) {
+            loadOfficialWhatsApp()
+        } else {
+            loadOfficialWhatsApp()
+        }
+    }
+
+    private val filePicker = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        val callback = pendingFileCallback ?: return@registerForActivityResult
+        pendingFileCallback = null
+        val uris = if (result.resultCode == Activity.RESULT_OK) {
+            val data = result.data
+            val clip = data?.clipData
+            when {
+                clip != null -> Array(clip.itemCount) { clip.getItemAt(it).uri }
+                data?.data != null -> arrayOf(data.data!!)
+                else -> null
+            }
+        } else null
+        callback.onReceiveValue(uris)
+    }
+
+    @SuppressLint("SetJavaScriptEnabled")
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        WindowCompat.setDecorFitsSystemWindows(window, true)
+        window.statusBarColor = Color.WHITE
+        window.navigationBarColor = Color.WHITE
+        window.decorView.systemUiVisibility = android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
+        if (intent.getBooleanExtra(EXTRA_SKIP_INITIAL_LOAD, false)) {
+            setContentView(FrameLayout(this))
+            return
+        }
+        webView = WebView(this)
+        root = FrameLayout(this).apply {
+            setBackgroundColor(Color.BLACK)
+            addView(webView, FrameLayout.LayoutParams(-1, -1))
+        }
+        setContentView(root)
+        ViewCompat.setOnApplyWindowInsetsListener(root) { view, insets ->
+            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            view.setPadding(0, bars.top, 0, bars.bottom)
+            insets
+        }
+        ViewCompat.requestApplyInsets(root)
+        configureWebView()
+        addBlueprintChrome()
+        addBlueprintDashboard()
+        setLinkedChromeVisible(false)
+        requestRuntimePermissionsIfNeeded()
+    }
+
+    private fun addBlueprintChrome() {
+        val green = Color.rgb(0, 150, 90)
+        val header = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(20, 14, 12, 8)
+            setBackgroundColor(Color.WHITE)
+            val brand = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
+            brand.addView(ImageView(context).apply {
+                setImageResource(com.waw.messenger.R.drawable.waw_main_logo)
+                contentDescription = "Logo WAW"
+            }, LinearLayout.LayoutParams(44, 44))
+            brand.addView(TextView(context).apply {
+                text = "WAW  BUSINESS"
+                textSize = 21f
+                setTextColor(Color.rgb(20, 30, 35))
+                setTypeface(typeface, android.graphics.Typeface.BOLD)
+                setPadding(10, 0, 0, 0)
+            })
+            addView(brand, LinearLayout.LayoutParams(-1, 48))
+            addView(TextView(context).apply {
+                text = "Official Linked Viewer  •  Lokal & Aman"
+                textSize = 13f
+                setTextColor(Color.rgb(0, 125, 75))
+            })
+            val tabs = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL }
+            listOf("\uf075" to "Chat", "\uf2a0" to "Panggilan", "\uf1ea" to "Status", "\uf1b3" to "Fitur", "\uf07b" to "Workspace").forEach { (icon, label) ->
+                val tab = TextView(context).apply {
+                    FaText.set(this, context, icon, label)
+                    textSize = 12f
+                    maxLines = 1
+                    setTextColor(if (label.endsWith("Chat")) Color.WHITE else Color.DKGRAY)
+                    background = GradientDrawable().apply {
+                        setColor(if (label.endsWith("Chat")) Color.rgb(20, 35, 45) else Color.rgb(245, 247, 248))
+                        cornerRadius = 10f
+                    }
+                    gravity = android.view.Gravity.CENTER
+                    setPadding(4, 10, 4, 10)
+                    setOnClickListener {
+                        if (label.endsWith("Workspace")) startActivity(Intent(this@LinkedDeviceWebViewActivity, WorkspaceActivity::class.java)) else navigateOfficialSection(label)
+                    }
+                }
+                tabs.addView(tab, LinearLayout.LayoutParams(0, 44, 1f).apply { setMargins(4, 10, 4, 0) })
+            }
+            addView(tabs, LinearLayout.LayoutParams(-1, 54))
+            addView(TextView(context).apply {
+                text = "● TERHUBUNG  •  WhatsApp Web resmi"
+                textSize = 10f
+                setTextColor(Color.rgb(0, 145, 85))
+                setPadding(2, 3, 0, 0)
+            })
+        }
+        headerChrome = header
+        root.addView(header, FrameLayout.LayoutParams(-1, 154, Gravity.TOP))
+
+        val bottom = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER
+            setBackgroundColor(Color.WHITE)
+            listOf("\uf075" to "Chat", "\uf2a0" to "Panggilan", "\uf1ea" to "Status", "\uf1b3" to "Fitur", "\uf07b" to "Workspace").forEach { (icon, label) ->
+                addView(TextView(context).apply {
+                    FaText.set(this, context, icon, label)
+                    textSize = 12f
+                    gravity = Gravity.CENTER
+                    setTextColor(if (label.endsWith("Workspace")) green else Color.DKGRAY)
+                    setPadding(4, 12, 4, 12)
+                    setOnClickListener {
+                        if (label.endsWith("Workspace")) startActivity(Intent(this@LinkedDeviceWebViewActivity, WorkspaceActivity::class.java)) else navigateOfficialSection(label)
+                    }
+                }, LinearLayout.LayoutParams(0, 60, 1f))
+            }
+        }
+        bottomChrome = bottom
+        root.addView(bottom, FrameLayout.LayoutParams(-1, 68, Gravity.BOTTOM))
+    }
+
+    private fun addBlueprintDashboard() {
+        dashboard = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(20, 18, 20, 12)
+            setBackgroundColor(Color.WHITE)
+            addView(TextView(context).apply {
+                text = "Workspace Quick Access"
+                textSize = 17f
+                setTextColor(Color.rgb(25, 35, 40))
+                setTypeface(typeface, android.graphics.Typeface.BOLD)
+            })
+            addView(TextView(context).apply {
+                text = "Kelola dokumen, tugas, kalender, dan file lokal WAW"
+                textSize = 13f
+                setTextColor(Color.DKGRAY)
+                setPadding(0, 4, 0, 12)
+            })
+            val grid = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL }
+            listOf(
+                listOf("▤  Dokumen", "Editor teks & PDF", false),
+                listOf("✓  Tugas", "Catatan absensi & pekerjaan", false),
+                listOf("▦  Kalender", "Agenda lokal", false),
+                listOf("▱  File", "File Manager Workspace", true)
+            ).chunked(2).forEach { rowItems ->
+                val row = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL }
+                rowItems.forEach { item ->
+                    val card = TextView(context).apply {
+                        text = "${item[0]}\n${item[1]}"
+                        textSize = 14f
+                        setTextColor(Color.rgb(30, 35, 40))
+                        setBackgroundColor(Color.rgb(247, 249, 250))
+                        setPadding(18, 18, 12, 18)
+                        setOnClickListener {
+                            if (item[2] as Boolean) startActivity(Intent(this@LinkedDeviceWebViewActivity, WorkspaceActivity::class.java))
+                        }
+                    }
+                    row.addView(card, LinearLayout.LayoutParams(0, 100, 1f).apply { setMargins(0, 0, 8, 10) })
+                }
+                grid.addView(row)
+            }
+            addView(grid, LinearLayout.LayoutParams(-1, -2))
+            addView(TextView(context).apply {
+                text = "Buka Chat WhatsApp Web"
+                textSize = 15f
+                gravity = Gravity.CENTER
+                setTextColor(Color.WHITE)
+                setBackgroundColor(Color.rgb(0, 150, 90))
+                setPadding(12, 16, 12, 16)
+                setOnClickListener { dashboard.visibility = android.view.View.GONE }
+            }, LinearLayout.LayoutParams(-1, 54).apply { setMargins(0, 12, 0, 0) })
+        }
+        val params = FrameLayout.LayoutParams(-1, -1).apply {
+            topMargin = 154
+            bottomMargin = 68
+        }
+        dashboard.visibility = android.view.View.GONE
+        root.addView(dashboard, params)
+    }
+
+    private fun navigateOfficialSection(label: String) {
+        if (!::webView.isInitialized) return
+        dashboard.visibility = android.view.View.GONE
+        val target = when (label) {
+            "Chat" -> listOf("Chats", "Chat")
+            "Panggilan" -> listOf("Calls", "Panggilan")
+            "Status" -> listOf("Status", "Updates")
+            else -> emptyList()
+        }
+        if (target.isEmpty()) return
+        val encoded = target.joinToString(",") { "'" + it.replace("'", "\\'") + "'" }
+        webView.evaluateJavascript("""
+            (function() {
+              const targets = [$encoded].map(x => x.toLowerCase());
+              const nodes = Array.from(document.querySelectorAll('button,[role="button"],[aria-label],a'));
+              const node = nodes.find(el => {
+                const value = ((el.getAttribute('aria-label') || '') + ' ' + (el.getAttribute('title') || '') + ' ' + (el.textContent || '')).trim().toLowerCase();
+                return targets.some(target => value === target || value.includes(target));
+              });
+              if (node) { node.click(); return 'clicked'; }
+              return 'not-found';
+            })();
+        """.trimIndent(), null)
+    }
+
+    private fun setLinkedChromeVisible(visible: Boolean) {
+        val state = if (visible) android.view.View.VISIBLE else android.view.View.GONE
+        if (::headerChrome.isInitialized) headerChrome.visibility = state
+        if (::bottomChrome.isInitialized) bottomChrome.visibility = state
+        if (::dashboard.isInitialized) dashboard.visibility = android.view.View.GONE
+        if (visible && ::headerChrome.isInitialized) {
+            AlphaAnimation(0f, 1f).apply { duration = 260; fillAfter = true }.also { headerChrome.startAnimation(it) }
+            if (::bottomChrome.isInitialized) AlphaAnimation(0f, 1f).apply { duration = 320; fillAfter = true }.also { bottomChrome.startAnimation(it) }
+        }
+    }
+
+    private fun requestRuntimePermissionsIfNeeded() {
+        val missing = arrayOf(Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO)
+            .filter { ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED }
+            .toTypedArray()
+        if (missing.isEmpty()) loadOfficialWhatsApp() else permissionLauncher.launch(missing)
+    }
+
+    @SuppressLint("SetJavaScriptEnabled")
+    private fun configureWebView() {
+        with(webView.settings) {
+            javaScriptEnabled = true
+            domStorageEnabled = true
+            databaseEnabled = true
+            useWideViewPort = false
+            loadWithOverviewMode = true
+            setSupportZoom(false)
+            builtInZoomControls = false
+            displayZoomControls = false
+            mediaPlaybackRequiresUserGesture = false
+            allowFileAccess = true
+            allowContentAccess = true
+            userAgentString = DESKTOP_USER_AGENT
+        }
+        CookieManager.getInstance().setAcceptCookie(true)
+        CookieManager.getInstance().setAcceptThirdPartyCookies(webView, true)
+
+        webView.webViewClient = object : WebViewClient() {
+            override fun onPageFinished(view: WebView?, url: String?) {
+                super.onPageFinished(view, url)
+                view?.evaluateJavascript("document.body && document.body.innerText", { raw ->
+                    val loginScreen = raw?.contains("Pindai untuk login") == true || raw?.contains("Scan to log in") == true
+                    setLinkedChromeVisible(!loginScreen)
+                })
+            }
+
+            override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
+                val uri = request?.url ?: return true
+                return WawShield.isBlocked(uri) || !isAllowedWhatsAppNavigation(uri)
+            }
+        }
+        webView.webChromeClient = object : WebChromeClient() {
+            override fun onShowFileChooser(
+                webView: WebView?,
+                filePathCallback: ValueCallback<Array<Uri>>?,
+                fileChooserParams: FileChooserParams?
+            ): Boolean {
+                pendingFileCallback?.onReceiveValue(null)
+                pendingFileCallback = filePathCallback
+                val intent = fileChooserParams?.createIntent() ?: Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                    addCategory(Intent.CATEGORY_OPENABLE)
+                    type = "*/*"
+                }
+                return runCatching { filePicker.launch(intent); true }.getOrElse {
+                    pendingFileCallback = null
+                    false
+                }
+            }
+
+            override fun onPermissionRequest(request: PermissionRequest?) {
+                if (request == null || request.origin.host != OFFICIAL_HOST) {
+                    request?.deny()
+                    return
+                }
+                val allowed = request.resources.filter {
+                    (it == PermissionRequest.RESOURCE_AUDIO_CAPTURE && ContextCompat.checkSelfPermission(this@LinkedDeviceWebViewActivity, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) ||
+                        (it == PermissionRequest.RESOURCE_VIDEO_CAPTURE && ContextCompat.checkSelfPermission(this@LinkedDeviceWebViewActivity, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED)
+                }.toTypedArray()
+                if (allowed.isEmpty()) request.deny() else runOnUiThread {
+                    pendingWebPermission = request
+                    request.grant(allowed)
+                    pendingWebPermission = null
+                }
+            }
+
+            override fun onPermissionRequestCanceled(request: PermissionRequest?) {
+                if (pendingWebPermission == request) pendingWebPermission = null
+                super.onPermissionRequestCanceled(request)
+            }
+        }
+    }
+
+    private fun loadOfficialWhatsApp() {
+        if (!::webView.isInitialized) return
+        webView.loadUrl(OFFICIAL_URL)
+    }
+
+    override fun onBackPressed() {
+        if (webView.canGoBack()) webView.goBack() else super.onBackPressed()
+    }
+
+    companion object {
+        const val EXTRA_SKIP_INITIAL_LOAD = "com.waw.messenger.extra.SKIP_INITIAL_LOAD"
+        private const val OFFICIAL_URL = "https://web.whatsapp.com"
+        private const val OFFICIAL_HOST = "web.whatsapp.com"
+        private const val DESKTOP_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+
+        private fun isAllowedWhatsAppNavigation(uri: Uri): Boolean =
+            uri.scheme == "https" && uri.host == OFFICIAL_HOST
+    }
+}
