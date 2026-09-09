@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://waw.example/schemas/request-context.schema.json",
+  "title": "WAW Hybrid Request Context",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["requestId", "traceId", "subjectId", "tenantId", "roles", "scopes"],
+  "properties": {
+    "requestId": { "type": "string", "minLength": 8, "maxLength": 128 },
+    "traceId": { "type": "string", "minLength": 8, "maxLength": 128 },
+    "subjectId": { "type": "string", "minLength": 1 },
+    "tenantId": { "type": "string", "format": "uuid" },
+    "workspaceId": { "type": ["string", "null"], "format": "uuid" },
+    "roles": { "type": "array", "items": { "$ref": "role.schema.json" }, "uniqueItems": true },
+    "scopes": { "type": "array", "items": { "type": "string", "pattern": "^[a-z][a-z0-9_]*:[a-z][a-z0-9_.*-]*$" }, "uniqueItems": true },
+    "authMethod": { "type": "string", "enum": ["password", "oauth", "mfa_recovery", "service"] }
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://waw.example/schemas/role.schema.json",
+  "title": "WAW Hybrid Role",
+  "type": "string",
+  "enum": ["owner", "admin", "operator", "member", "viewer"]
+}

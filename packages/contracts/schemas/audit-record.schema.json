@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://waw.example/schemas/audit-record.schema.json",
+  "title": "WAW Hybrid Audit Record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "occurredAt", "tenantId", "actorId", "action", "result", "traceId"],
+  "properties": {
+    "id": { "type": "string", "format": "uuid" },
+    "occurredAt": { "type": "string", "format": "date-time" },
+    "tenantId": { "type": "string", "format": "uuid" },
+    "workspaceId": { "type": ["string", "null"], "format": "uuid" },
+    "actorId": { "type": "string", "minLength": 1 },
+    "action": { "type": "string", "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*){1,3}$" },
+    "resourceType": { "type": ["string", "null"], "minLength": 1 },
+    "resourceId": { "type": ["string", "null"], "minLength": 1 },
+    "result": { "type": "string", "enum": ["allowed", "denied", "failed"] },
+    "reasonCode": { "type": ["string", "null"], "minLength": 1 },
+    "traceId": { "type": "string", "minLength": 8, "maxLength": 128 },
+    "metadata": { "type": "object", "additionalProperties": false }
+  }
+}
