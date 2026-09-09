@@ -45,6 +45,13 @@ import com.waw.messenger.linked.LinkedDeviceWebViewActivity
 class LoginActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // QR/linking is the first screen. Keep the WAW shell in the next activity
+        // and do not show an intermediate "Hubungkan WhatsApp" login page.
+        if (savedInstanceState == null) {
+            startActivity(Intent(this, LinkedDeviceWebViewActivity::class.java))
+            finish()
+            return
+        }
         WindowCompat.setDecorFitsSystemWindows(window, false)
         window.statusBarColor = android.graphics.Color.TRANSPARENT
         window.navigationBarColor = android.graphics.Color.rgb(2, 19, 19)
