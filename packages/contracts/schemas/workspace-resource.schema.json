@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://waw.example/schemas/workspace-resource.schema.json",
+  "title": "WAW Workspace Resource",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["resourceId", "tenantId", "workspaceId", "kind", "name", "state", "createdAt"],
+  "properties": {
+    "resourceId": { "type": "string", "format": "uuid" },
+    "tenantId": { "type": "string", "format": "uuid" },
+    "workspaceId": { "type": "string", "format": "uuid" },
+    "kind": { "type": "string", "enum": ["file", "document", "pdf", "scan", "vault", "note", "backup", "diagnostic", "shield"] },
+    "name": { "type": "string", "minLength": 1, "maxLength": 255 },
+    "mediaId": { "type": ["string", "null"], "format": "uuid" },
+    "state": { "type": "string", "enum": ["active", "archived", "deleted", "quarantined"] },
+    "sensitivity": { "type": "string", "enum": ["normal", "sensitive", "restricted"] },
+    "createdBy": { "type": "string", "format": "uuid" },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "updatedAt": { "type": ["string", "null"], "format": "date-time" },
+    "deletedAt": { "type": ["string", "null"], "format": "date-time" }
+  }
+}
