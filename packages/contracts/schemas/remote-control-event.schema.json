@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://waw.example/schemas/remote-control-event.schema.json",
+  "title": "WAW Workspace Remote Control Event",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["eventId", "sessionId", "tenantId", "workspaceId", "actorId", "kind", "occurredAt"],
+  "properties": {
+    "eventId": { "type": "string", "format": "uuid" },
+    "sessionId": { "type": "string", "format": "uuid" },
+    "tenantId": { "type": "string", "format": "uuid" },
+    "workspaceId": { "type": "string", "format": "uuid" },
+    "actorId": { "type": "string", "format": "uuid" },
+    "kind": { "type": "string", "enum": ["invite.created", "invite.redeemed", "consent.requested", "consent.granted", "consent.rejected", "heartbeat", "approved_action", "file_transfer", "revoke", "disconnect"] },
+    "action": { "type": ["string", "null"], "enum": ["back", "home", "recents", null] },
+    "nonce": { "type": ["string", "null"], "maxLength": 255 },
+    "occurredAt": { "type": "string", "format": "date-time" }
+  }
+}
