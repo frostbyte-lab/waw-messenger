@@ -24,7 +24,9 @@ jobs:
         with:
           node-version: '22'
           cache: npm
-          cache-dependency-path: remote/relay/package-lock.json
+          cache-dependency-path: |
+            remote/relay/package-lock.json
+            services/api/package-lock.json
 
       - name: Install relay dependencies
         working-directory: remote/relay
@@ -33,6 +35,13 @@ jobs:
       - name: Run relay pairing and revoke test
         working-directory: remote/relay
         run: npm test
+
+      - name: Install API dependencies
+        working-directory: services/api
+        run: npm ci --ignore-scripts
+
+      - name: Run API tenant and webhook tests
+        run: node --test services/api/server.test.js
 
       - name: Validate relay compose configuration
         working-directory: remote/relay
@@ -43,10 +52,12 @@ jobs:
           python3 - <<'PY'
           import json
           from pathlib import Path
-          for path in sorted(Path('packages/contracts/schemas').glob('*.json')):
+          paths = sorted(Path('packages/contracts/schemas').glob('*.json'))
+          for path in paths:
               with path.open() as handle:
                   json.load(handle)
               print(f'PASS: {path}')
+          print(f'Validated {len(paths)} contracts')
           PY
 
       - name: Check repository diff
