@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://waw.example/schemas/remote-session.schema.json",
+  "title": "WAW Workspace Remote Session",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["sessionId", "tenantId", "workspaceId", "operatorId", "targetId", "state", "consent", "createdAt"],
+  "properties": {
+    "sessionId": { "type": "string", "format": "uuid" },
+    "tenantId": { "type": "string", "format": "uuid" },
+    "workspaceId": { "type": "string", "format": "uuid" },
+    "operatorId": { "type": "string", "format": "uuid" },
+    "targetId": { "type": "string", "format": "uuid" },
+    "state": { "type": "string", "enum": ["invited", "consent_pending", "active", "revoked", "expired", "ended", "failed"] },
+    "consent": { "type": "string", "enum": ["pending", "granted", "rejected", "revoked"] },
+    "capabilities": { "type": "array", "items": { "type": "string", "enum": ["screen", "touch", "keyboard", "file_transfer", "approved_actions"] }, "uniqueItems": true },
+    "relayRoomId": { "type": ["string", "null"], "maxLength": 255 },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "expiresAt": { "type": ["string", "null"], "format": "date-time" },
+    "revokedAt": { "type": ["string", "null"], "format": "date-time" },
+    "endedAt": { "type": ["string", "null"], "format": "date-time" }
+  }
+}
