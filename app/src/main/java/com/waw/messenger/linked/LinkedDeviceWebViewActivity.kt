@@ -236,8 +236,7 @@ open class LinkedDeviceWebViewActivity : FragmentActivity() {
     }
 
     private fun addBusinessConsentGate() {
-        lateinit var gate: LinearLayout
-        gate = LinearLayout(this).apply {
+        val gate = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
             setPadding(28, 28, 28, 28)
@@ -267,7 +266,7 @@ open class LinkedDeviceWebViewActivity : FragmentActivity() {
                 gravity = Gravity.CENTER
                 setPadding(12, 24, 12, 12)
                 setOnClickListener {
-                    gate.visibility = View.GONE
+                    (it.parent as? View)?.visibility = View.GONE
                     requestRuntimePermissionsIfNeeded()
                 }
             })
