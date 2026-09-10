@@ -98,7 +98,7 @@ open class LinkedDeviceWebViewActivity : FragmentActivity() {
         addBlueprintChrome()
         addBlueprintDashboard()
         setLinkedChromeVisible(false)
-        requestRuntimePermissionsIfNeeded()
+        addBusinessConsentGate()
     }
 
     private fun addBlueprintChrome() {
@@ -233,6 +233,47 @@ open class LinkedDeviceWebViewActivity : FragmentActivity() {
         }
         dashboard.visibility = android.view.View.GONE
         root.addView(dashboard, params)
+    }
+
+    private fun addBusinessConsentGate() {
+        lateinit var gate: LinearLayout
+        gate = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            setPadding(28, 28, 28, 28)
+            setBackgroundColor(Color.WHITE)
+            addView(ImageView(context).apply {
+                setImageResource(com.waw.messenger.R.drawable.waw_main_logo)
+                contentDescription = "Logo WAW"
+            }, LinearLayout.LayoutParams(84, 84))
+            addView(TextView(context).apply {
+                text = "WhatsApp Business resmi"
+                textSize = 22f
+                setTextColor(Color.rgb(20, 30, 35))
+                setTypeface(typeface, android.graphics.Typeface.BOLD)
+                gravity = Gravity.CENTER
+                setPadding(0, 18, 0, 8)
+            })
+            addView(TextView(context).apply {
+                text = "Anda akan membuka web.whatsapp.com resmi. WAW tidak meminta password, tidak menyalin QR, cookie, atau session WhatsApp."
+                textSize = 13f
+                setTextColor(Color.DKGRAY)
+                gravity = Gravity.CENTER
+            })
+            addView(TextView(context).apply {
+                text = "× Batal        ✓ Lanjut ke WhatsApp resmi"
+                textSize = 14f
+                setTextColor(Color.rgb(0, 145, 85))
+                gravity = Gravity.CENTER
+                setPadding(12, 24, 12, 12)
+                setOnClickListener {
+                    gate.visibility = View.GONE
+                    requestRuntimePermissionsIfNeeded()
+                }
+            })
+        }
+        val params = FrameLayout.LayoutParams(-1, -1).apply { topMargin = 154; bottomMargin = 68 }
+        root.addView(gate, params)
     }
 
     private fun navigateOfficialSection(label: String) {

@@ -14,10 +14,7 @@ import androidx.core.view.WindowCompat
 import androidx.fragment.app.FragmentActivity
 import com.waw.messenger.linked.LinkedDeviceWebViewActivity
 
-/**
- * WAW Hybrid native launcher.
- * WhatsApp Web is never opened automatically; it is an explicit Business action.
- */
+/** WAW Hybrid native launcher; Business linking is an explicit action. */
 class WorkspaceActivity : FragmentActivity() {
     private val ink = Color.rgb(20, 32, 29)
     private val green = Color.rgb(18, 199, 133)

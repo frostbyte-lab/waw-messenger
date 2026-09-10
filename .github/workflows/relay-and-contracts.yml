@@ -19,6 +19,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Check WAW Hybrid launcher boundary
+        run: bash scripts/check-hybrid-launcher.sh
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
