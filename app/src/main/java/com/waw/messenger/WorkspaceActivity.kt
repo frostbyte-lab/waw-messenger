@@ -13,6 +13,7 @@ import android.widget.TextView
 import androidx.core.view.WindowCompat
 import androidx.fragment.app.FragmentActivity
 import com.waw.messenger.linked.LinkedDeviceWebViewActivity
+import com.waw.messenger.remote.RemoteHostActivity
 
 /** WAW Hybrid native launcher; Business linking is an explicit action. */
 class WorkspaceActivity : FragmentActivity() {
@@ -114,7 +115,7 @@ class WorkspaceActivity : FragmentActivity() {
 
     private fun openInternal() = toast("Chat internal WAW siap dihubungkan ke backend realtime")
     private fun openWhatsApp() = startActivity(Intent(this, LinkedDeviceWebViewActivity::class.java))
-    private fun openRemote() = startActivity(Intent(this, remote.RemoteHostActivity::class.java))
+    private fun openRemote() = startActivity(Intent(this, RemoteHostActivity::class.java))
     private fun openTools() = startActivity(Intent(this, ToolsActivity::class.java))
     private fun toast(message: String) = android.widget.Toast.makeText(this, message, android.widget.Toast.LENGTH_SHORT).show()
 }
