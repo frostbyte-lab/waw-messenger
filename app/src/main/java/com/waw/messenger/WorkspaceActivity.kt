@@ -1,121 +1,219 @@
 package com.waw.messenger
 
 import android.content.Intent
-import android.graphics.Color
-import android.graphics.Typeface
 import android.os.Bundle
-import android.view.Gravity
-import android.view.View
-import android.widget.ImageView
-import android.widget.LinearLayout
-import android.widget.ScrollView
-import android.widget.TextView
-import androidx.core.view.WindowCompat
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Business
+import androidx.compose.material.icons.rounded.ChatBubble
+import androidx.compose.material.icons.rounded.Devices
+import androidx.compose.material.icons.rounded.Folder
+import androidx.compose.material.icons.rounded.Groups
+import androidx.compose.material.icons.rounded.MoreHoriz
+import androidx.compose.material.icons.rounded.NotificationsNone
+import androidx.compose.material.icons.rounded.Phone
+import androidx.compose.material.icons.rounded.Settings
+import androidx.compose.material.icons.rounded.Shield
+import androidx.compose.material.icons.rounded.Wifi
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.fragment.app.FragmentActivity
 import com.waw.messenger.linked.LinkedDeviceWebViewActivity
 import com.waw.messenger.remote.RemoteHostActivity
 
-/** WAW Hybrid native launcher; Business linking is an explicit action. */
-class WorkspaceActivity : FragmentActivity() {
-    private val ink = Color.rgb(20, 32, 29)
-    private val green = Color.rgb(18, 199, 133)
-    private val muted = Color.rgb(96, 111, 105)
+private val WawInk = Color(0xFF10201C)
+private val WawGreen = Color(0xFF17B978)
+private val WawMint = Color(0xFFE7F7EF)
+private val WawCanvas = Color(0xFFF6F8F7)
+private val WawMuted = Color(0xFF71817B)
+private val WawBusiness = Color(0xFF277A57)
 
+class WorkspaceActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        WindowCompat.setDecorFitsSystemWindows(window, true)
-        window.statusBarColor = Color.WHITE
-        window.navigationBarColor = Color.WHITE
-        window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
+        setContent { WawHybridApp() }
+    }
 
-        val content = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setBackgroundColor(Color.rgb(247, 250, 248))
+    @Composable
+    private fun WawHybridApp() {
+        var selected by remember { mutableIntStateOf(0) }
+        Scaffold(
+            containerColor = WawCanvas,
+            bottomBar = {
+                NavigationBar(containerColor = Color.White) {
+                    listOf(
+                        Triple("Chat", Icons.Rounded.ChatBubble, "Chat internal"),
+                        Triple("Panggilan", Icons.Rounded.Phone, "Panggilan internal"),
+                        Triple("Status", Icons.Rounded.NotificationsNone, "Status WAW"),
+                        Triple("Fitur", Icons.Rounded.MoreHoriz, "Fitur WAW"),
+                        Triple("Workspace", Icons.Rounded.Folder, "Workspace")
+                    ).forEachIndexed { index, item ->
+                        NavigationBarItem(
+                            selected = selected == index,
+                            onClick = { selected = index },
+                            icon = { Icon(item.second, contentDescription = item.third) },
+                            label = { Text(item.first, fontSize = 10.sp) }
+                        )
+                    }
+                }
+            }
+        ) { padding ->
+            when (selected) {
+                0 -> InternalHome(padding)
+                1 -> EmptySection(padding, "Panggilan internal", "Panggilan WebRTC WAW dengan consent kamera dan mikrofon.", Icons.Rounded.Phone)
+                2 -> EmptySection(padding, "Status WAW", "Bagikan pembaruan hanya kepada anggota workspace yang Anda pilih.", Icons.Rounded.NotificationsNone)
+                3 -> Features(padding)
+                else -> Workspace(padding)
+            }
         }
-        content.addView(header(), LinearLayout.LayoutParams(-1, -2))
+    }
 
-        val scroll = ScrollView(this).apply {
-            isFillViewport = true
-            addView(LinearLayout(context).apply {
-                orientation = LinearLayout.VERTICAL
-                setPadding(20, 22, 20, 28)
-                addView(sectionLabel("WAW HYBRID"))
-                addView(title("Satu ruang kerja untuk komunikasi dan remote"))
-                addView(description("Data internal WAW dan WhatsApp Business tetap dipisahkan. Pilih layanan secara sadar dari menu di bawah."))
-                addView(channelCard("WAW Internal", "Chat, Status, presence, Workspace, dan remote", "waw_internal", green) { openInternal() })
-                addView(channelCard("WhatsApp Business", "Buka layanan resmi Meta/WhatsApp Web hanya setelah Anda memilihnya", "whatsapp_business", Color.rgb(37, 211, 102)) { openWhatsApp() })
-                addView(sectionLabel("FITUR UTAMA"))
-                addView(actionCard("Workspace", "Dokumen, file, watermark, scanner, vault, dan tools", "Buka Workspace") { openTools() })
-                addView(actionCard("Workspace Remote", "Sesi remote hanya berjalan setelah consent dan dapat dicabut", "Buka Remote") { openRemote() })
-                addView(infoCard())
-            })
+    @Composable
+    private fun InternalHome(padding: PaddingValues) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize().padding(padding),
+            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 22.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            item { Header() }
+            item { InternalHero() }
+            item { SectionTitle("Percakapan internal", "WAW Internal") }
+            items(listOf("Tim Support" to "Ayo selesaikan tiket workspace hari ini", "Operator" to "Sesi remote sudah dicabut", "Workspace Team" to "3 dokumen baru tersedia")) { chat -> ChatRow(chat.first, chat.second) }
+            item { SectionTitle("Channel resmi", "Terpisah") }
+            item { BusinessChannel() }
         }
-        content.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
-        content.addView(bottomBar())
-        setContentView(content)
     }
 
-    private fun header(): View = LinearLayout(this).apply {
-        orientation = LinearLayout.HORIZONTAL
-        gravity = Gravity.CENTER_VERTICAL
-        setPadding(20, 18, 20, 16)
-        setBackgroundColor(Color.WHITE)
-        addView(ImageView(context).apply {
-            setImageResource(R.drawable.waw_main_logo)
-            contentDescription = "Logo WAW"
-        }, LinearLayout.LayoutParams(52, 52))
-        addView(LinearLayout(context).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(14, 0, 0, 0)
-            addView(TextView(context).apply { text = "WAW"; textSize = 25f; setTextColor(ink); setTypeface(typeface, Typeface.BOLD) })
-            addView(TextView(context).apply { text = "HYBRID WORKSPACE"; textSize = 10f; setTextColor(green); setTypeface(typeface, Typeface.BOLD) })
-        }, LinearLayout.LayoutParams(0, -2, 1f))
-        addView(TextView(context).apply { text = "● ONLINE"; textSize = 10f; setTextColor(green); setTypeface(typeface, Typeface.BOLD) })
+    @Composable
+    private fun Header() {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+            Image(painterResource(R.drawable.waw_main_logo), "Logo WAW", Modifier.size(48.dp).clip(CircleShape), contentScale = ContentScale.Crop)
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text("WAW", fontSize = 24.sp, fontWeight = FontWeight.ExtraBold, color = WawInk)
+                Text("INTERNAL WORKSPACE", fontSize = 10.sp, letterSpacing = 1.4.sp, color = WawGreen, fontWeight = FontWeight.Bold)
+            }
+            IconButton(onClick = {}) { Icon(Icons.Rounded.Settings, "Pengaturan", tint = WawMuted) }
+        }
     }
 
-    private fun sectionLabel(value: String) = TextView(this).apply {
-        text = value; textSize = 10f; setTextColor(green); setTypeface(typeface, Typeface.BOLD); letterSpacing = 0.12f
-        setPadding(0, 8, 0, 8)
-    }
-    private fun title(value: String) = TextView(this).apply { text = value; textSize = 24f; setTextColor(ink); setTypeface(typeface, Typeface.BOLD); setPadding(0, 0, 0, 6) }
-    private fun description(value: String) = TextView(this).apply { text = value; textSize = 13f; setTextColor(muted); setPadding(0, 0, 0, 18) }
-
-    private fun channelCard(title: String, body: String, badge: String, color: Int, click: () -> Unit) = LinearLayout(this).apply {
-        orientation = LinearLayout.VERTICAL; setPadding(18, 16, 18, 16); setBackgroundColor(Color.WHITE); elevation = 3f; setOnClickListener { click() }
-        addView(LinearLayout(context).apply {
-            gravity = Gravity.CENTER_VERTICAL
-            addView(TextView(context).apply { text = title; textSize = 17f; setTextColor(ink); setTypeface(typeface, Typeface.BOLD) }, LinearLayout.LayoutParams(0, -2, 1f))
-            addView(TextView(context).apply { text = badge; textSize = 9f; setTextColor(color); setTypeface(typeface, Typeface.BOLD) })
-        })
-        addView(TextView(context).apply { text = body; textSize = 12f; setTextColor(muted); setPadding(0, 7, 0, 0) })
-        layoutParams = LinearLayout.LayoutParams(-1, -2).apply { setMargins(0, 0, 0, 12) }
-    }
-
-    private fun actionCard(title: String, body: String, action: String, click: () -> Unit) = LinearLayout(this).apply {
-        orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(16, 15, 16, 15); setBackgroundColor(Color.WHITE); setOnClickListener { click() }
-        addView(LinearLayout(context).apply {
-            orientation = LinearLayout.VERTICAL
-            addView(TextView(context).apply { text = title; textSize = 15f; setTextColor(ink); setTypeface(typeface, Typeface.BOLD) })
-            addView(TextView(context).apply { text = body; textSize = 11f; setTextColor(muted); setPadding(0, 4, 0, 0) })
-        }, LinearLayout.LayoutParams(0, -2, 1f))
-        addView(TextView(context).apply { text = "›"; textSize = 28f; setTextColor(green) })
-        layoutParams = LinearLayout.LayoutParams(-1, -2).apply { setMargins(0, 0, 0, 10) }
+    @Composable
+    private fun InternalHero() {
+        Card(colors = CardDefaults.cardColors(containerColor = WawInk), shape = RoundedCornerShape(26.dp), modifier = Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Rounded.Shield, null, tint = WawGreen, modifier = Modifier.size(20.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text("WAW INTERNAL", color = WawGreen, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp)
+                    Spacer(Modifier.weight(1f))
+                    Text("● ONLINE", color = Color(0xFF9BE9C3), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                }
+                Text("Selamat datang di ruang kerja Anda", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                Text("Chat, status, remote, dan dokumen WAW berada di sini. Data internal tidak dicampur dengan channel Business.", color = Color(0xFFB5C9C1), fontSize = 13.sp, lineHeight = 19.sp)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilledTonalButton(onClick = {}, colors = ButtonDefaults.filledTonalButtonColors(containerColor = WawGreen, contentColor = WawInk)) { Icon(Icons.Rounded.Add, null); Spacer(Modifier.width(4.dp)); Text("Chat baru") }
+                    TextButton(onClick = {}, colors = ButtonDefaults.textButtonColors(contentColor = Color.White)) { Text("Lihat status") }
+                }
+            }
+        }
     }
 
-    private fun infoCard() = TextView(this).apply {
-        text = "Privasi: WAW tidak menyimpan QR, cookie, password, atau session WhatsApp personal. Remote selalu membutuhkan persetujuan target dan tombol revoke."
-        textSize = 11f; setTextColor(muted); setPadding(15, 14, 15, 14); setBackgroundColor(Color.rgb(232, 247, 239))
-        layoutParams = LinearLayout.LayoutParams(-1, -2).apply { setMargins(0, 8, 0, 0) }
+    @Composable
+    private fun SectionTitle(title: String, badge: String) {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+            Text(title, color = WawInk, fontSize = 17.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+            Text(badge, color = WawBusiness, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+        }
     }
 
-    private fun bottomBar() = TextView(this).apply {
-        text = "Chat Internal     •     Status     •     Fitur     •     Workspace"
-        gravity = Gravity.CENTER; textSize = 11f; setTextColor(muted); setPadding(12, 16, 12, 16); setBackgroundColor(Color.WHITE)
+    @Composable
+    private fun ChatRow(name: String, message: String) {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Color.White).padding(14.dp)) {
+            Box(Modifier.size(44.dp).clip(CircleShape).background(WawMint), contentAlignment = Alignment.Center) { Icon(Icons.Rounded.Groups, null, tint = WawBusiness) }
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) { Text(name, color = WawInk, fontWeight = FontWeight.SemiBold, fontSize = 15.sp); Text(message, color = WawMuted, fontSize = 12.sp, maxLines = 1) }
+            Text("09:41", color = WawMuted, fontSize = 10.sp)
+        }
     }
 
-    private fun openInternal() = toast("Chat internal WAW siap dihubungkan ke backend realtime")
-    private fun openWhatsApp() = startActivity(Intent(this, LinkedDeviceWebViewActivity::class.java))
-    private fun openRemote() = startActivity(Intent(this, RemoteHostActivity::class.java))
-    private fun openTools() = startActivity(Intent(this, ToolsActivity::class.java))
-    private fun toast(message: String) = android.widget.Toast.makeText(this, message, android.widget.Toast.LENGTH_SHORT).show()
+    @Composable
+    private fun BusinessChannel() {
+        Card(colors = CardDefaults.cardColors(containerColor = Color.White), shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Rounded.Business, null, tint = WawBusiness); Spacer(Modifier.width(9.dp)); Text("WhatsApp Business", color = WawInk, fontWeight = FontWeight.Bold, fontSize = 16.sp); Spacer(Modifier.weight(1f)); Text("CHANNEL TERPISAH", color = WawBusiness, fontSize = 9.sp, fontWeight = FontWeight.Bold) }
+                Text("Gunakan layanan resmi setelah Anda memilih dan menyetujui. Chat personal tidak disimpan di WAW.", color = WawMuted, fontSize = 12.sp, lineHeight = 18.sp)
+                Button(onClick = { startActivity(Intent(this@WorkspaceActivity, LinkedDeviceWebViewActivity::class.java)) }, colors = ButtonDefaults.buttonColors(containerColor = WawBusiness), shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) { Text("Buka WhatsApp Business resmi") }
+            }
+        }
+    }
+
+    @Composable
+    private fun Features(padding: PaddingValues) { EmptySection(padding, "Fitur WAW", "Remote, file, scanner, dokumen, dan keamanan workspace.", Icons.Rounded.Devices, true) }
+
+    @Composable
+    private fun Workspace(padding: PaddingValues) { EmptySection(padding, "Workspace", "Semua tools internal WAW berada dalam satu ruang kerja.", Icons.Rounded.Folder, true) }
+
+    @Composable
+    private fun EmptySection(padding: PaddingValues, title: String, body: String, icon: androidx.compose.ui.graphics.vector.ImageVector, actions: Boolean = false) {
+        Column(Modifier.fillMaxSize().padding(padding).padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Header()
+            Spacer(Modifier.height(24.dp))
+            Box(Modifier.fillMaxWidth().clip(RoundedCornerShape(26.dp)).background(WawMint).padding(28.dp), contentAlignment = Alignment.Center) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Icon(icon, null, tint = WawBusiness, modifier = Modifier.size(42.dp))
+                    Text(title, color = WawInk, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                    Text(body, color = WawMuted, fontSize = 13.sp, lineHeight = 19.sp)
+                    if (actions) {
+                        Button(onClick = { startActivity(Intent(this@WorkspaceActivity, ToolsActivity::class.java)) }, colors = ButtonDefaults.buttonColors(containerColor = WawBusiness)) { Text("Buka tools WAW") }
+                        FilledTonalButton(onClick = { startActivity(Intent(this@WorkspaceActivity, RemoteHostActivity::class.java)) }) { Icon(Icons.Rounded.Devices, null); Spacer(Modifier.width(6.dp)); Text("Workspace Remote") }
+                    }
+                }
+            }
+        }
+    }
 }
