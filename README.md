@@ -1,102 +1,143 @@
-# WAW Business Workspace
+# WAW WORKSPACE — CATATAN LENGKAP FINAL (VERSI WEB UJI COBA)
 
-## Sumber kebenaran sistem
+## System UI Tetap, Jalan Kayak WA Pada Umumnya
 
-Dokumen ini menggantikan catatan sistem lama. Arsitektur aktif WAW adalah **WAW Hybrid**: satu UI WAW dengan batas komunikasi yang terpisah antara `waw_internal` dan `whatsapp_business`.
+**URL Live:** https://waw-workspace-review.pages.dev/
 
-Catatan remote standalone lama, mockup login WhatsApp, credential buatan WAW, dan asumsi bahwa relay WAW mengelola sesi WhatsApp personal dinyatakan **legacy** dan tidak boleh dijadikan dasar implementasi baru.
+**Halaman aktif:** `/data-deletion/` sebagai bukti fitur koneksi, kontak, percakapan, pesan, dan webhook.
 
-## Produk aktif
+**Prinsip:** UI asli WAW dipertahankan 100%, login menggunakan OTP, dan fitur dirancang agar berjalan seperti WhatsApp pada umumnya.
 
-WAW menyediakan shell produk dengan branding, navigasi, Workspace, consent, dan fitur perangkat milik WAW. Untuk komunikasi WhatsApp, linking, chat, media, panggilan, Status, cookie, QR, dan session, WAW menggunakan komponen resmi WhatsApp Web pada `https://web.whatsapp.com`.
+> **Penting:** Versi web ini hanya sistem uji coba, pengecekan, dan preview. Jika seluruh alur berjalan baik di web, versi utama akan diterapkan pada APK dengan tampilan, fitur, dan sistem yang sama.
 
-WAW tidak meminta password WhatsApp dan tidak mengirim cookie, QR token, session key, credential, atau isi chat WhatsApp ke backend WAW.
+**Web = Preview dan Testing | APK = Produk Utama**
 
-## Dua channel sistem
+## 1. Tujuan Versi Web Uji Coba
 
-| Channel | Fungsi | Sumber data |
-|---|---|---|
-| `waw_internal` | Akun, tenant, workspace, chat internal, Status WAW, WebRTC, assignment, notifikasi, audit, dan Remote Workspace | Backend WAW |
-| `whatsapp_business` | Pesan bisnis, media bisnis, template, delivery status, webhook, dan Calling API jika memenuhi syarat | Meta WhatsApp Business Cloud API |
+Versi web digunakan untuk memeriksa login OTP, meninjau detail UI WAW, menguji koneksi, kontak, percakapan, pesan, webhook, panggilan, dan video call, serta melakukan demo kepada tim atau calon pengguna sebelum instalasi APK. Versi web juga digunakan untuk kebutuhan verifikasi domain Meta karena menyediakan URL live.
 
-Data kedua channel tidak boleh dicampur tanpa `channel`, `tenantId`, `workspaceId`, `role`, `retention`, dan audit boundary yang jelas.
+Versi web bukan produk utama, bukan untuk penggunaan harian skala besar, dan data web hanya digunakan untuk testing. Data utama direncanakan berada pada APK.
 
-## Batas integrasi WhatsApp
-
-Implementasi WhatsApp wajib mengikuti jalur resmi. WAW boleh menyediakan header, tab, status wrapper, dan navigasi visual, tetapi fungsi WhatsApp tetap dijalankan oleh WhatsApp Web resmi atau WhatsApp Business Cloud API yang sesuai.
-
-WAW dilarang:
-
-- Membuat login WhatsApp sendiri.
-- Meminta atau menyimpan password WhatsApp.
-- Mengambil cookie, QR secret, token, atau private key WhatsApp.
-- Menyalin UI WhatsApp sebagai backend alternatif.
-- Mengirim data chat personal ke relay WAW.
-- Memproses Status personal sebagai data terpisah.
-
-Dokumen batas resmi: [docs/official-whatsapp-integration-boundaries.md](docs/official-whatsapp-integration-boundaries.md).
-
-## Workspace dan Remote
-
-Workspace adalah fitur WAW, bukan fitur internal WhatsApp. Remote Workspace tetap boleh memakai Host Companion dan relay WSS, tetapi harus memiliki explicit consent, token one-time dan expiry, room isolation, foreground service, MediaProjection, Accessibility, file picker sesuai aturan Android, revoke, emergency disconnect, dan audit lifecycle session.
-
-Remote standalone lama hanya dipertahankan sebagai komponen migrasi/legacy sampai seluruh kapabilitasnya berada di dalam shell WAW Hybrid.
-
-## Urutan implementasi resmi
-
-Setiap milestone wajib mengikuti:
+Alur pengembangan:
 
 ```text
-DESIGN → IMPLEMENT → BUILD → TEST → SECURITY REVIEW → DOCUMENT → LOCK
+Versi WEB Uji Coba → Check & Preview → OK → Build VERSI APK Utama
 ```
 
-| Prefix | Milestone |
+Semua tampilan, fitur, dan sistem yang disetujui pada web harus diterapkan pada APK utama dengan tampilan dan perilaku yang sama.
+
+## 2. Login — OTP Sederhana
+
+Alur login yang ditargetkan:
+
+```text
+Buka WAW Web Uji Coba → Input nomor HP → Kirim OTP → Input OTP 6 digit → Masuk Workspace
+```
+
+Tidak menggunakan password, verifikasi email, upload NIB/NPWP, atau proses persetujuan bisnis untuk alur preview.
+
+Teknologi yang direncanakan: Firebase Phone Authentication.
+
+```js
+signInWithPhoneNumber(auth, phoneNumber)
+confirmationResult.confirm(otp)
+```
+
+## 3. UI WAW yang Dipertahankan
+
+Layout utama harus tetap mengikuti sistem UI WAW:
+
+```text
+[HEADER] WAW Workspace | Search | Call | VC | Titik Tiga
+[SIDEBAR KIRI 30%]              [CHAT KANAN 70%]
+- Search Chat                    - Nama Kontak + Status Online
+- Filter: Semua, Belum Dibaca    - Bubble Chat seperti WhatsApp
+- List Chat                      - Input emoji, file, voice note
+                                 - Tombol Call dan Video Call
+```
+
+Perubahan UI tidak boleh menghapus branding WAW, layout utama, warna, bubble chat, navigasi, atau fitur workspace yang telah disepakati.
+
+## 4. Fitur yang Harus Diuji
+
+| Fitur | Kebutuhan |
 |---|---|
-| `HYB-000` | Baseline, CI, secret scan, branch protection |
-| `HYB-010` | Contracts dan channel schema |
-| `HYB-020` | Auth, tenant guard, role, audit |
-| `HYB-030` | Database dan API gateway |
-| `HYB-040` | UI shell dan design system parity |
-| `HYB-050` | WAW internal chat, Status, dan realtime |
-| `HYB-060` | WhatsApp Business adapter dan webhook |
-| `HYB-070` | Media pipeline |
-| `HYB-080` | WebRTC dan calling eligibility |
-| `HYB-090` | Workspace integration |
-| `HYB-100` | Workspace Remote dan Cloudflare Tunnel |
-| `HYB-110` | Security, observability, dan release |
+| Koneksi | Status terhubung, menghubungkan, dan offline |
+| Kontak | Foto profil, nama, dan nomor HP |
+| Percakapan | Bubble kiri/kanan, status terkirim, diterima, dan dibaca |
+| Pesan | Teks, gambar, video, file, dan voice note |
+| Panggilan | Voice call dan video call |
+| Workspace | Grup, status, template, webhook, dan pengaturan |
 
-Urutan lengkap: [IMPLEMENTATION_ORDER.md](https://github.com/frostbyte-lab/waw-messenger/blob/docs/wa-hybrid-implementation-order/docs/IMPLEMENTATION_ORDER.md).
+Fitur yang belum selesai harus ditandai sebagai testing atau roadmap, bukan dianggap sudah tersedia.
 
-## Status saat ini
+## 5. Web Uji Coba dan APK Utama
 
-Branch `main` memprioritaskan WAW UI shell dan WhatsApp Web resmi. Baseline security hybrid dan master architecture tersedia pada branch hybrid khusus, tetapi belum seluruh backend hybrid production digabungkan ke `main`.
+| Aspek | Web Uji Coba | APK Utama |
+|---|---|---|
+| Tujuan | Check, preview, dan testing | Produk utama dan pemakaian harian |
+| Lokasi | https://waw-workspace-review.pages.dev/ | Play Store atau direct install resmi |
+| Login | OTP Firebase | OTP Firebase |
+| Tampilan | UI WAW asli | UI WAW asli dan sama |
+| Data | Testing atau dummy | Data asli pengguna |
+| Koneksi | Browser dan internet | Native, background service, dan push notification |
+| Call/VC | WebRTC browser | Native WebRTC yang lebih stabil |
+| Status | Sementara | Versi utama |
 
-Yang sudah aktif di `main`:
+Prinsip utama: apa yang disetujui dan berjalan di web harus tersedia di APK dengan tampilan dan sistem yang identik, dengan penyesuaian yang memang diwajibkan oleh platform.
 
-- WAW UI shell.
-- Linking langsung ke WhatsApp Web resmi.
-- WebView Android yang membatasi origin ke `web.whatsapp.com`.
-- Permission kamera/mikrofon hanya untuk origin resmi.
-- Workspace WAW dan modul perangkat yang tersedia.
-- CI Android dan release artifact.
+## 6. Tahapan Kerja
 
-Yang masih menjadi pekerjaan hybrid:
+### Tahap 1 — Web Uji Coba
 
-- Shared contracts package.
-- Auth, tenant guard, role, dan audit backend.
-- API gateway dan database production.
-- WhatsApp Business Cloud API dan webhook Meta.
-- Media service, queue, dan retention.
-- Realtime/WebRTC production.
-- Migrasi penuh Remote Workspace ke shell WAW.
-- Observability, staging, rollback, dan security review production.
+1. Pengguna membuka https://waw-workspace-review.pages.dev/.
+2. Pengguna memasukkan nomor HP dan OTP.
+3. Pengguna masuk ke preview workspace.
+4. Tim memeriksa UI, chat, koneksi, call, dan video call.
+5. Feedback dan perbaikan diterapkan pada web.
 
-## Visual contract
+### Tahap 2 — APK Utama
 
-Web dan APK harus memiliki visual parity dengan referensi WAW. Perubahan UI wajib mempertahankan branding, shell navigasi, warna, typography, spacing, card, status indicator, button treatment, responsive behavior, dan animasi utama. Perbedaan hanya diperbolehkan bila dipaksa oleh platform, seperti dialog permission Android, MediaProjection, Accessibility settings, file picker, dan safe-area native.
+1. APK dibangun dengan tampilan dan fitur yang telah disetujui pada web.
+2. Pengguna menginstal APK.
+3. Pengguna login dengan OTP yang sama.
+4. Workspace, chat, kontak, dan riwayat disinkronkan jika backend telah siap.
+5. APK menjadi versi utama untuk penggunaan sehari-hari.
 
-Referensi: [docs/UI_AUDIT_WAW.md](docs/UI_AUDIT_WAW.md).
+## 7. File dan Halaman yang Harus Ada
 
-## Aturan kontribusi
+Pada web uji coba:
 
-Setiap perubahan sistem harus mencantumkan scope, out of scope, dependency, acceptance criteria, test evidence, security notes, dan rollback/cleanup. Jangan menghidupkan kembali catatan atau alur legacy tanpa keputusan arsitektur baru yang terdokumentasi.
+- `index.html` untuk login OTP dan tidak boleh 404.
+- `/workspace/` untuk UI utama WAW.
+- `/data-deletion/` sebagai halaman penghapusan data.
+- `/privacy/` untuk kebijakan privasi.
+- `/terms/` untuk ketentuan penggunaan.
+
+Pada APK utama:
+
+- Login OTP.
+- Workspace.
+- Kontak.
+- Chat.
+- Panggilan dan video call.
+- Pengaturan.
+
+## 8. Status Implementasi
+
+Dokumen ini adalah catatan arah produk dan pengujian. Fitur yang belum benar-benar diuji pada URL live atau APK tidak boleh dianggap selesai. Setiap fitur baru wajib melalui implementasi, build, test, dan pemeriksaan keamanan sebelum dinyatakan aktif.
+
+## Kesimpulan
+
+- Versi web digunakan untuk preview dan testing.
+- APK menjadi produk utama.
+- UI WAW dipertahankan dan tidak boleh diubah tanpa keputusan baru.
+- Login ditargetkan menggunakan nomor HP dan OTP.
+- Sistem diarahkan untuk menyediakan chat, kontak, koneksi, panggilan, video call, grup, status, template, webhook, dan pengaturan.
+- Semua fitur yang disetujui di web harus diterapkan pada APK dengan tampilan dan sistem yang sama.
+
+## Link
+
+- **Web Uji Coba:** https://waw-workspace-review.pages.dev/
+- **Data Deletion:** https://waw-workspace-review.pages.dev/data-deletion/
+- **Email Penghapusan:** projekmii23@gmail.com
